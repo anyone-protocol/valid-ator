@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { OnionooService } from 'src/onionoo/onionoo.service';
 import { TasksService } from '../tasks.service';
-import { RelayInfo } from 'src/onionoo/interfaces/8_0/relay-info';
+import { RelayInfo } from 'src/onionoo/interfaces/8_3/relay-info';
 
 @Processor('onionoo-queue')
 export class OnionooQueue extends WorkerHost {

@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
 import { firstValueFrom, catchError } from 'rxjs';
-import { DetailsResponse } from './interfaces/8_0/details-response';
-import { RelayInfo } from './interfaces/8_0/relay-info';
+import { DetailsResponse } from './interfaces/8_3/details-response';
+import { RelayInfo } from './interfaces/8_3/relay-info';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { RelayData } from './schemas/relay-data';
@@ -16,7 +16,7 @@ export class OnionooService {
     private lastSeen: String = '';
 
     private readonly detailsUri = 'https://onionoo.torproject.org/details';
-    private readonly currentApiVersion = '8.0';
+    private readonly currentApiVersion = '8.0'; // as reported via Onionoo API (04_2023: inconsistently with documentation and content standard)
 
     constructor(
         private readonly httpService: HttpService,
