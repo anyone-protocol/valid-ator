@@ -50,8 +50,7 @@ export class OnionooService {
                 this.lastSeen = initData.last_seen;
                 this.dataId = initData._id;
             } else {
-                // this should not happen
-                this.logger.warn('Data was deleted, or is incorrect');
+                this.logger.warn('This should not happen. Data was deleted, or is incorrect');
                 this.initServiceData();
             }
         } else this.initServiceData();
