@@ -26,6 +26,14 @@ export class OnionooService {
         private readonly onionooServiceDataModel: Model<OnionooServiceData>,
     ) {}
 
+    async initServiceData(): Promise<void> {
+        const newData = await this.onionooServiceDataModel.create({
+            apiVersion: this.currentApiVersion,
+            last_seen: '',
+        });
+        this.dataId = newData._id;
+    }
+
     async onApplicationBootstrap(): Promise<void> {
         const hasData = await this.onionooServiceDataModel.exists({
             apiVersion: this.currentApiVersion,
@@ -44,14 +52,9 @@ export class OnionooService {
             } else {
                 // this should not happen
                 this.logger.warn('Data was deleted, or is incorrect');
+                this.initServiceData();
             }
-        } else {
-            const newData = await this.onionooServiceDataModel.create({
-                apiVersion: this.currentApiVersion,
-                last_seen: '',
-            });
-            this.dataId = newData._id;
-        }
+        } else this.initServiceData();
 
         this.logger.log(
             `Bootstrapping Onionoo Connector [seen: ${this.lastSeen}, id: ${this.dataId}]`,
