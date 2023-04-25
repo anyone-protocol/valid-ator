@@ -1,10 +1,10 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq';
-import { Queue, FlowProducer, FlowJob } from 'bullmq';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
+import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
+import { Queue, FlowProducer, FlowJob } from 'bullmq'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
-    private readonly logger = new Logger(TasksService.name);
+    private readonly logger = new Logger(TasksService.name)
 
     public static UPDATE_ONIONOO_RELAYS_FLOW: FlowJob = {
         name: 'update-onionoo-relays-persist',
@@ -24,7 +24,7 @@ export class TasksService implements OnApplicationBootstrap {
                 ],
             },
         ],
-    };
+    }
 
     constructor(
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
@@ -33,10 +33,10 @@ export class TasksService implements OnApplicationBootstrap {
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
-        this.logger.log('Bootstrapping Tasks Service');
-        await this.tasksQueue.obliterate({ force: true });
-        await this.onionooQueue.obliterate({ force: true });
-        await this.requestUpdateOnionooRelays(0);
+        this.logger.log('Bootstrapping Tasks Service')
+        await this.tasksQueue.obliterate({ force: true })
+        await this.onionooQueue.obliterate({ force: true })
+        await this.requestUpdateOnionooRelays(0)
     }
 
     public async requestUpdateOnionooRelays(
@@ -46,6 +46,6 @@ export class TasksService implements OnApplicationBootstrap {
             'update-onionoo-relays',
             {},
             { delay: delayJob, removeOnComplete: 128, removeOnFail: 1024 },
-        );
+        )
     }
 }

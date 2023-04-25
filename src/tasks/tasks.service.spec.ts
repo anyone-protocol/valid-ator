@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { TasksService } from './tasks.service';
-import { BullModule } from '@nestjs/bullmq';
+import { Test, TestingModule } from '@nestjs/testing'
+import { TasksService } from './tasks.service'
+import { BullModule } from '@nestjs/bullmq'
 
 describe('TasksService', () => {
-    let service: TasksService;
+    let service: TasksService
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -22,12 +22,12 @@ describe('TasksService', () => {
                 }),
             ],
             providers: [TasksService],
-        }).compile();
+        }).compile()
 
-        service = module.get<TasksService>(TasksService);
-    });
+        service = module.get<TasksService>(TasksService)
+    })
 
     it('should be defined', () => {
-        expect(service).toBeDefined();
-    });
-});
+        expect(service).toBeDefined()
+    })
+})

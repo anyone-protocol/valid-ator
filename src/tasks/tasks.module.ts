@@ -1,9 +1,9 @@
-import { BullModule } from '@nestjs/bullmq';
-import { Module } from '@nestjs/common';
-import { OnionooQueue } from './processors/onionoo-queue';
-import { TasksQueue } from './processors/tasks-queue';
-import { TasksService } from './tasks.service';
-import { OnionooModule } from 'src/onionoo/onionoo.module';
+import { BullModule } from '@nestjs/bullmq'
+import { Module } from '@nestjs/common'
+import { OnionooQueue } from './processors/onionoo-queue'
+import { TasksQueue } from './processors/tasks-queue'
+import { TasksService } from './tasks.service'
+import { OnionooModule } from 'src/onionoo/onionoo.module'
 
 @Module({
     imports: [

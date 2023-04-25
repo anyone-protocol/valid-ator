@@ -1,12 +1,12 @@
-import { HttpModule } from '@nestjs/axios';
-import { Module } from '@nestjs/common';
-import { OnionooService } from './onionoo.service';
-import { MongooseModule } from '@nestjs/mongoose';
-import { RelayData, RelayDataSchema } from './schemas/relay-data';
+import { HttpModule } from '@nestjs/axios'
+import { Module } from '@nestjs/common'
+import { OnionooService } from './onionoo.service'
+import { MongooseModule } from '@nestjs/mongoose'
+import { RelayData, RelayDataSchema } from './schemas/relay-data'
 import {
     OnionooServiceData,
     OnionooServiceDataSchema,
-} from './schemas/onionoo-service-data';
+} from './schemas/onionoo-service-data'
 
 @Module({
     imports: [
