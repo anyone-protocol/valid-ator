@@ -9,14 +9,14 @@ import {
 import { RelayData, RelayDataSchema } from './schemas/relay-data'
 
 describe('OnionooService', () => {
+    let testModule: TestingModule
     let service: OnionooService
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
+    beforeAll(async () => {
+        testModule = await Test.createTestingModule({
             imports: [
                 HttpModule.register({ timeout: 60 * 1000, maxRedirects: 3 }),
-                
-                MongooseModule.forRoot('mongodb://localhost/validATOR-tests'),
+                MongooseModule.forRoot('mongodb://localhost/validATOR-onionoo-service-tests'),
                 MongooseModule.forFeature([
                     { name: OnionooServiceData.name, schema: OnionooServiceDataSchema },
                 ]),
@@ -26,8 +26,7 @@ describe('OnionooService', () => {
             ],
             providers: [OnionooService],
         }).compile()
-
-        service = module.get<OnionooService>(OnionooService)
+        service = testModule.get<OnionooService>(OnionooService)
     })
 
     it('should be defined', () => {
