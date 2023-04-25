@@ -13,6 +13,9 @@ export class RelayData {
 
     @Prop({ type: Number, required: true })
     validated_at: number
+
+    @Prop({ type: String })
+    ator_public_key: string
 }
 
 export const RelayDataSchema = SchemaFactory.createForClass(RelayData)

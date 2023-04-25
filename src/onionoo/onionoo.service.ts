@@ -8,6 +8,8 @@ import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { RelayData } from './schemas/relay-data'
 import { OnionooServiceData } from './schemas/onionoo-service-data'
+import { RelayDataDto } from './dto/relay-data-dto'
+import { ethers } from "ethers";
 
 @Injectable()
 export class OnionooService {
@@ -17,6 +19,8 @@ export class OnionooService {
 
     private readonly detailsUri = 'https://onionoo.torproject.org/details'
     private readonly currentApiVersion = '8.0' // as reported via Onionoo API (04_2023: inconsistently with documentation and content standard)
+    private readonly atorKeyPattern = '@ator:'
+    private readonly keyLength = 42
 
     constructor(
         private readonly httpService: HttpService,
@@ -113,21 +117,55 @@ export class OnionooService {
         return relays
     }
 
-    public async validateNewRelays(relays: RelayInfo[]): Promise<RelayInfo[]> {
-        this.logger.debug(`Validating ${relays.length} relays`)
-
-        const validated = relays.filter((value, index, array) =>
-            value.contact?.includes('@ator: 0x'),
-        )
-
-        if (validated.length > 0)
-            this.logger.log(`Validated ${validated.length} relays`)
-        else if (relays.length > 0) this.logger.log('No new validations found')
-
-        return validated
+    public extractAtorKey(inputString?: string): string {
+        if (inputString !== undefined && inputString.length > 0) {
+            const startIndex = inputString.indexOf(this.atorKeyPattern)
+            if (startIndex > -1) {
+                const baseIndex = startIndex + this.atorKeyPattern.length
+                const keyIndex = inputString.indexOf('0x', baseIndex)
+                if (keyIndex > -1) {
+                    const endKeyIndex = keyIndex + this.keyLength
+                    if (endKeyIndex <= inputString.length) {
+                        const keyCandidate = inputString.substring(keyIndex, endKeyIndex)
+                        this.logger.debug(`Found key candidate ${keyCandidate} in [${inputString}]`)
+                        if (ethers.isAddress(keyCandidate)) 
+                            return keyCandidate
+                        else this.logger.warn('Invalid ator key (as checked by ethers) found after pattern in matched relay')
+                    } else this.logger.warn('Invalid ator key candidate found after pattern in matched relay')
+                } else this.logger.warn('Ator key not found after pattern in matched relay')
+            } else this.logger.warn('Ator key pattern not found in matched relay')
+        } else this.logger.warn('Attempting to extract empty key from matched relay')
+        return ''
     }
 
-    public async persistNewValidations(relays: RelayInfo[]) {
+    public async validateNewRelays(relays: RelayInfo[]): Promise<RelayDataDto[]> {
+        this.logger.debug(`Validating ${relays.length} relays`)
+        
+        const validationStamp = Date.now()
+        
+        const matchingRelays = relays.filter((value, index, array) =>
+            value.contact !== undefined
+            && value.contact.includes(this.atorKeyPattern),
+        )
+
+        if (matchingRelays.length > 0)
+            this.logger.log(`Validated ${matchingRelays.length} relays`)
+        else if (relays.length > 0) this.logger.log('No new validations found')
+        
+        const relayData = matchingRelays.map<RelayDataDto>(
+            (info, index, array) => (
+                {
+                    fingerprint: info.fingerprint,
+                    contact: (info.contact !== undefined)? info.contact : '', // other case should not happen as its filtered out while creating validations array
+                    validated_at: validationStamp,
+                    ator_public_key: this.extractAtorKey(info.contact)
+                }
+        ))
+
+        return relayData.filter((data, index, array) => data.ator_public_key.length > 0)
+    }
+
+    public async persistNewValidations(relays: RelayDataDto[]) {
         if (relays.length === 0) this.logger.debug('No relays to persist found')
         else {
             this.logger.debug(`Persisting ${relays.length} validated relays`)

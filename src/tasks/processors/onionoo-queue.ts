@@ -4,6 +4,7 @@ import { Job } from 'bullmq'
 import { OnionooService } from 'src/onionoo/onionoo.service'
 import { TasksService } from '../tasks.service'
 import { RelayInfo } from 'src/onionoo/interfaces/8_3/relay-info'
+import { RelayDataDto } from 'src/onionoo/dto/relay-data-dto'
 
 @Processor('onionoo-queue')
 export class OnionooQueue extends WorkerHost {
@@ -25,7 +26,7 @@ export class OnionooQueue extends WorkerHost {
                 return relays
 
             case 'update-onionoo-relays-validate':
-                const fetchedRelays = Object.values(
+                const fetchedRelays: RelayInfo[] = Object.values(
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
@@ -36,7 +37,7 @@ export class OnionooQueue extends WorkerHost {
                 return validated
 
             case 'update-onionoo-relays-persist':
-                const validatedRelays = Object.values(
+                const validatedRelays: RelayDataDto[] = Object.values(
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
