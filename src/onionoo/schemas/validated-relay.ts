@@ -1,18 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
+import { RelayData } from './relay-data'
 
-export type RelayDataDocument = HydratedDocument<RelayData>
+export type ValidatedRelayDocument = HydratedDocument<ValidatedRelay>
 
 @Schema()
-export class RelayData {
+export class ValidatedRelay {
     @Prop({ type: String, required: true })
     fingerprint: string
-
-    @Prop({ type: Number, required: true })
-    validated_at: number
 
     @Prop({ type: String, required: true })
     ator_public_key: string
 }
 
-export const RelayDataSchema = SchemaFactory.createForClass(RelayData)
+export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

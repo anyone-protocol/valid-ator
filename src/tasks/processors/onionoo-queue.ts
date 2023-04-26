@@ -30,9 +30,7 @@ export class OnionooQueue extends WorkerHost {
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
-                const validated = await this.onionoo.validateNewRelays(
-                    fetchedRelays,
-                )
+                const validated = await this.onionoo.filterRelays(fetchedRelays)
 
                 return validated
 
@@ -41,7 +39,7 @@ export class OnionooQueue extends WorkerHost {
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
-                await this.onionoo.persistNewValidations(validatedRelays)
+                await this.onionoo.validateRelays(validatedRelays)
                 this.tasks.requestUpdateOnionooRelays()
                 break
             default:

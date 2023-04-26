@@ -7,7 +7,8 @@ import {
     OnionooServiceData,
     OnionooServiceDataSchema,
 } from './schemas/onionoo-service-data'
-import { ConfigModule, ConfigService } from '@nestjs/config'
+import { ConfigService } from '@nestjs/config'
+import { ValidationData, ValidationDataSchema } from './schemas/validation-data'
 
 @Module({
     imports: [
@@ -31,6 +32,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
         MongooseModule.forFeature([
             { name: OnionooServiceData.name, schema: OnionooServiceDataSchema },
             { name: RelayData.name, schema: RelayDataSchema },
+            { name: ValidationData.name, schema: ValidationDataSchema },
         ]),
     ],
     providers: [OnionooService],

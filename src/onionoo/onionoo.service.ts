@@ -11,6 +11,8 @@ import { OnionooServiceData } from './schemas/onionoo-service-data'
 import { RelayDataDto } from './dto/relay-data-dto'
 import { ethers } from 'ethers'
 import { ConfigService } from '@nestjs/config'
+import { ValidationData } from './schemas/validation-data'
+import { ValidatedRelay } from './schemas/validated-relay'
 
 @Injectable()
 export class OnionooService {
@@ -29,6 +31,8 @@ export class OnionooService {
         private readonly relayDataModel: Model<RelayData>,
         @InjectModel(OnionooServiceData.name)
         private readonly onionooServiceDataModel: Model<OnionooServiceData>,
+        @InjectModel(ValidationData.name)
+        private readonly validationDataModel: Model<ValidationData>,
     ) {}
 
     async initServiceData(): Promise<void> {
@@ -144,7 +148,8 @@ export class OnionooService {
                         this.logger.debug(
                             `Found key candidate ${keyCandidate} in [${inputString}]`,
                         )
-                        if (ethers.isAddress(keyCandidate)) return keyCandidate
+                        if (ethers.isAddress(keyCandidate))
+                            return ethers.getAddress(keyCandidate)
                         else
                             this.logger.warn(
                                 'Invalid ator key (as checked by ethers) found after pattern in matched relay',
@@ -167,12 +172,8 @@ export class OnionooService {
         return ''
     }
 
-    public async validateNewRelays(
-        relays: RelayInfo[],
-    ): Promise<RelayDataDto[]> {
-        this.logger.debug(`Validating ${relays.length} relays`)
-
-        const validationStamp = Date.now()
+    public async filterRelays(relays: RelayInfo[]): Promise<RelayDataDto[]> {
+        this.logger.debug(`Filtering ${relays.length} relays`)
 
         const matchingRelays = relays.filter(
             (value, index, array) =>
@@ -181,44 +182,64 @@ export class OnionooService {
         )
 
         if (matchingRelays.length > 0)
-            this.logger.log(`Validated ${matchingRelays.length} relays`)
-        else if (relays.length > 0) this.logger.log('No new validations found')
+            this.logger.log(`Filtered ${matchingRelays.length} relays`)
+        else if (relays.length > 0)
+            this.logger.log('No new interesting relays found')
 
         const relayData = matchingRelays.map<RelayDataDto>(
             (info, index, array) => ({
                 fingerprint: info.fingerprint,
                 contact: info.contact !== undefined ? info.contact : '', // other case should not happen as its filtered out while creating validations array
-                validated_at: validationStamp,
-                ator_public_key: this.extractAtorKey(info.contact),
             }),
         )
 
-        return relayData.filter(
-            (data, index, array) => data.ator_public_key.length > 0,
-        )
+        return relayData.filter((data, index, array) => data.contact.length > 0)
     }
 
-    public async persistNewValidations(relays: RelayDataDto[]) {
-        if (relays.length === 0) this.logger.debug('No relays to persist found')
+    public async validateRelays(relays: RelayDataDto[]) {
+        if (relays.length === 0) this.logger.debug('No relays to validate')
         else {
-            this.logger.debug(`Persisting ${relays.length} validated relays`)
             const validationStamp = Date.now()
 
-            relays.forEach(async (relay, index, array) => {
-                const persistResult = await this.relayDataModel
-                    .updateOne(
-                        { fingerprint: relay.fingerprint },
-                        {
-                            fingerprint: relay.fingerprint,
-                            contact: relay.contact,
-                            validated_at: validationStamp,
-                        },
-                        { upsert: true, setDefaultsOnInsert: true },
-                    )
-                    .catch((error) => this.logger.error(error))
+            const validatedRelays = relays
+                .map<ValidatedRelay>((relay, index, array) => ({
+                    fingerprint: relay.fingerprint,
+                    ator_public_key: this.extractAtorKey(relay.contact),
+                }))
+                .filter(
+                    (relay, index, array) => relay.ator_public_key.length > 0,
+                )
 
-                this.logger.log(`Persisted validation of ${relay.fingerprint}`)
+            this.logger.log(
+                `Storing validation summary with ${validatedRelays.length} relays`,
+            )
+
+            this.validationDataModel.create<ValidationData>({
+                validated_at: validationStamp,
+                relays: validatedRelays,
+            })
+
+            validatedRelays.forEach(async (relay, index, array) => {
+                this.logger.debug(
+                    `Storing validation details of ${relay.fingerprint}`,
+                )
+                await this.relayDataModel
+                    .create<RelayData>({
+                        validated_at: validationStamp,
+                        fingerprint: relay.fingerprint,
+                        ator_public_key: relay.ator_public_key,
+                    })
+                    .catch((error) => this.logger.error(error))
             })
         }
+    }
+
+    public async lastValidationOf(
+        fingerprint: string,
+    ): Promise<RelayData | null> {
+        return this.relayDataModel
+            .findOne<RelayData>({ fingerprint: fingerprint })
+            .sort({ validated_at: 'desc' })
+            .exec()
     }
 }
