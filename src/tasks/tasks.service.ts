@@ -12,17 +12,26 @@ export class TasksService implements OnApplicationBootstrap {
     public static UPDATE_ONIONOO_RELAYS_FLOW: FlowJob = {
         name: 'update-onionoo-relays-persist',
         queueName: 'onionoo-queue',
-        opts: { removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
+        opts: {
+            removeOnComplete: TasksService.keepCompleted,
+            removeOnFail: TasksService.keepFailed,
+        },
         children: [
             {
                 name: 'update-onionoo-relays-validate',
                 queueName: 'onionoo-queue',
-                opts: { removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
+                opts: {
+                    removeOnComplete: TasksService.keepCompleted,
+                    removeOnFail: TasksService.keepFailed,
+                },
                 children: [
                     {
                         name: 'update-onionoo-relays-fetch',
                         queueName: 'onionoo-queue',
-                        opts: { removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
+                        opts: {
+                            removeOnComplete: TasksService.keepCompleted,
+                            removeOnFail: TasksService.keepFailed,
+                        },
                     },
                 ],
             },
@@ -48,7 +57,11 @@ export class TasksService implements OnApplicationBootstrap {
         await this.tasksQueue.add(
             'update-onionoo-relays',
             {},
-            { delay: delayJob, removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
+            {
+                delay: delayJob,
+                removeOnComplete: TasksService.keepCompleted,
+                removeOnFail: TasksService.keepFailed,
+            },
         )
     }
 }

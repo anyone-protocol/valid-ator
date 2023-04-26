@@ -11,17 +11,22 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
 
 @Module({
     imports: [
-        HttpModule.registerAsync({ 
+        HttpModule.registerAsync({
             inject: [ConfigService],
             useFactory: (
-                config: ConfigService<{ 
-                    ONIONOO_REQUEST_TIMEOUT: number,
+                config: ConfigService<{
+                    ONIONOO_REQUEST_TIMEOUT: number
                     ONIONOO_REQUEST_MAX_REDIRECTS: number
-                }>
-            ) => ({ 
-                timeout: config.get<number>('ONIONOO_REQUEST_TIMEOUT', { infer: true }), 
-                maxRedirects: config.get<number>('ONIONOO_REQUEST_MAX_REDIRECTS', { infer: true })
-            })
+                }>,
+            ) => ({
+                timeout: config.get<number>('ONIONOO_REQUEST_TIMEOUT', {
+                    infer: true,
+                }),
+                maxRedirects: config.get<number>(
+                    'ONIONOO_REQUEST_MAX_REDIRECTS',
+                    { infer: true },
+                ),
+            }),
         }),
         MongooseModule.forFeature([
             { name: OnionooServiceData.name, schema: OnionooServiceDataSchema },

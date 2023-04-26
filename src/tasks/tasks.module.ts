@@ -12,11 +12,16 @@ import { ConfigService } from '@nestjs/config'
         BullModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (
-                config: ConfigService<{ REDIS_HOSTNAME: string, REDIS_PORT: number }>
-            ) => ({ connection: { 
-                host: config.get<string>('REDIS_HOSTNAME', { infer: true }), 
-                port: config.get<number>('REDIS_PORT', { infer: true }) 
-            } })
+                config: ConfigService<{
+                    REDIS_HOSTNAME: string
+                    REDIS_PORT: number
+                }>,
+            ) => ({
+                connection: {
+                    host: config.get<string>('REDIS_HOSTNAME', { infer: true }),
+                    port: config.get<number>('REDIS_PORT', { infer: true }),
+                },
+            }),
         }),
         BullModule.registerQueue({ name: 'tasks-queue' }),
         BullModule.registerQueue({ name: 'onionoo-queue' }),
