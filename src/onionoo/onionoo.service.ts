@@ -10,6 +10,7 @@ import { RelayData } from './schemas/relay-data'
 import { OnionooServiceData } from './schemas/onionoo-service-data'
 import { RelayDataDto } from './dto/relay-data-dto'
 import { ethers } from "ethers";
+import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class OnionooService {
@@ -17,13 +18,13 @@ export class OnionooService {
     private dataId: Types.ObjectId
     private lastSeen: String = ''
 
-    private readonly detailsUri = 'https://onionoo.torproject.org/details'
     private readonly currentApiVersion = '8.0' // as reported via Onionoo API (04_2023: inconsistently with documentation and content standard)
     private readonly atorKeyPattern = '@ator:'
     private readonly keyLength = 42
 
     constructor(
         private readonly httpService: HttpService,
+        private readonly config: ConfigService<{ ONIONOO_DETAILS_URI: string }>,
         @InjectModel(RelayData.name)
         private readonly relayDataModel: Model<RelayData>,
         @InjectModel(OnionooServiceData.name)
@@ -71,48 +72,43 @@ export class OnionooService {
             `Fetching new relays from Onionoo [seen: ${this.lastSeen}]`,
         )
 
-        const requestStamp = Date.now()
-        const { headers, status, data } = await firstValueFrom(
-            this.httpService
-                .get<DetailsResponse>(this.detailsUri, {
-                    headers: {
-                        'content-encoding': 'gzip',
-                        'if-modified-since': `${this.lastSeen}`,
-                    },
-                    validateStatus: (status) =>
-                        status === 304 || status === 200,
-                })
-                .pipe(
-                    catchError((error: AxiosError) => {
-                        this.logger.error(
-                            `Fetching relays failed with ${error.response?.status}`,
-                        )
-                        throw 'Failed to fetch details from Onionoo'
-                    }),
-                ),
-        )
-
-        this.logger.debug(`Fetch details response ${status}`)
         var relays: RelayInfo[] = []
-        if (status === 200) {
-            relays = data.relays
-            const lastModified = headers['last-modified']
-            if (
-                lastModified !== undefined &&
-                typeof lastModified === 'string' &&
-                requestStamp > Date.parse(lastModified)
-            ) {
-                this.lastSeen = new Date(lastModified).toUTCString()
-                await this.onionooServiceDataModel.findByIdAndUpdate(
-                    this.dataId,
-                    { apiVersion: data.version, last_seen: this.lastSeen },
-                )
-            } else this.lastSeen = ''
-
-            this.logger.log(
-                `Received ${relays.length} relays from Onionoo [seen: ${this.lastSeen}]`,
+        const detailsUri = this.config.get<string>('ONIONOO_DETAILS_URI', { infer: true })
+        if (detailsUri !== undefined) {
+            const requestStamp = Date.now()
+            const { headers, status, data } = await firstValueFrom(
+                this.httpService
+                    .get<DetailsResponse>(detailsUri, {
+                        headers: { 'content-encoding': 'gzip', 'if-modified-since': `${this.lastSeen}` },
+                        validateStatus: (status) => status === 304 || status === 200,
+                    })
+                    .pipe(
+                        catchError((error: AxiosError) => {
+                            this.logger.error(
+                                `Fetching relays from ${detailsUri} failed with ${error.response?.status}`,
+                            )
+                            throw 'Failed to fetch details from Onionoo'
+                        }),
+                    ),
             )
-        } else this.logger.log('No new updates from Onionoo') // 304 - Not modified
+
+            this.logger.debug(`Fetch details from ${detailsUri} response ${status}`)
+            if (status === 200) {
+                relays = data.relays
+                const lastMod = headers['last-modified']
+                if (lastMod !== undefined && typeof lastMod === 'string' && requestStamp > Date.parse(lastMod) ) {
+                    this.lastSeen = new Date(lastMod).toUTCString()
+                    await this.onionooServiceDataModel.findByIdAndUpdate(
+                        this.dataId,
+                        { apiVersion: data.version, last_seen: this.lastSeen },
+                    )
+                } else this.lastSeen = ''
+
+                this.logger.log(
+                    `Received ${relays.length} relays from Onionoo [seen: ${this.lastSeen}]`,
+                )
+            } else this.logger.log('No new updates from Onionoo') // 304 - Not modified
+        } else this.logger.warn('Set the ONIONOO_DETAILS_URI in ENV vars or configuration')
 
         return relays
     }
@@ -135,6 +131,7 @@ export class OnionooService {
                 } else this.logger.warn('Ator key not found after pattern in matched relay')
             } else this.logger.warn('Ator key pattern not found in matched relay')
         } else this.logger.warn('Attempting to extract empty key from matched relay')
+        
         return ''
     }
 

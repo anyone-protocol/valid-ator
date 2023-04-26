@@ -6,20 +6,23 @@ import { Queue, FlowProducer, FlowJob } from 'bullmq'
 export class TasksService implements OnApplicationBootstrap {
     private readonly logger = new Logger(TasksService.name)
 
+    private static readonly keepCompleted: 128
+    private static readonly keepFailed: 1024
+
     public static UPDATE_ONIONOO_RELAYS_FLOW: FlowJob = {
         name: 'update-onionoo-relays-persist',
         queueName: 'onionoo-queue',
-        opts: { removeOnComplete: 128, removeOnFail: 1024 },
+        opts: { removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
         children: [
             {
                 name: 'update-onionoo-relays-validate',
                 queueName: 'onionoo-queue',
-                opts: { removeOnComplete: 128, removeOnFail: 1024 },
+                opts: { removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
                 children: [
                     {
                         name: 'update-onionoo-relays-fetch',
                         queueName: 'onionoo-queue',
-                        opts: { removeOnComplete: 128, removeOnFail: 1024 },
+                        opts: { removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
                     },
                 ],
             },
@@ -45,7 +48,7 @@ export class TasksService implements OnApplicationBootstrap {
         await this.tasksQueue.add(
             'update-onionoo-relays',
             {},
-            { delay: delayJob, removeOnComplete: 128, removeOnFail: 1024 },
+            { delay: delayJob, removeOnComplete: TasksService.keepCompleted, removeOnFail: TasksService.keepFailed },
         )
     }
 }

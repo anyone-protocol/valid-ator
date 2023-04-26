@@ -7,6 +7,7 @@ import {
     OnionooServiceDataSchema,
 } from './schemas/onionoo-service-data'
 import { RelayData, RelayDataSchema } from './schemas/relay-data'
+import { ConfigModule } from '@nestjs/config'
 
 describe('OnionooService', () => {
     let testModule: TestingModule
@@ -15,6 +16,7 @@ describe('OnionooService', () => {
     beforeAll(async () => {
         testModule = await Test.createTestingModule({
             imports: [
+                ConfigModule.forRoot(),
                 HttpModule.register({ timeout: 60 * 1000, maxRedirects: 3 }),
                 MongooseModule.forRoot('mongodb://localhost/validATOR-onionoo-service-tests'),
                 MongooseModule.forFeature([
