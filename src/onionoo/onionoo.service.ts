@@ -242,4 +242,11 @@ export class OnionooService {
             .sort({ validated_at: 'desc' })
             .exec()
     }
+
+    public async lastValidation(): Promise<ValidationData | null> {
+        return this.validationDataModel
+            .findOne<ValidationData>()
+            .sort({ validated_at: 'desc' })
+            .exec()
+    }
 }

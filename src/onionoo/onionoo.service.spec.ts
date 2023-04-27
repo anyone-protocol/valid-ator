@@ -199,4 +199,20 @@ describe('OnionooService', () => {
             null,
         )
     })
+
+    it('should provide last validation results', async () => {
+        const relayDto1 = {
+            fingerprint: 'F143E45414700000000000000000000000000010',
+            contact:
+                'Some @text @ator:  0xf72a247Dc4546b0291dbbf57648D45a752537802',
+        }
+
+        service.validateRelays([relayDto1])
+
+        expect(
+            await service
+                .lastValidation()
+                .then((value) => value?.relays.length),
+        ).toEqual(1)
+    })
 })
