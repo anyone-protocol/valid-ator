@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer, FlowJob } from 'bullmq'
+import { RelayData } from 'src/onionoo/schemas/relay-data'
+import { ValidationData } from 'src/onionoo/schemas/validation-data'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -9,53 +11,78 @@ export class TasksService implements OnApplicationBootstrap {
     private static readonly keepCompleted: 128
     private static readonly keepFailed: 1024
 
-    public static UPDATE_ONIONOO_RELAYS_FLOW: FlowJob = {
-        name: 'update-onionoo-relays-persist',
-        queueName: 'onionoo-queue',
-        opts: {
-            removeOnComplete: TasksService.keepCompleted,
-            removeOnFail: TasksService.keepFailed,
-        },
+    public static jobOpts = {
+        removeOnComplete: TasksService.keepCompleted,
+        removeOnFail: TasksService.keepFailed,
+    }
+
+    public static VALIDATE_ONIONOO_RELAYS_FLOW: FlowJob = {
+        name: 'publish-validation',
+        queueName: 'tasks-queue',
+        opts: TasksService.jobOpts,
         children: [
             {
-                name: 'update-onionoo-relays-validate',
+                name: 'validate-relays',
                 queueName: 'onionoo-queue',
-                opts: {
-                    removeOnComplete: TasksService.keepCompleted,
-                    removeOnFail: TasksService.keepFailed,
-                },
+                opts: TasksService.jobOpts,
                 children: [
                     {
-                        name: 'update-onionoo-relays-fetch',
+                        name: 'filter-relays',
                         queueName: 'onionoo-queue',
-                        opts: {
-                            removeOnComplete: TasksService.keepCompleted,
-                            removeOnFail: TasksService.keepFailed,
-                        },
+                        opts: TasksService.jobOpts,
+                        children: [
+                            {
+                                name: 'fetch-relays',
+                                queueName: 'onionoo-queue',
+                                opts: TasksService.jobOpts,
+                            },
+                        ],
                     },
                 ],
             },
         ],
     }
 
+    public static PUBLISH_RELAY_VALIDATIONS(
+        validation: ValidationData,
+    ): FlowJob {
+        return {
+            name: 'finalize-publish',
+            queueName: 'publishing-queue',
+            data: validation.validated_at,
+            opts: TasksService.jobOpts,
+            children: validation.relays.map((relay, index, array) => ({
+                name: 'publish-smartweave',
+                queueName: 'publishing-queue',
+                opts: TasksService.jobOpts,
+                data: relay,
+            })),
+        }
+    }
+
     constructor(
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
         @InjectQueue('onionoo-queue') public onionooQueue: Queue,
-        @InjectFlowProducer('tasks-flow') public flow: FlowProducer,
+        @InjectQueue('publishing-queue') public publishingQueue: Queue,
+        @InjectFlowProducer('validation-flow')
+        public validationFlow: FlowProducer,
+        @InjectFlowProducer('publishing-flow')
+        public publishingFlow: FlowProducer,
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
         this.logger.log('Bootstrapping Tasks Service')
         await this.tasksQueue.obliterate({ force: true })
         await this.onionooQueue.obliterate({ force: true })
-        await this.requestUpdateOnionooRelays(0)
+        await this.publishingQueue.obliterate({ force: true })
+        await this.updateOnionooRelays(0)
     }
 
-    public async requestUpdateOnionooRelays(
-        delayJob: number = 1000 * 10,
+    public async updateOnionooRelays(
+        delayJob: number = 1000 * 60,
     ): Promise<void> {
         await this.tasksQueue.add(
-            'update-onionoo-relays',
+            'validate-onionoo-relays',
             {},
             {
                 delay: delayJob,

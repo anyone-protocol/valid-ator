@@ -2,6 +2,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
 import { TasksService } from '../tasks.service'
+import { ValidationData } from 'src/onionoo/schemas/validation-data'
 
 @Processor('tasks-queue')
 export class TasksQueue extends WorkerHost {
@@ -15,9 +16,29 @@ export class TasksQueue extends WorkerHost {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
-            case 'update-onionoo-relays':
-                this.tasks.flow.add(TasksService.UPDATE_ONIONOO_RELAYS_FLOW)
+            case 'validate-onionoo-relays':
+                this.tasks.validationFlow.add(
+                    TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
+                )
                 break
+
+            case 'publish-validation':
+                const validationData: ValidationData[] = Object.values(
+                    await job.getChildrenValues(),
+                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+
+                if (validationData.length > 0)
+                    this.tasks.publishingFlow.add(
+                        TasksService.PUBLISH_RELAY_VALIDATIONS(
+                            validationData[0],
+                        ),
+                    )
+                else
+                    this.logger.warn(
+                        'Nothing to publish, this should not happen',
+                    )
+                break
+
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)
         }

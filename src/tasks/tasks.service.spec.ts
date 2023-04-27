@@ -16,8 +16,16 @@ describe('TasksService', () => {
                     name: 'onionoo-queue',
                     connection: { host: 'localhost', port: 6379 },
                 }),
+                BullModule.registerQueue({
+                    name: 'publishing-queue',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
                 BullModule.registerFlowProducer({
-                    name: 'tasks-flow',
+                    name: 'validation-flow',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
+                BullModule.registerFlowProducer({
+                    name: 'publishing-flow',
                     connection: { host: 'localhost', port: 6379 },
                 }),
             ],

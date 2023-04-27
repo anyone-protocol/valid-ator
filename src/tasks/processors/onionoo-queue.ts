@@ -10,6 +10,10 @@ import { RelayDataDto } from 'src/onionoo/dto/relay-data-dto'
 export class OnionooQueue extends WorkerHost {
     private readonly logger = new Logger(OnionooQueue.name)
 
+    public static readonly JOB_FETCH_RELAYS = 'fetch-relays'
+    public static readonly JOB_FILTER_RELAYS = 'filter-relays'
+    public static readonly JOB_VALIDATE_RELAYS = 'validate-relays'
+
     constructor(
         private readonly onionoo: OnionooService,
         private readonly tasks: TasksService,
@@ -21,11 +25,11 @@ export class OnionooQueue extends WorkerHost {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
-            case 'update-onionoo-relays-fetch':
+            case OnionooQueue.JOB_FETCH_RELAYS:
                 const relays = await this.onionoo.fetchNewRelays()
                 return relays
 
-            case 'update-onionoo-relays-validate':
+            case OnionooQueue.JOB_FILTER_RELAYS:
                 const fetchedRelays: RelayInfo[] = Object.values(
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
@@ -34,14 +38,22 @@ export class OnionooQueue extends WorkerHost {
 
                 return validated
 
-            case 'update-onionoo-relays-persist':
+            case OnionooQueue.JOB_VALIDATE_RELAYS:
                 const validatedRelays: RelayDataDto[] = Object.values(
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
-                await this.onionoo.validateRelays(validatedRelays)
-                this.tasks.requestUpdateOnionooRelays()
-                break
+                try {
+                    const validationData = await this.onionoo.validateRelays(
+                        validatedRelays,
+                    )
+                    await this.tasks.updateOnionooRelays() // using default delay time in param
+                    return validationData
+                } catch (e) {
+                    this.logger.error(e)
+                    return null
+                }
+
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)
         }

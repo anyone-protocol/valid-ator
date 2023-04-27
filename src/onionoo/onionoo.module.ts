@@ -9,6 +9,7 @@ import {
 } from './schemas/onionoo-service-data'
 import { ConfigService } from '@nestjs/config'
 import { ValidationData, ValidationDataSchema } from './schemas/validation-data'
+import { TasksModule } from 'src/tasks/tasks.module'
 
 @Module({
     imports: [

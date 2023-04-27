@@ -196,11 +196,17 @@ export class OnionooService {
         return relayData.filter((data, index, array) => data.contact.length > 0)
     }
 
-    public async validateRelays(relays: RelayDataDto[]) {
-        if (relays.length === 0) this.logger.debug('No relays to validate')
-        else {
-            const validationStamp = Date.now()
-
+    public async validateRelays(
+        relays: RelayDataDto[],
+    ): Promise<ValidationData> {
+        const validationStamp = Date.now()
+        if (relays.length === 0) {
+            this.logger.log(`No relays to validate at ${validationStamp}`)
+            return {
+                validated_at: validationStamp,
+                relays: [],
+            }
+        } else {
             const validatedRelays = relays
                 .map<ValidatedRelay>((relay, index, array) => ({
                     fingerprint: relay.fingerprint,
@@ -211,17 +217,19 @@ export class OnionooService {
                 )
 
             this.logger.log(
-                `Storing validation summary with ${validatedRelays.length} relays`,
+                `Storing validation ${validationStamp} with ${validatedRelays.length} relays`,
             )
 
-            this.validationDataModel.create<ValidationData>({
+            const validationData = {
                 validated_at: validationStamp,
                 relays: validatedRelays,
-            })
+            }
+
+            this.validationDataModel.create(validationData)
 
             validatedRelays.forEach(async (relay, index, array) => {
                 this.logger.debug(
-                    `Storing validation details of ${relay.fingerprint}`,
+                    `Storing validation ${validationStamp} of ${relay.fingerprint}`,
                 )
                 await this.relayDataModel
                     .create<RelayData>({
@@ -231,6 +239,8 @@ export class OnionooService {
                     })
                     .catch((error) => this.logger.error(error))
             })
+
+            return validationData
         }
     }
 
