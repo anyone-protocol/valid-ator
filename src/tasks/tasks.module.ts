@@ -6,10 +6,12 @@ import { TasksService } from './tasks.service'
 import { ConfigService } from '@nestjs/config'
 import { OnionooModule } from 'src/onionoo/onionoo.module'
 import { PublishingQueue } from './processors/publishing-queue'
+import { ContractsModule } from 'src/contracts/contracts.module'
 
 @Module({
     imports: [
         OnionooModule,
+        ContractsModule,
         BullModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (

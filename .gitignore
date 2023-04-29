@@ -36,3 +36,6 @@ lerna-debug.log*
 
 # environment
 *.env
+
+# Warp
+cache/*

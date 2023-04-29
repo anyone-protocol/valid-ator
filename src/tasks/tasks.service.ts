@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer, FlowJob } from 'bullmq'
-import { RelayData } from 'src/onionoo/schemas/relay-data'
 import { ValidationData } from 'src/onionoo/schemas/validation-data'
 
 @Injectable()
@@ -52,7 +51,7 @@ export class TasksService implements OnApplicationBootstrap {
             data: validation.validated_at,
             opts: TasksService.jobOpts,
             children: validation.relays.map((relay, index, array) => ({
-                name: 'publish-smartweave',
+                name: 'publish-validated-relay',
                 queueName: 'publishing-queue',
                 opts: TasksService.jobOpts,
                 data: relay,

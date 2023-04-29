@@ -5,6 +5,7 @@ import { TasksModule } from './tasks/tasks.module'
 import { OnionooModule } from './onionoo/onionoo.module'
 import { MongooseModule } from '@nestjs/mongoose'
 import { ConfigModule, ConfigService } from '@nestjs/config'
+import { ContractsModule } from './contracts/contracts.module'
 
 @Module({
     imports: [
@@ -17,6 +18,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
                 uri: config.get<string>('MONGO_URI', { infer: true }),
             }),
         }),
+        ContractsModule,
     ],
     controllers: [AppController],
     providers: [AppService],

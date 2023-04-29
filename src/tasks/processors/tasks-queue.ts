@@ -8,6 +8,10 @@ import { ValidationData } from 'src/onionoo/schemas/validation-data'
 export class TasksQueue extends WorkerHost {
     private readonly logger = new Logger(TasksQueue.name)
 
+    public static readonly JOB_VALIDATE_ONIONOO_RELAYS =
+        'validate-onionoo-relays'
+    public static readonly JOB_PUBLISH_VALIDATION = 'publish-validation'
+
     constructor(private readonly tasks: TasksService) {
         super()
     }
@@ -16,13 +20,13 @@ export class TasksQueue extends WorkerHost {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
-            case 'validate-onionoo-relays':
+            case TasksQueue.JOB_VALIDATE_ONIONOO_RELAYS:
                 this.tasks.validationFlow.add(
                     TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
                 )
                 break
 
-            case 'publish-validation':
+            case TasksQueue.JOB_PUBLISH_VALIDATION:
                 const validationData: ValidationData[] = Object.values(
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
