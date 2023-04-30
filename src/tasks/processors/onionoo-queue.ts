@@ -39,11 +39,14 @@ export class OnionooQueue extends WorkerHost {
                 return validated
 
             case OnionooQueue.JOB_VALIDATE_RELAYS:
-                const validatedRelays: RelayDataDto[] = Object.values(
-                    await job.getChildrenValues(),
-                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
-
                 try {
+                    const validatedRelays: RelayDataDto[] = Object.values(
+                        await job.getChildrenValues(),
+                    ).reduce(
+                        (prev, curr) => (prev as []).concat(curr as []),
+                        [],
+                    )
+
                     const validationData = await this.onionoo.validateRelays(
                         validatedRelays,
                     )

@@ -11,13 +11,7 @@ import {
 } from 'warp-contracts-plugin-signature/server'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
-
-export enum RelayVerificationResult {
-    Ok,
-    AlreadyVerified,
-    NotRegistered,
-    Failed,
-}
+import { RelayVerificationResult } from './dto/relay-verification-result'
 
 @Injectable()
 export class ContractsService {
@@ -111,7 +105,7 @@ export class ContractsService {
                 `${relay.fingerprint}|${relay.ator_public_key} Registered: ${registered} Verified: ${verified}`,
             )
 
-            if (verified) return RelayVerificationResult.AlreadyVerified
+            if (verified) return 'AlreadyVerified'
             if (registered) {
                 if (this.owner !== undefined) {
                     const evmSig = await buildEvmSignature(this.owner.signer)
@@ -126,15 +120,15 @@ export class ContractsService {
                             address: relay.ator_public_key,
                         })
 
-                    return RelayVerificationResult.Ok
+                    return 'OK'
                 } else {
                     this.logger.error('Contract owner not defined')
-                    return RelayVerificationResult.Failed
+                    return 'Failed'
                 }
-            } else return RelayVerificationResult.NotRegistered
+            } else return 'NotRegistered'
         } else {
             this.logger.error('Contract not initialized')
-            return RelayVerificationResult.Failed
+            return 'Failed'
         }
     }
 }

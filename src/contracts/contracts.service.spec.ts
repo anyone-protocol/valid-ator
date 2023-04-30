@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { ContractsService, RelayVerificationResult } from './contracts.service'
+import { ContractsService } from './contracts.service'
 import { ConfigModule } from '@nestjs/config'
 
 describe('ContractsService', () => {
@@ -24,7 +24,7 @@ describe('ContractsService', () => {
                 fingerprint: 'AABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
                 ator_public_key: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
             }),
-        ).toBe(RelayVerificationResult.NotRegistered)
+        ).toBe('NotRegistered')
     })
 
     it('should check if the fingerprint was verified', async () => {
@@ -33,7 +33,7 @@ describe('ContractsService', () => {
                 fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
                 ator_public_key: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
             }),
-        ).toBe(RelayVerificationResult.AlreadyVerified)
+        ).toBe('AlreadyVerified')
     })
 
     // it('should allow registering relay fingerprints', async () => {
