@@ -26,17 +26,27 @@ export class OnionooQueue extends WorkerHost {
 
         switch (job.name) {
             case OnionooQueue.JOB_FETCH_RELAYS:
-                const relays = await this.onionoo.fetchNewRelays()
-                return relays
+                try {
+                    const relays = await this.onionoo.fetchNewRelays()
+                    return relays
+                } catch (e) {
+                    this.logger.error(e)
+                    return []
+                }
 
             case OnionooQueue.JOB_FILTER_RELAYS:
-                const fetchedRelays: RelayInfo[] = Object.values(
-                    await job.getChildrenValues(),
-                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                try {
+                    const fetchedRelays: RelayInfo[] = Object.values(
+                        await job.getChildrenValues(),
+                    ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
-                const validated = await this.onionoo.filterRelays(fetchedRelays)
+                    const validated = await this.onionoo.filterRelays(fetchedRelays)
 
-                return validated
+                    return validated
+                } catch (e) {
+                    this.logger.error(e)
+                    return []
+                }
 
             case OnionooQueue.JOB_VALIDATE_RELAYS:
                 try {

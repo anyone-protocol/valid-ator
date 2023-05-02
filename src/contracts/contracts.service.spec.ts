@@ -39,9 +39,9 @@ describe('ContractsService', () => {
     // it('should allow registering relay fingerprints', async () => {
     //     expect(
     //         await service.verifyRelay({
-    //             fingerprint: 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
-    //             ator_public_key: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+    //             fingerprint: 'FAE2B62C2A081FB5F6959773E7DD7068C3A8C822',
+    //             ator_public_key: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A'
     //     }),
-    //     ).toBe(RelayVerificationResult.AlreadyVerified)
+    //     ).toBe('OK')
     // })
 })
