@@ -1,0 +1,25 @@
+version: "3.7"
+services:
+  mongo:
+    container_name: valid-ator-mongo
+    image: mongo:5.0
+    expose:
+      - "27017"
+  redis:
+    container_name: valid-ator-redis
+    image: redis:7
+    expose:
+      - "6379"
+  validator:
+    image: ghcr.io/ator-development/valid-ator:0.2.0
+    build: 
+      context: .
+      dockerfile: ./Dockerfile
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOSTNAME=redis
+      - MONGO_URI=mongodb://mongo/valid-ator-dev
+    depends_on:
+      - mongo
+      - redis

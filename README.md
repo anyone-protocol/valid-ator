@@ -1,6 +1,14 @@
 # valid-ator
 
-## Runtime requirements
+## Running in local
+
+```bash
+$ docker compose up
+```
+
+## Development
+
+### Runtime requirements
 
 ```bash
 # redis
@@ -10,13 +18,13 @@ $ docker run --name validator_dev_redis -p 6379:6379 redis:7
 $ docker run --name validator_dev_mongo -p 27017:27017 mongo:5.0 
 ```
 
-## Installation
+### Installation
 
 ```bash
 $ npm install
 ```
 
-## Running 
+### Running 
 
 ```bash
 # development
@@ -29,7 +37,7 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Test
+### Testing
 
 ```bash
 # unit tests
