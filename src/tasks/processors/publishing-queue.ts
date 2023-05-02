@@ -5,6 +5,7 @@ import { TasksService } from '../tasks.service'
 import { ContractsService } from 'src/contracts/contracts.service'
 import { VerificationResultDto } from 'src/contracts/dto/verification-result-dto'
 import { RelayVerificationResult } from 'src/contracts/dto/relay-verification-result'
+import { ConfigService } from '@nestjs/config'
 
 @Processor('publishing-queue')
 export class PublishingQueue extends WorkerHost {
@@ -14,11 +15,15 @@ export class PublishingQueue extends WorkerHost {
         'publish-validated-relay'
     public static readonly JOB_FINALIZE_PUBLISH = 'finalize-publish'
 
+    private isLive: boolean
+
     constructor(
         private readonly tasks: TasksService,
         private readonly contracts: ContractsService,
+        private readonly config: ConfigService<{ IS_LIVE: boolean }>
     ) {
         super()
+        this.isLive = config.get<boolean>('IS_LIVE', { infer: true })
     }
 
     async process(job: Job<any, any, string>): Promise<any> {
@@ -35,9 +40,13 @@ export class PublishingQueue extends WorkerHost {
                         job.data.fingerprint.length === 40
                     ) {
                         this.logger.log(
-                            `Verifying validated relay [${job.data.fingerprint}]`,
+                            `Verifying validated relay [${job.data.fingerprint}] IS_LIVE: ${this.isLive}`,
                         )
-                        verifyResult = await this.contracts.verifyRelay(job.data)
+                        if (this.isLive === true) {
+                            verifyResult = await this.contracts.verifyRelay(job.data)
+                        } else {
+                            this.logger.warn(`NOT LIVE - skipped contract call to verify relay [${job.data.fingerprint}]`)
+                        }
                     } else {
                         this.logger.log(
                             `Incorrect fingerprint [${job.data.fingerprint}]`,
@@ -74,9 +83,10 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (failed.length > 0) {
                         this.logger.log(
-                            `Failed publishing verification of ${failed.length} relays`,
+                            `${job.data}> Failed publishing verification of ${failed.length} relays: [${
+                                failed.map((relay,index,array) => relay.fingerprint ).join(', ')
+                            }]`,
                         )
-                        this.logger.log(failed)
                     }
 
                     const notRegistered = verificationResults.filter(
@@ -85,9 +95,10 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (notRegistered.length > 0) {
                         this.logger.log(
-                            `Skipped ${notRegistered.length} not registered relays`,
+                            `${job.data}> Skipped ${notRegistered.length} not registered relays: [${
+                                notRegistered.map((relay,index,array) => relay.fingerprint ).join(', ')
+                            }]`,
                         )
-                        this.logger.log(notRegistered)
                     }
 
                     const alreadyVerified = verificationResults.filter(
@@ -96,7 +107,7 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (alreadyVerified.length > 0) {
                         this.logger.log(
-                            `Skipped ${alreadyVerified.length} verified relays `,
+                            `${job.data}> Skipped ${alreadyVerified.length} verified relays `,
                         )
                     }
 
@@ -105,12 +116,12 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (ok.length > 0) {
                         this.logger.log(
-                            `Published verification of ${ok.length} relays`,
+                            `${job.data}> Published verification of ${ok.length} relays`,
                         )
                     }
                 } else {
                     this.logger.log(
-                        `No data was published for validation ${job.data}`,
+                        `${job.data}> No data was published`,
                     )
                 }
 
