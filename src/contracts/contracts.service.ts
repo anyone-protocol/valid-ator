@@ -17,6 +17,8 @@ import { RelayVerificationResult } from './dto/relay-verification-result'
 export class ContractsService {
     private readonly logger = new Logger(ContractsService.name)
 
+    private isLive: boolean
+
     private owner
 
     private warp: Warp
@@ -27,9 +29,12 @@ export class ContractsService {
             RELAY_REGISTRY_OWNER_ADDRESS: string
             RELAY_REGISTRY_OWNER_KEY: string
             RELAY_REGISTRY_TXID: string
+            IS_LIVE: boolean
         }>,
     ) {
         LoggerFactory.INST.logLevel('error')
+
+        this.isLive = config.get<boolean>('IS_LIVE', { infer: true })
 
         const ownerKey = this.config.get<string>('RELAY_REGISTRY_OWNER_KEY', {
             infer: true,
@@ -101,24 +106,29 @@ export class ContractsService {
                 state,
             )
 
-            this.logger.log(
-                `${relay.fingerprint}|${relay.ator_public_key} Registered: ${registered} Verified: ${verified}`,
+            this.logger.debug(
+                `${relay.fingerprint}|${relay.ator_public_key} IS_LIVE: ${this.isLive} Registered: ${registered} Verified: ${verified}`,
             )
 
             if (verified) return 'AlreadyVerified'
             if (registered) {
                 if (this.owner !== undefined) {
                     const evmSig = await buildEvmSignature(this.owner.signer)
-                    await this.contract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
-                        .writeInteraction<Verify>({
-                            function: 'verify',
-                            fingerprint: relay.fingerprint,
-                            address: relay.ator_public_key,
-                        })
+                    
+                    if (this.isLive === true) {
+                        await this.contract
+                            .connect({
+                                signer: evmSig,
+                                type: 'ethereum',
+                            })
+                            .writeInteraction<Verify>({
+                                function: 'verify',
+                                fingerprint: relay.fingerprint,
+                                address: relay.ator_public_key,
+                            })
+                    } else {
+                        this.logger.warn(`NOT LIVE - skipped contract call to verify relay [${relay.fingerprint}]`)
+                    }
 
                     return 'OK'
                 } else {

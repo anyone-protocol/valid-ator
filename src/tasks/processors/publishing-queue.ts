@@ -15,15 +15,11 @@ export class PublishingQueue extends WorkerHost {
         'publish-validated-relay'
     public static readonly JOB_FINALIZE_PUBLISH = 'finalize-publish'
 
-    private isLive: boolean
-
     constructor(
         private readonly tasks: TasksService,
-        private readonly contracts: ContractsService,
-        private readonly config: ConfigService<{ IS_LIVE: boolean }>
+        private readonly contracts: ContractsService
     ) {
         super()
-        this.isLive = config.get<boolean>('IS_LIVE', { infer: true })
     }
 
     async process(job: Job<any, any, string>): Promise<any> {
@@ -40,13 +36,9 @@ export class PublishingQueue extends WorkerHost {
                         job.data.fingerprint.length === 40
                     ) {
                         this.logger.log(
-                            `Verifying validated relay [${job.data.fingerprint}] IS_LIVE: ${this.isLive}`,
+                            `Verifying validated relay [${job.data.fingerprint}]`,
                         )
-                        if (this.isLive === true) {
-                            verifyResult = await this.contracts.verifyRelay(job.data)
-                        } else {
-                            this.logger.warn(`NOT LIVE - skipped contract call to verify relay [${job.data.fingerprint}]`)
-                        }
+                        verifyResult = await this.contracts.verifyRelay(job.data)
                     } else {
                         this.logger.log(
                             `Incorrect fingerprint [${job.data.fingerprint}]`,
