@@ -11,6 +11,9 @@ export class ValidatedRelay {
 
     @Prop({ type: String, required: true })
     ator_public_key: string
+
+    @Prop({ type: String, required: false, default: 0 })
+    consensus_weight: number
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

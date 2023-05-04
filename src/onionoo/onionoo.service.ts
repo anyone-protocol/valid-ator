@@ -190,6 +190,7 @@ export class OnionooService {
             (info, index, array) => ({
                 fingerprint: info.fingerprint,
                 contact: info.contact !== undefined ? info.contact : '', // other case should not happen as its filtered out while creating validations array
+                consensus_weight: info.consensus_weight
             }),
         )
 
@@ -211,6 +212,7 @@ export class OnionooService {
                 .map<ValidatedRelay>((relay, index, array) => ({
                     fingerprint: relay.fingerprint,
                     ator_public_key: this.extractAtorKey(relay.contact),
+                    consensus_weight: relay.consensus_weight
                 }))
                 .filter(
                     (relay, index, array) => relay.ator_public_key.length > 0,
@@ -236,6 +238,7 @@ export class OnionooService {
                         validated_at: validationStamp,
                         fingerprint: relay.fingerprint,
                         ator_public_key: relay.ator_public_key,
+                        consensus_weight: relay.consensus_weight
                     })
                     .catch((error) => this.logger.error(error))
             })

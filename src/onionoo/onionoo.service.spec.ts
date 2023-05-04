@@ -167,6 +167,7 @@ describe('OnionooService', () => {
             {
                 contact: relay2.contact,
                 fingerprint: relay2.fingerprint,
+                consensus_weight: 1
             },
         ])
     })
@@ -176,6 +177,7 @@ describe('OnionooService', () => {
             fingerprint: 'F143E45414700000000000000000000000000010',
             contact:
                 'Some @text @ator:  0xf72a247Dc4546b0291dbbf57648D45a752537802',
+            consensus_weight: 1
         }
 
         service.validateRelays([relayDto1])
@@ -192,6 +194,7 @@ describe('OnionooService', () => {
             fingerprint: 'F143E45414700000000000000000000000000020',
             contact:
                 'Some @text @ator:  0xf72a247dc4546b0291dbbf57648D45a752537802',
+            consensus_weight: 1
         }
 
         service.validateRelays([relayDto2])
@@ -205,6 +208,7 @@ describe('OnionooService', () => {
             fingerprint: 'F143E45414700000000000000000000000000010',
             contact:
                 'Some @text @ator:  0xf72a247Dc4546b0291dbbf57648D45a752537802',
+            consensus_weight: 1
         }
 
         service.validateRelays([relayDto1])
