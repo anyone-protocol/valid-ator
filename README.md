@@ -49,11 +49,3 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
-
-### Manual publishing
-```bash
-# Get a classic GH token
-$ echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
-$ docker build -t ghcr.io/ator-development/valid-ator:0.2.2 .
-$ docker push ghcr.io/ator-development/valid-ator:0.2.2
-```
