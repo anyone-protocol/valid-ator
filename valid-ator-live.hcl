@@ -1,5 +1,5 @@
 job "valid-ator-live" {
-  datacenters = ["ator-1"]
+  datacenters = ["dc-1"]
   type = "service"
 
   group "valid-ator-live-group" {
@@ -41,6 +41,21 @@ job "valid-ator-live" {
         destination = "/data/db"
         read_only = false
       }
+
+      resources {
+        cpu    = 2048
+        memory = 4096
+      }
+
+      service {
+        name = "valid-ator-live-mongo"
+        port = "mongodb"
+        
+        check {
+          name     = "MongoDB health check"
+          type     = "tcp"
+        }
+      }
     }
 
     task "valid-ator-live-redis {
@@ -48,59 +63,24 @@ job "valid-ator-live" {
       config {
         image = "redis:7"
       }
-      
-      logs {
-        max_files     = 5
-        max_file_size = 15
-      }
 
       lifecycle {
         sidecar = true
         hook = "prestart"
       }
 
-      
-      vault {
-        policies = ["valid-ator-live-redis"]
-      }
-
-      template {
-        data = <<EOH
-        {{with secret "valid-ator/live-redis"}}
-          REDIS_HOSTNAME="{{.Data.data.REDIS_HOSTNAME}}"
-          REDIS_PORT={{.Data.data.REDIS_PORT}}
-        {{end}}
-        EOH
-        destination = "secrets/file.env"
-        env         = true
-      }
-
-      env {
-        
-      }
-
       resources {
         cpu    = 2048
         memory = 4096
-        network {
-          mbits = 10
-          port "cache" { }
-        }
       }
 
       service {
         name = "valid-ator-live-redis"
-        port = "cache"
+        port = "rediscache"
         
         check {
           name     = "Redis health check"
           type     = "tcp"
-          interval = "5s"
-          timeout  = "10s"
-          check_restart {
-            limit = 30
-            grace = "15s"
-          }
         }
       }
     }
