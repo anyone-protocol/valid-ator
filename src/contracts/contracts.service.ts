@@ -17,7 +17,7 @@ import { RelayVerificationResult } from './dto/relay-verification-result'
 export class ContractsService {
     private readonly logger = new Logger(ContractsService.name)
 
-    private isLive: boolean
+    private isLive?: string
 
     private owner
 
@@ -29,12 +29,14 @@ export class ContractsService {
             RELAY_REGISTRY_OWNER_ADDRESS: string
             RELAY_REGISTRY_OWNER_KEY: string
             RELAY_REGISTRY_TXID: string
-            IS_LIVE: boolean
+            IS_LIVE: string
         }>,
     ) {
         LoggerFactory.INST.logLevel('error')
 
-        this.isLive = config.get<boolean>('IS_LIVE', { infer: true })
+        this.isLive = config.get<string>('IS_LIVE', { infer: true })
+
+        this.logger.log(`Initializing Contracts Service IS_LIVE: ${this.isLive}`)
 
         const ownerKey = this.config.get<string>('RELAY_REGISTRY_OWNER_KEY', {
             infer: true,
@@ -115,7 +117,7 @@ export class ContractsService {
                 if (this.owner !== undefined) {
                     const evmSig = await buildEvmSignature(this.owner.signer)
                     
-                    if (this.isLive === true) {
+                    if (this.isLive === 'true') {
                         await this.contract
                             .connect({
                                 signer: evmSig,

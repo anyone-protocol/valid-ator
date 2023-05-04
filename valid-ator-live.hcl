@@ -126,7 +126,7 @@ job "valid-ator-live" {
       }
 
       env {
-        IS_LIVE=false
+        IS_LIVE="false"
         MONGO_URI="mongodb://${NOMAD_IP_mongodb}:${NOMAD_PORT_mongodb}/valid-ator-dev"
         REDIS_HOSTNAME="${NOMAD_IP_rediscache}"
         REDIS_PORT=${NOMAD_PORT_rediscache}

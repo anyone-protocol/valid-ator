@@ -75,7 +75,7 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (failed.length > 0) {
                         this.logger.log(
-                            `${job.data}> Failed publishing verification of ${failed.length} relays: [${
+                            `${job.data}> Failed publishing verification of ${failed.length} relay(s): [${
                                 failed.map((relay,index,array) => relay.fingerprint ).join(', ')
                             }]`,
                         )
@@ -87,7 +87,7 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (notRegistered.length > 0) {
                         this.logger.log(
-                            `${job.data}> Skipped ${notRegistered.length} not registered relays: [${
+                            `${job.data}> Skipped ${notRegistered.length} not registered relay(s): [${
                                 notRegistered.map((relay,index,array) => relay.fingerprint ).join(', ')
                             }]`,
                         )
@@ -99,7 +99,7 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (alreadyVerified.length > 0) {
                         this.logger.log(
-                            `${job.data}> Skipped ${alreadyVerified.length} verified relays `,
+                            `${job.data}> Skipped ${alreadyVerified.length} verified relay(s)`,
                         )
                     }
 
@@ -108,7 +108,7 @@ export class PublishingQueue extends WorkerHost {
                     )
                     if (ok.length > 0) {
                         this.logger.log(
-                            `${job.data}> Published verification of ${ok.length} relays`,
+                            `${job.data}> Published verification of ${ok.length} relay(s)`,
                         )
                     }
                 } else {
