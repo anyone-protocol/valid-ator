@@ -21,7 +21,7 @@ export class OnionooService {
     private lastSeen: String = ''
 
     private readonly currentApiVersion = '8.0' // as reported via Onionoo API (04_2023: inconsistently with documentation and content standard)
-    private readonly atorKeyPattern = '@ator:'
+    private readonly atorKeyPattern = '@ator:' // this pattern should be lowercase
     private readonly keyLength = 42
 
     constructor(
@@ -179,7 +179,7 @@ export class OnionooService {
         const matchingRelays = relays.filter(
             (value, index, array) =>
                 value.contact !== undefined &&
-                value.contact.includes(this.atorKeyPattern),
+                value.contact.toLowerCase().includes(this.atorKeyPattern),
         )
 
         if (matchingRelays.length > 0)
