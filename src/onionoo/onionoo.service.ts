@@ -137,11 +137,12 @@ export class OnionooService {
             const startIndex = inputString.indexOf(this.atorKeyPattern)
             if (startIndex > -1) {
                 const baseIndex = startIndex + this.atorKeyPattern.length
-                const keyIndex = inputString.indexOf('0x', baseIndex)
+                const fixedInput = inputString.replace('0X', '0x')
+                const keyIndex = fixedInput.indexOf('0x', baseIndex)
                 if (keyIndex > -1) {
                     const endKeyIndex = keyIndex + this.keyLength
-                    if (endKeyIndex <= inputString.length) {
-                        const keyCandidate = inputString.substring(
+                    if (endKeyIndex <= fixedInput.length) {
+                        const keyCandidate = fixedInput.substring(
                             keyIndex,
                             endKeyIndex,
                         )
@@ -160,7 +161,7 @@ export class OnionooService {
                         )
                 } else
                     this.logger.warn(
-                        'Ator key not found after pattern in matched relay',
+                        `Ator key not found after pattern in matched relay for input: ${inputString}`,
                     )
             } else
                 this.logger.warn('Ator key pattern not found in matched relay')

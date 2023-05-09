@@ -112,12 +112,21 @@ export class ContractsService {
                 `${relay.fingerprint}|${relay.ator_public_key} IS_LIVE: ${this.isLive} Registered: ${registered} Verified: ${verified}`,
             )
 
-            if (verified) return 'AlreadyVerified'
+            if (verified) {
+                this.logger.log(
+                    `Already validated relay [${relay.fingerprint}]`,
+                )
+                return 'AlreadyVerified'
+            }
             if (registered) {
                 if (this.owner !== undefined) {
                     const evmSig = await buildEvmSignature(this.owner.signer)
                     
                     if (this.isLive === 'true') {
+                        this.logger.log(
+                            `Verifying validated relay [${relay.fingerprint}]`,
+                        )
+
                         await this.contract
                             .connect({
                                 signer: evmSig,
@@ -137,7 +146,12 @@ export class ContractsService {
                     this.logger.error('Contract owner not defined')
                     return 'Failed'
                 }
-            } else return 'NotRegistered'
+            } else {
+                this.logger.log(
+                    `Not registered relay [${relay.fingerprint}], skipping validation`,
+                )
+                return 'NotRegistered'
+            }
         } else {
             this.logger.error('Contract not initialized')
             return 'Failed'

@@ -35,9 +35,6 @@ export class PublishingQueue extends WorkerHost {
                         typeof job.data.fingerprint === 'string' &&
                         job.data.fingerprint.length === 40
                     ) {
-                        this.logger.log(
-                            `Verifying validated relay [${job.data.fingerprint}]`,
-                        )
                         verifyResult = await this.contracts.verifyRelay(job.data)
                     } else {
                         this.logger.log(
