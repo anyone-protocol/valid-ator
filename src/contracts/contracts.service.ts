@@ -26,8 +26,8 @@ export class ContractsService {
 
     constructor(
         private readonly config: ConfigService<{
-            RELAY_REGISTRY_OWNER_ADDRESS: string
-            RELAY_REGISTRY_OWNER_KEY: string
+            RELAY_REGISTRY_VALIDATOR_ADDRESS: string
+            RELAY_REGISTRY_VALIDATOR_KEY: string
             RELAY_REGISTRY_TXID: string
             IS_LIVE: string
         }>,
@@ -38,14 +38,14 @@ export class ContractsService {
 
         this.logger.log(`Initializing Contracts Service IS_LIVE: ${this.isLive}`)
 
-        const ownerKey = this.config.get<string>('RELAY_REGISTRY_OWNER_KEY', {
+        const ownerKey = this.config.get<string>('RELAY_REGISTRY_VALIDATOR_KEY', {
             infer: true,
         })
 
         if (ownerKey !== undefined) {
             this.owner = {
                 address: this.config.get<string>(
-                    'RELAY_REGISTRY_OWNER_ADDRESS',
+                    'RELAY_REGISTRY_VALIDATOR_ADDRESS',
                     {
                         infer: true,
                     },
@@ -113,7 +113,7 @@ export class ContractsService {
             )
 
             if (verified) {
-                this.logger.log(
+                this.logger.debug(
                     `Already validated relay [${relay.fingerprint}]`,
                 )
                 return 'AlreadyVerified'
