@@ -39,3 +39,5 @@ lerna-debug.log*
 
 # Warp
 cache/*
+
+version.yml

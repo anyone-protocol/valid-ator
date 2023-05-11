@@ -3,3 +3,6 @@ Dockerfile
 node_modules
 npm-debug.log
 dist
+
+version.yml
+deploy.env
