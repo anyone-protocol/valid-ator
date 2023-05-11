@@ -25,7 +25,7 @@ job "valid-ator-live" {
       }
     }
 
-    task "valid-ator-live-mongo {
+    task "valid-ator-live-mongo" {
       driver = "docker"
       config {
         image = "mongo:5.0"
@@ -54,11 +54,13 @@ job "valid-ator-live" {
         check {
           name     = "MongoDB health check"
           type     = "tcp"
+          interval = "5s"
+          timeout  = "10s"
         }
       }
     }
 
-    task "valid-ator-live-redis {
+    task "valid-ator-live-redis" {
       driver = "docker"
       config {
         image = "redis:7"
@@ -81,6 +83,8 @@ job "valid-ator-live" {
         check {
           name     = "Redis health check"
           type     = "tcp"
+          interval = "5s"
+          timeout  = "10s"
         }
       }
     }
@@ -88,7 +92,7 @@ job "valid-ator-live" {
     task "valid-ator-live-service" {
       driver = "docker"
       config {
-        image = "ghcr.io/ator-development/valid-ator:[[.version]]"
+        image = "ghcr.io/ator-development/valid-ator:[[ .valid-ator.version ]]"
       }
 
       vault {
@@ -109,7 +113,7 @@ job "valid-ator-live" {
         IS_LIVE="false"
         MONGO_URI="mongodb://${NOMAD_IP_mongodb}:${NOMAD_PORT_mongodb}/valid-ator-dev"
         REDIS_HOSTNAME="${NOMAD_IP_rediscache}"
-        REDIS_PORT=${NOMAD_PORT_rediscache}
+        REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
