@@ -1,15 +1,15 @@
 job "valid-ator-live" {
-  datacenters = ["dc-1"]
+  datacenters = ["ator-fin"]
   type = "service"
 
   group "valid-ator-live-group" {
     
     count = 1
 
-    volume "valid-ator-live-mongo" {
+    volume "mongodb" {
       type = "host"
       read_only = false
-      source = "valid-ator-live-mongo"
+      source = "mongodb"
     }
 
     network {
@@ -37,7 +37,7 @@ job "valid-ator-live" {
       }
 
       volume_mount {
-        volume = "valid-ator-live-mongo"
+        volume = "mongodb"
         destination = "/data/db"
         read_only = false
       }
@@ -88,7 +88,7 @@ job "valid-ator-live" {
     task "valid-ator-live-service" {
       driver = "docker"
       config {
-        image = "ghcr.io/ator-development/valid-ator:0.2.3"
+        image = "ghcr.io/ator-development/valid-ator:[[.version]]"
       }
 
       vault {
@@ -97,8 +97,8 @@ job "valid-ator-live" {
 
       template {
         data = <<EOH
-        {{with secret "valid-ator/live"}}
-          RELAY_REGISTRY_OWNER_KEY="{{.Data.data.RELAY_REGISTRY_OWNER_KEY}}"
+        {{with secret "kv/valid-ator/live"}}
+          RELAY_REGISTRY_VALIDATOR_KEY="{{.Data.data.RELAY_REGISTRY_VALIDATOR_KEY}}"
         {{end}}
         EOH
         destination = "secrets/file.env"
@@ -113,7 +113,7 @@ job "valid-ator-live" {
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
-        RELAY_REGISTRY_OWNER_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+        RELAY_REGISTRY_VALIDATOR_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
         RELAY_REGISTRY_TXID="kvPua_H71Iwsvx4q-SwAmSMuw7Y9Tj8DyxUIhFKK-JQ"
       }
 
