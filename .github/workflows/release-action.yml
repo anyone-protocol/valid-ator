@@ -48,8 +48,8 @@ jobs:
           NOMAD_TOKEN: ${{ secrets.DEPLOY_SECRET }}
           NOMAD_ADDR: ${{ secrets.ATOR_DEPLOY_ADDR }}
         run: |
-          curl -L https://github.com/hashicorp/levant/releases/download/0.3.2/linux-amd64-levant -o levant
-          chmod +x levant
+          curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
+          unzip levant.zip
           ./levant deploy -var-file="deploy-vars.yml" valid-ator-live.hcl
 
           
