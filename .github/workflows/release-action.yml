@@ -38,7 +38,7 @@ jobs:
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
 
-          echo -e "---\nvalidator:\n  version:$VERSION" > deploy-vars.yml
+          echo -e "{\"deploy\":\"$VERSION\"}" > deploy-vars.json
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
@@ -51,6 +51,6 @@ jobs:
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
-          ./levant deploy -var-file="deploy-vars.yml" valid-ator-live.hcl
+          ./levant deploy -var-file="deploy-vars.json" valid-ator-live.hcl
 
           
