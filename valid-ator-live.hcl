@@ -92,7 +92,7 @@ job "valid-ator-live" {
     task "valid-ator-live-service" {
       driver = "docker"
       config {
-        image = "ghcr.io/ator-development/valid-ator:[[ .valid-ator.version ]]"
+        image = "ghcr.io/ator-development/valid-ator:[[ .validator.version ]]"
       }
 
       vault {

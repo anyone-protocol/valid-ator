@@ -38,7 +38,7 @@ jobs:
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
 
-          echo -e "---\nvalid-ator:\n  version:$VERSION" > deploy-vars.yml
+          echo -e "---\nvalidator:\n  version:$VERSION" > deploy-vars.yml
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
