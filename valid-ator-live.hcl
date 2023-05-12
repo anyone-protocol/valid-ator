@@ -110,9 +110,9 @@ job "valid-ator-live" {
       }
 
       env {
-        IS_LIVE="false"
-        MONGO_URI="mongodb://${NOMAD_IP_mongodb}:${NOMAD_PORT_mongodb}/valid-ator-dev"
-        REDIS_HOSTNAME="${NOMAD_IP_rediscache}"
+        IS_LIVE="true"
+        MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-dev"
+        REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
