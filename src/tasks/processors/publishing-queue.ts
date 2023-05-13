@@ -109,7 +109,7 @@ export class PublishingQueue extends WorkerHost {
                         )
                     }
                 } else {
-                    this.logger.log(
+                    this.logger.debug(
                         `${job.data}> No data was published`,
                     )
                 }

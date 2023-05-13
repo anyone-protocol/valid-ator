@@ -123,7 +123,7 @@ export class OnionooService {
                 this.logger.log(
                     `Received ${relays.length} relays from Onionoo [seen: ${this.lastSeen}]`,
                 )
-            } else this.logger.log('No new updates from Onionoo') // 304 - Not modified
+            } else this.logger.debug('No new updates from Onionoo') // 304 - Not modified
         } else
             this.logger.warn(
                 'Set the ONIONOO_DETAILS_URI in ENV vars or configuration',
@@ -203,7 +203,7 @@ export class OnionooService {
     ): Promise<ValidationData> {
         const validationStamp = Date.now()
         if (relays.length === 0) {
-            this.logger.log(`No relays to validate at ${validationStamp}`)
+            this.logger.debug(`No relays to validate at ${validationStamp}`)
             return {
                 validated_at: validationStamp,
                 relays: [],
