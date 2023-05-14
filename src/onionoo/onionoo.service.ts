@@ -134,7 +134,7 @@ export class OnionooService {
 
     public extractAtorKey(inputString?: string): string {
         if (inputString !== undefined && inputString.length > 0) {
-            const startIndex = inputString.indexOf(this.atorKeyPattern)
+            const startIndex = inputString.toLowerCase().indexOf(this.atorKeyPattern)
             if (startIndex > -1) {
                 const baseIndex = startIndex + this.atorKeyPattern.length
                 const fixedInput = inputString.replace('0X', '0x')
@@ -164,7 +164,7 @@ export class OnionooService {
                         `Ator key not found after pattern in matched relay for input: ${inputString}`,
                     )
             } else
-                this.logger.warn('Ator key pattern not found in matched relay')
+                this.logger.warn(`Ator key pattern not found in matched relay for input: ${inputString}`)
         } else
             this.logger.warn(
                 'Attempting to extract empty key from matched relay',
