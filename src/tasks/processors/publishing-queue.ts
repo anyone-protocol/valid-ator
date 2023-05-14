@@ -16,7 +16,6 @@ export class PublishingQueue extends WorkerHost {
     public static readonly JOB_FINALIZE_PUBLISH = 'finalize-publish'
 
     constructor(
-        private readonly tasks: TasksService,
         private readonly contracts: ContractsService
     ) {
         super()
@@ -108,10 +107,19 @@ export class PublishingQueue extends WorkerHost {
                             `${job.data}> Published verification of ${ok.length} relay(s)`,
                         )
                     }
+
+                    const validatedRelays = verificationResults.filter(
+                        (value, index, array) => value.result === 'OK' || value.result === 'AlreadyVerified'
+                    )
+
+                    return validatedRelays
+
                 } else {
                     this.logger.debug(
                         `${job.data}> No data was published`,
                     )
+
+                    return []
                 }
 
                 break
