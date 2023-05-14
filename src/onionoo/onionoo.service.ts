@@ -191,7 +191,17 @@ export class OnionooService {
             (info, index, array) => ({
                 fingerprint: info.fingerprint,
                 contact: info.contact !== undefined ? info.contact : '', // other case should not happen as its filtered out while creating validations array
-                consensus_weight: info.consensus_weight
+                consensus_weight: info.consensus_weight,
+
+                running: info.running,
+                consensus_measured: info.measured??false,
+                consensus_weight_fraction: info.consensus_weight_fraction??0,
+                version: info.version??"?",
+                version_status: info.version_status??"",
+                bandwidth_rate: info.bandwidth_rate??0,
+                bandwidth_burst: info.bandwidth_burst??0,
+                observed_bandwidth: info.observed_bandwidth??0,
+                advertised_bandwidth: info.advertised_bandwidth??0
             }),
         )
 
@@ -234,14 +244,30 @@ export class OnionooService {
                 this.logger.debug(
                     `Storing validation ${validationStamp} of ${relay.fingerprint}`,
                 )
-                await this.relayDataModel
-                    .create<RelayData>({
-                        validated_at: validationStamp,
-                        fingerprint: relay.fingerprint,
-                        ator_public_key: relay.ator_public_key,
-                        consensus_weight: relay.consensus_weight
-                    })
-                    .catch((error) => this.logger.error(error))
+
+                const relayData = relays.find((value, index, array) => value.fingerprint == relay.fingerprint)
+                if (relayData == undefined) {
+                    this.logger.error(`Failed to find relay data for validated relay [${relay.fingerprint}]`)
+                } else {
+                    await this.relayDataModel
+                        .create<RelayData>({
+                            validated_at: validationStamp,
+                            fingerprint: relay.fingerprint,
+                            ator_public_key: relay.ator_public_key,
+                            consensus_weight: relayData.consensus_weight,
+
+                            running: relayData.running,
+                            consensus_measured: relayData.consensus_measured,
+                            consensus_weight_fraction: relayData.consensus_weight_fraction,
+                            version: relayData.version,
+                            version_status: relayData.version_status,
+                            bandwidth_rate: relayData.bandwidth_rate,
+                            bandwidth_burst: relayData.bandwidth_burst,
+                            observed_bandwidth: relayData.observed_bandwidth,
+                            advertised_bandwidth: relayData.advertised_bandwidth
+                        })
+                        .catch((error) => this.logger.error(error))
+                }
             })
 
             return validationData
