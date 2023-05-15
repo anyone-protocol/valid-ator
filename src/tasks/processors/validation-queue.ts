@@ -6,9 +6,9 @@ import { TasksService } from '../tasks.service'
 import { RelayInfo } from 'src/onionoo/interfaces/8_3/relay-info'
 import { RelayDataDto } from 'src/onionoo/dto/relay-data-dto'
 
-@Processor('onionoo-queue')
-export class OnionooQueue extends WorkerHost {
-    private readonly logger = new Logger(OnionooQueue.name)
+@Processor('validation-queue')
+export class ValidationQueue extends WorkerHost {
+    private readonly logger = new Logger(ValidationQueue.name)
 
     public static readonly JOB_FETCH_RELAYS = 'fetch-relays'
     public static readonly JOB_FILTER_RELAYS = 'filter-relays'
@@ -25,7 +25,7 @@ export class OnionooQueue extends WorkerHost {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
-            case OnionooQueue.JOB_FETCH_RELAYS:
+            case ValidationQueue.JOB_FETCH_RELAYS:
                 try {
                     const relays = await this.onionoo.fetchNewRelays()
                     return relays
@@ -34,7 +34,7 @@ export class OnionooQueue extends WorkerHost {
                     return []
                 }
 
-            case OnionooQueue.JOB_FILTER_RELAYS:
+            case ValidationQueue.JOB_FILTER_RELAYS:
                 try {
                     const fetchedRelays: RelayInfo[] = Object.values(
                         await job.getChildrenValues(),
@@ -48,7 +48,7 @@ export class OnionooQueue extends WorkerHost {
                     return []
                 }
 
-            case OnionooQueue.JOB_VALIDATE_RELAYS:
+            case ValidationQueue.JOB_VALIDATE_RELAYS:
                 try {
                     const validatedRelays: RelayDataDto[] = Object.values(
                         await job.getChildrenValues(),

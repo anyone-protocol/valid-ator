@@ -22,17 +22,17 @@ export class TasksService implements OnApplicationBootstrap {
         children: [
             {
                 name: 'validate-relays',
-                queueName: 'onionoo-queue',
+                queueName: 'validation-queue',
                 opts: TasksService.jobOpts,
                 children: [
                     {
                         name: 'filter-relays',
-                        queueName: 'onionoo-queue',
+                        queueName: 'validation-queue',
                         opts: TasksService.jobOpts,
                         children: [
                             {
                                 name: 'fetch-relays',
-                                queueName: 'onionoo-queue',
+                                queueName: 'validation-queue',
                                 opts: TasksService.jobOpts,
                             },
                         ],
@@ -46,34 +46,39 @@ export class TasksService implements OnApplicationBootstrap {
         validation: ValidationData,
     ): FlowJob {
         return {
-            name: 'finalize-publish',
-            queueName: 'publishing-queue',
-            data: validation.validated_at,
+            name: 'store-verification',
+            queueName: 'verification-queue',
             opts: TasksService.jobOpts,
-            children: validation.relays.map((relay, index, array) => ({
-                name: 'publish-validated-relay',
-                queueName: 'publishing-queue',
+            children: [{
+                name: 'finalize-verification',
+                queueName: 'verification-queue',
+                data: validation.validated_at,
                 opts: TasksService.jobOpts,
-                data: relay,
-            })),
+                children: validation.relays.map((relay, index, array) => ({
+                    name: 'verify-relay',
+                    queueName: 'verification-queue',
+                    opts: TasksService.jobOpts,
+                    data: relay,
+                }))
+            }],
         }
     }
 
     constructor(
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
-        @InjectQueue('onionoo-queue') public onionooQueue: Queue,
-        @InjectQueue('publishing-queue') public publishingQueue: Queue,
+        @InjectQueue('validation-queue') public validationQueue: Queue,
+        @InjectQueue('verification-queue') public verificationQueue: Queue,
         @InjectFlowProducer('validation-flow')
         public validationFlow: FlowProducer,
-        @InjectFlowProducer('publishing-flow')
+        @InjectFlowProducer('verification-flow')
         public publishingFlow: FlowProducer,
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
         this.logger.log('Bootstrapping Tasks Service')
         await this.tasksQueue.obliterate({ force: true })
-        await this.onionooQueue.obliterate({ force: true })
-        await this.publishingQueue.obliterate({ force: true })
+        await this.validationQueue.obliterate({ force: true })
+        await this.verificationQueue.obliterate({ force: true })
         await this.updateOnionooRelays(0)
     }
 

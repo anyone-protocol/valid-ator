@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { RegisteredRelayDto } from './dto/registred-relay-dto'
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
 import { RelayRegistryState, Verify } from './relay-registry'
 import { ConfigService } from '@nestjs/config'
@@ -12,6 +11,9 @@ import {
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
 import { RelayVerificationResult } from './dto/relay-verification-result'
+import { VerificationData } from './schemas/verification-data'
+import { VerifiedRelays } from './dto/verification-result-dto'
+import { ValidatedRelay } from 'src/onionoo/schemas/validated-relay'
 
 @Injectable()
 export class ContractsService {
@@ -92,8 +94,77 @@ export class ContractsService {
         else return false
     }
 
+    public async storeVerification(verifiedRelays: VerifiedRelays): Promise<VerificationData> {
+        const verificationStamp = Date.now()
+        
+        const atornauts = verifiedRelays.map((relay, index, array) => ({
+            address: relay.address,
+            fingerprint: relay.fingerprint,
+            network_weight: relay.network_weight
+        }))
+
+        return {
+            verified_at: verificationStamp,
+            atornauts: atornauts
+        }
+    }
+
+    public async finalizeVerification(data: VerifiedRelays): Promise<VerifiedRelays> {
+        const failed = data.filter(
+            (value, index, array) => value.result === 'Failed',
+        )
+        if (failed.length > 0) {
+            this.logger.log(
+                `Failed publishing verification of ${failed.length} relay(s): [${
+                    failed.map((relay,index,array) => relay.fingerprint ).join(', ')
+                }]`,
+            )
+        }
+
+        const notRegistered = data.filter(
+            (value, index, array) =>
+                value.result === 'NotRegistered',
+        )
+        if (notRegistered.length > 0) {
+            this.logger.log(
+                `Skipped ${notRegistered.length} not registered relay(s): [${
+                    notRegistered.map((relay,index,array) => relay.fingerprint ).join(', ')
+                }]`,
+            )
+        }
+
+        const alreadyVerified = data.filter(
+            (value, index, array) =>
+                value.result === 'AlreadyVerified',
+        )
+        if (alreadyVerified.length > 0) {
+            this.logger.log(
+                `Skipped ${alreadyVerified.length} verified relay(s)`,
+            )
+        }
+
+        const ok = data.filter(
+            (value, index, array) => value.result === 'OK',
+        )
+        if (ok.length > 0) {
+            this.logger.log(
+                `Updated verification of ${ok.length} relay(s)`,
+            )
+        }
+
+        const verifiedRelays = data.filter(
+            (value, index, array) => value.result === 'OK' || value.result === 'AlreadyVerified'
+        )
+
+        this.logger.log(
+            `Total verified relays: ${verifiedRelays.length}`,
+        )
+
+        return verifiedRelays
+    }
+
     public async verifyRelay(
-        relay: RegisteredRelayDto,
+        relay: ValidatedRelay,
     ): Promise<RelayVerificationResult> {
         if (this.contract !== undefined) {
             const data = await this.contract.readState()

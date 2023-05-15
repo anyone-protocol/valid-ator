@@ -1,11 +1,11 @@
 import { BullModule } from '@nestjs/bullmq'
 import { Module } from '@nestjs/common'
-import { OnionooQueue } from './processors/onionoo-queue'
+import { ValidationQueue } from './processors/validation-queue'
 import { TasksQueue } from './processors/tasks-queue'
 import { TasksService } from './tasks.service'
 import { ConfigService } from '@nestjs/config'
 import { OnionooModule } from 'src/onionoo/onionoo.module'
-import { PublishingQueue } from './processors/publishing-queue'
+import { VerificationQueue } from './processors/verification-queue'
 import { ContractsModule } from 'src/contracts/contracts.module'
 
 @Module({
@@ -27,11 +27,11 @@ import { ContractsModule } from 'src/contracts/contracts.module'
             }),
         }),
         BullModule.registerQueue({ name: 'tasks-queue' }),
-        BullModule.registerQueue({ name: 'onionoo-queue' }),
-        BullModule.registerQueue({ name: 'publishing-queue' }),
+        BullModule.registerQueue({ name: 'validation-queue' }),
+        BullModule.registerQueue({ name: 'verification-queue' }),
         BullModule.registerFlowProducer({ name: 'validation-flow' }),
-        BullModule.registerFlowProducer({ name: 'publishing-flow' }),
+        BullModule.registerFlowProducer({ name: 'verification-flow' }),
     ],
-    providers: [TasksService, TasksQueue, OnionooQueue, PublishingQueue],
+    providers: [TasksService, TasksQueue, ValidationQueue, VerificationQueue],
 })
 export class TasksModule {}

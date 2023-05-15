@@ -13,11 +13,11 @@ describe('TasksService', () => {
                     connection: { host: 'localhost', port: 6379 },
                 }),
                 BullModule.registerQueue({
-                    name: 'onionoo-queue',
+                    name: 'validation-queue',
                     connection: { host: 'localhost', port: 6379 },
                 }),
                 BullModule.registerQueue({
-                    name: 'publishing-queue',
+                    name: 'verification-queue',
                     connection: { host: 'localhost', port: 6379 },
                 }),
                 BullModule.registerFlowProducer({
@@ -25,7 +25,7 @@ describe('TasksService', () => {
                     connection: { host: 'localhost', port: 6379 },
                 }),
                 BullModule.registerFlowProducer({
-                    name: 'publishing-flow',
+                    name: 'verification-flow',
                     connection: { host: 'localhost', port: 6379 },
                 }),
             ],

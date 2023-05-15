@@ -10,7 +10,7 @@ export class ValidationData {
     @Prop({ type: Number, required: true })
     validated_at: number
 
-    @Prop({ type: Array<RelayData>, required: true })
+    @Prop({ type: Array<ValidatedRelay>, required: true })
     relays: ValidatedRelay[]
 }
 
