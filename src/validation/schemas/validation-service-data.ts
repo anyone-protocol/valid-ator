@@ -1,10 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 
-export type OnionooServiceDataDocument = HydratedDocument<OnionooServiceData>
+export type ValidationServiceDataDocument =
+    HydratedDocument<ValidationServiceData>
 
 @Schema()
-export class OnionooServiceData {
+export class ValidationServiceData {
     @Prop({ type: String, required: true })
     apiVersion: string
 
@@ -12,5 +13,6 @@ export class OnionooServiceData {
     last_seen: string
 }
 
-export const OnionooServiceDataSchema =
-    SchemaFactory.createForClass(OnionooServiceData)
+export const ValidationServiceDataSchema = SchemaFactory.createForClass(
+    ValidationServiceData,
+)

@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
-import { RelayData } from './relay-data'
 import { ValidatedRelay } from './validated-relay'
 
 export type ValidationDataDocument = HydratedDocument<ValidationData>

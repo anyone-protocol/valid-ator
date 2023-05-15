@@ -1,10 +1,10 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
-import { OnionooService } from 'src/onionoo/onionoo.service'
+import { ValidationService } from 'src/validation/validation.service'
 import { TasksService } from '../tasks.service'
-import { RelayInfo } from 'src/onionoo/interfaces/8_3/relay-info'
-import { RelayDataDto } from 'src/onionoo/dto/relay-data-dto'
+import { RelayInfo } from 'src/validation/interfaces/8_3/relay-info'
+import { RelayDataDto } from 'src/validation/dto/relay-data-dto'
 
 @Processor('validation-queue')
 export class ValidationQueue extends WorkerHost {
@@ -15,7 +15,7 @@ export class ValidationQueue extends WorkerHost {
     public static readonly JOB_VALIDATE_RELAYS = 'validate-relays'
 
     constructor(
-        private readonly onionoo: OnionooService,
+        private readonly onionoo: ValidationService,
         private readonly tasks: TasksService,
     ) {
         super()
@@ -38,9 +38,14 @@ export class ValidationQueue extends WorkerHost {
                 try {
                     const fetchedRelays: RelayInfo[] = Object.values(
                         await job.getChildrenValues(),
-                    ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                    ).reduce(
+                        (prev, curr) => (prev as []).concat(curr as []),
+                        [],
+                    )
 
-                    const validated = await this.onionoo.filterRelays(fetchedRelays)
+                    const validated = await this.onionoo.filterRelays(
+                        fetchedRelays,
+                    )
 
                     return validated
                 } catch (e) {

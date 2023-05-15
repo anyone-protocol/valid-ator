@@ -2,7 +2,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
 import { TasksService } from '../tasks.service'
-import { ValidationData } from 'src/onionoo/schemas/validation-data'
+import { ValidationData } from 'src/validation/schemas/validation-data'
 
 @Processor('tasks-queue')
 export class TasksQueue extends WorkerHost {

@@ -13,4 +13,5 @@ export class VerificationData {
     atornauts: VerifiedRelay[]
 }
 
-export const VerificationDataSchema = SchemaFactory.createForClass(VerificationData)
+export const VerificationDataSchema =
+    SchemaFactory.createForClass(VerificationData)

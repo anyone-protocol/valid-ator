@@ -1,24 +1,23 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
-import { ContractsService } from 'src/contracts/contracts.service'
-import { RelayVerificationResult } from 'src/contracts/dto/relay-verification-result'
-import { VerificationResultDto, VerifiedRelays } from 'src/contracts/dto/verification-result-dto'
-import { VerifiedRelay } from 'src/contracts/schemas/verified-relay'
-import { ValidatedRelay } from 'src/onionoo/schemas/validated-relay'
+import { VerificationService } from 'src/verification/verification.service'
+import { RelayVerificationResult } from 'src/verification/dto/relay-verification-result'
+import {
+    VerificationResultDto,
+    VerifiedRelays,
+} from 'src/verification/dto/verification-result-dto'
+import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 
 @Processor('verification-queue')
 export class VerificationQueue extends WorkerHost {
     private readonly logger = new Logger(VerificationQueue.name)
 
-    public static readonly JOB_VERIFY_RELAY =
-        'verify-relay'
+    public static readonly JOB_VERIFY_RELAY = 'verify-relay'
     public static readonly JOB_FINALIZE_VERIFICATION = 'finalize-verification'
     public static readonly JOB_STORE_VERIFICATION = 'store-verification'
 
-    constructor(
-        private readonly contracts: ContractsService
-    ) {
+    constructor(private readonly contracts: VerificationService) {
         super()
     }
 
@@ -52,55 +51,47 @@ export class VerificationQueue extends WorkerHost {
                     fingerprint: job.data.fingerprint,
                     address: job.data.ator_public_key,
                     result: verifyResult,
-                    network_weight: jobData.consensus_weight
+                    network_weight: jobData.consensus_weight,
                 }
 
-                return [ verifiedRelay ]
+                return [verifiedRelay]
 
             case VerificationQueue.JOB_FINALIZE_VERIFICATION:
-                const verificationResults: VerifiedRelays =
-                    Object.values(await job.getChildrenValues()).reduce(
-                        (prev, curr) => (prev as []).concat(curr as []),
-                        [],
-                    )
+                const verificationResults: VerifiedRelays = Object.values(
+                    await job.getChildrenValues(),
+                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
                 if (verificationResults.length > 0) {
-                    this.logger.log(
-                        `Finalizing verification ${job.data}`,
+                    this.logger.log(`Finalizing verification ${job.data}`)
+
+                    return await this.contracts.finalizeVerification(
+                        verificationResults,
                     )
-
-                    return await this.contracts.finalizeVerification(verificationResults)
-
                 } else {
-                    this.logger.debug(
-                        `${job.data}> No data was published`,
-                    )
+                    this.logger.debug(`${job.data}> No data was published`)
 
                     return []
                 }
 
             case VerificationQueue.JOB_STORE_VERIFICATION:
-                const verifiedRelays: VerifiedRelays =
-                Object.values(await job.getChildrenValues()).reduce(
-                    (prev, curr) => (prev as []).concat(curr as []),
-                    [],
-                )
+                const verifiedRelays: VerifiedRelays = Object.values(
+                    await job.getChildrenValues(),
+                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
                 if (verifiedRelays.length > 0) {
                     this.logger.log(
-                        `Persisting verification of ${verifiedRelays.length} relays`
+                        `Persisting verification of ${verifiedRelays.length} relays`,
                     )
 
-                    return await this.contracts.storeVerification(verifiedRelays)
-
+                    return await this.contracts.storeVerification(
+                        verifiedRelays,
+                    )
                 } else {
-                    this.logger.log(
-                        `No verified relays found to store`
-                    )
+                    this.logger.log(`No verified relays found to store`)
                 }
 
                 break
-            
+
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)
         }

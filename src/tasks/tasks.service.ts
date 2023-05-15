@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer, FlowJob } from 'bullmq'
-import { ValidationData } from 'src/onionoo/schemas/validation-data'
+import { ValidationData } from 'src/validation/schemas/validation-data'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -49,18 +49,20 @@ export class TasksService implements OnApplicationBootstrap {
             name: 'store-verification',
             queueName: 'verification-queue',
             opts: TasksService.jobOpts,
-            children: [{
-                name: 'finalize-verification',
-                queueName: 'verification-queue',
-                data: validation.validated_at,
-                opts: TasksService.jobOpts,
-                children: validation.relays.map((relay, index, array) => ({
-                    name: 'verify-relay',
+            children: [
+                {
+                    name: 'finalize-verification',
                     queueName: 'verification-queue',
+                    data: validation.validated_at,
                     opts: TasksService.jobOpts,
-                    data: relay,
-                }))
-            }],
+                    children: validation.relays.map((relay, index, array) => ({
+                        name: 'verify-relay',
+                        queueName: 'verification-queue',
+                        opts: TasksService.jobOpts,
+                        data: relay,
+                    })),
+                },
+            ],
         }
     }
 

@@ -1,15 +1,14 @@
 import { HttpModule } from '@nestjs/axios'
 import { Module } from '@nestjs/common'
-import { OnionooService } from './onionoo.service'
+import { ValidationService as ValidationService } from './validation.service'
 import { MongooseModule } from '@nestjs/mongoose'
 import { RelayData, RelayDataSchema } from './schemas/relay-data'
 import {
-    OnionooServiceData,
-    OnionooServiceDataSchema,
-} from './schemas/onionoo-service-data'
+    ValidationServiceData,
+    ValidationServiceDataSchema,
+} from './schemas/validation-service-data'
 import { ConfigService } from '@nestjs/config'
 import { ValidationData, ValidationDataSchema } from './schemas/validation-data'
-import { TasksModule } from 'src/tasks/tasks.module'
 
 @Module({
     imports: [
@@ -31,12 +30,15 @@ import { TasksModule } from 'src/tasks/tasks.module'
             }),
         }),
         MongooseModule.forFeature([
-            { name: OnionooServiceData.name, schema: OnionooServiceDataSchema },
+            {
+                name: ValidationServiceData.name,
+                schema: ValidationServiceDataSchema,
+            },
             { name: RelayData.name, schema: RelayDataSchema },
             { name: ValidationData.name, schema: ValidationDataSchema },
         ]),
     ],
-    providers: [OnionooService],
-    exports: [OnionooService],
+    providers: [ValidationService],
+    exports: [ValidationService],
 })
-export class OnionooModule {}
+export class ValidationModule {}

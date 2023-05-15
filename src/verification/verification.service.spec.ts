@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { ContractsService } from './contracts.service'
+import { VerificationService } from './verification.service'
 import { ConfigModule } from '@nestjs/config'
 
-describe('ContractsService', () => {
-    let service: ContractsService
+describe('VerificationService', () => {
+    let service: VerificationService
 
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [ConfigModule.forRoot()],
-            providers: [ContractsService],
+            providers: [VerificationService],
         }).compile()
 
-        service = module.get<ContractsService>(ContractsService)
+        service = module.get<VerificationService>(VerificationService)
     })
 
     it('should be defined', () => {
@@ -23,6 +23,7 @@ describe('ContractsService', () => {
             await service.verifyRelay({
                 fingerprint: 'AABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
                 ator_public_key: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+                consensus_weight: 1,
             }),
         ).toBe('NotRegistered')
     })
@@ -32,6 +33,7 @@ describe('ContractsService', () => {
             await service.verifyRelay({
                 fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
                 ator_public_key: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
+                consensus_weight: 1,
             }),
         ).toBe('AlreadyVerified')
     })

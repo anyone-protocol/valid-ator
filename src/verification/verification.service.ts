@@ -13,11 +13,11 @@ import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
 import { RelayVerificationResult } from './dto/relay-verification-result'
 import { VerificationData } from './schemas/verification-data'
 import { VerifiedRelays } from './dto/verification-result-dto'
-import { ValidatedRelay } from 'src/onionoo/schemas/validated-relay'
+import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 
 @Injectable()
-export class ContractsService {
-    private readonly logger = new Logger(ContractsService.name)
+export class VerificationService {
+    private readonly logger = new Logger(VerificationService.name)
 
     private isLive?: string
 
@@ -38,11 +38,16 @@ export class ContractsService {
 
         this.isLive = config.get<string>('IS_LIVE', { infer: true })
 
-        this.logger.log(`Initializing Contracts Service IS_LIVE: ${this.isLive}`)
+        this.logger.log(
+            `Initializing Contracts Service IS_LIVE: ${this.isLive}`,
+        )
 
-        const ownerKey = this.config.get<string>('RELAY_REGISTRY_VALIDATOR_KEY', {
-            infer: true,
-        })
+        const ownerKey = this.config.get<string>(
+            'RELAY_REGISTRY_VALIDATOR_KEY',
+            {
+                infer: true,
+            },
+        )
 
         if (ownerKey !== undefined) {
             this.owner = {
@@ -94,48 +99,54 @@ export class ContractsService {
         else return false
     }
 
-    public async storeVerification(verifiedRelays: VerifiedRelays): Promise<VerificationData> {
+    public async storeVerification(
+        verifiedRelays: VerifiedRelays,
+    ): Promise<VerificationData> {
         const verificationStamp = Date.now()
-        
+
         const atornauts = verifiedRelays.map((relay, index, array) => ({
             address: relay.address,
             fingerprint: relay.fingerprint,
-            network_weight: relay.network_weight
+            network_weight: relay.network_weight,
         }))
 
         return {
             verified_at: verificationStamp,
-            atornauts: atornauts
+            atornauts: atornauts,
         }
     }
 
-    public async finalizeVerification(data: VerifiedRelays): Promise<VerifiedRelays> {
+    public async finalizeVerification(
+        data: VerifiedRelays,
+    ): Promise<VerifiedRelays> {
         const failed = data.filter(
             (value, index, array) => value.result === 'Failed',
         )
         if (failed.length > 0) {
             this.logger.log(
-                `Failed publishing verification of ${failed.length} relay(s): [${
-                    failed.map((relay,index,array) => relay.fingerprint ).join(', ')
-                }]`,
+                `Failed publishing verification of ${
+                    failed.length
+                } relay(s): [${failed
+                    .map((relay, index, array) => relay.fingerprint)
+                    .join(', ')}]`,
             )
         }
 
         const notRegistered = data.filter(
-            (value, index, array) =>
-                value.result === 'NotRegistered',
+            (value, index, array) => value.result === 'NotRegistered',
         )
         if (notRegistered.length > 0) {
             this.logger.log(
-                `Skipped ${notRegistered.length} not registered relay(s): [${
-                    notRegistered.map((relay,index,array) => relay.fingerprint ).join(', ')
-                }]`,
+                `Skipped ${
+                    notRegistered.length
+                } not registered relay(s): [${notRegistered
+                    .map((relay, index, array) => relay.fingerprint)
+                    .join(', ')}]`,
             )
         }
 
         const alreadyVerified = data.filter(
-            (value, index, array) =>
-                value.result === 'AlreadyVerified',
+            (value, index, array) => value.result === 'AlreadyVerified',
         )
         if (alreadyVerified.length > 0) {
             this.logger.log(
@@ -143,22 +154,17 @@ export class ContractsService {
             )
         }
 
-        const ok = data.filter(
-            (value, index, array) => value.result === 'OK',
-        )
+        const ok = data.filter((value, index, array) => value.result === 'OK')
         if (ok.length > 0) {
-            this.logger.log(
-                `Updated verification of ${ok.length} relay(s)`,
-            )
+            this.logger.log(`Updated verification of ${ok.length} relay(s)`)
         }
 
         const verifiedRelays = data.filter(
-            (value, index, array) => value.result === 'OK' || value.result === 'AlreadyVerified'
+            (value, index, array) =>
+                value.result === 'OK' || value.result === 'AlreadyVerified',
         )
 
-        this.logger.log(
-            `Total verified relays: ${verifiedRelays.length}`,
-        )
+        this.logger.log(`Total verified relays: ${verifiedRelays.length}`)
 
         return verifiedRelays
     }
@@ -192,7 +198,7 @@ export class ContractsService {
             if (registered) {
                 if (this.owner !== undefined) {
                     const evmSig = await buildEvmSignature(this.owner.signer)
-                    
+
                     if (this.isLive === 'true') {
                         this.logger.log(
                             `Verifying validated relay [${relay.fingerprint}]`,
@@ -209,7 +215,9 @@ export class ContractsService {
                                 address: relay.ator_public_key,
                             })
                     } else {
-                        this.logger.warn(`NOT LIVE - skipped contract call to verify relay [${relay.fingerprint}]`)
+                        this.logger.warn(
+                            `NOT LIVE - skipped contract call to verify relay [${relay.fingerprint}]`,
+                        )
                     }
 
                     return 'OK'

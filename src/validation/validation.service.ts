@@ -7,7 +7,7 @@ import { RelayInfo } from './interfaces/8_3/relay-info'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { RelayData } from './schemas/relay-data'
-import { OnionooServiceData } from './schemas/onionoo-service-data'
+import { ValidationServiceData } from './schemas/validation-service-data'
 import { RelayDataDto } from './dto/relay-data-dto'
 import { ethers } from 'ethers'
 import { ConfigService } from '@nestjs/config'
@@ -15,8 +15,8 @@ import { ValidationData } from './schemas/validation-data'
 import { ValidatedRelay } from './schemas/validated-relay'
 
 @Injectable()
-export class OnionooService {
-    private readonly logger = new Logger(OnionooService.name)
+export class ValidationService {
+    private readonly logger = new Logger(ValidationService.name)
     private dataId: Types.ObjectId
     private lastSeen: String = ''
 
@@ -29,8 +29,8 @@ export class OnionooService {
         private readonly config: ConfigService<{ ONIONOO_DETAILS_URI: string }>,
         @InjectModel(RelayData.name)
         private readonly relayDataModel: Model<RelayData>,
-        @InjectModel(OnionooServiceData.name)
-        private readonly onionooServiceDataModel: Model<OnionooServiceData>,
+        @InjectModel(ValidationServiceData.name)
+        private readonly onionooServiceDataModel: Model<ValidationServiceData>,
         @InjectModel(ValidationData.name)
         private readonly validationDataModel: Model<ValidationData>,
     ) {}
@@ -134,7 +134,9 @@ export class OnionooService {
 
     public extractAtorKey(inputString?: string): string {
         if (inputString !== undefined && inputString.length > 0) {
-            const startIndex = inputString.toLowerCase().indexOf(this.atorKeyPattern)
+            const startIndex = inputString
+                .toLowerCase()
+                .indexOf(this.atorKeyPattern)
             if (startIndex > -1) {
                 const baseIndex = startIndex + this.atorKeyPattern.length
                 const fixedInput = inputString.replace('0X', '0x')
@@ -164,7 +166,9 @@ export class OnionooService {
                         `Ator key not found after pattern in matched relay for input: ${inputString}`,
                     )
             } else
-                this.logger.warn(`Ator key pattern not found in matched relay for input: ${inputString}`)
+                this.logger.warn(
+                    `Ator key pattern not found in matched relay for input: ${inputString}`,
+                )
         } else
             this.logger.warn(
                 'Attempting to extract empty key from matched relay',
@@ -194,14 +198,14 @@ export class OnionooService {
                 consensus_weight: info.consensus_weight,
 
                 running: info.running,
-                consensus_measured: info.measured??false,
-                consensus_weight_fraction: info.consensus_weight_fraction??0,
-                version: info.version??"?",
-                version_status: info.version_status??"",
-                bandwidth_rate: info.bandwidth_rate??0,
-                bandwidth_burst: info.bandwidth_burst??0,
-                observed_bandwidth: info.observed_bandwidth??0,
-                advertised_bandwidth: info.advertised_bandwidth??0
+                consensus_measured: info.measured ?? false,
+                consensus_weight_fraction: info.consensus_weight_fraction ?? 0,
+                version: info.version ?? '?',
+                version_status: info.version_status ?? '',
+                bandwidth_rate: info.bandwidth_rate ?? 0,
+                bandwidth_burst: info.bandwidth_burst ?? 0,
+                observed_bandwidth: info.observed_bandwidth ?? 0,
+                advertised_bandwidth: info.advertised_bandwidth ?? 0,
             }),
         )
 
@@ -223,7 +227,7 @@ export class OnionooService {
                 .map<ValidatedRelay>((relay, index, array) => ({
                     fingerprint: relay.fingerprint,
                     ator_public_key: this.extractAtorKey(relay.contact),
-                    consensus_weight: relay.consensus_weight
+                    consensus_weight: relay.consensus_weight,
                 }))
                 .filter(
                     (relay, index, array) => relay.ator_public_key.length > 0,
@@ -245,9 +249,14 @@ export class OnionooService {
                     `Storing validation ${validationStamp} of ${relay.fingerprint}`,
                 )
 
-                const relayData = relays.find((value, index, array) => value.fingerprint == relay.fingerprint)
+                const relayData = relays.find(
+                    (value, index, array) =>
+                        value.fingerprint == relay.fingerprint,
+                )
                 if (relayData == undefined) {
-                    this.logger.error(`Failed to find relay data for validated relay [${relay.fingerprint}]`)
+                    this.logger.error(
+                        `Failed to find relay data for validated relay [${relay.fingerprint}]`,
+                    )
                 } else {
                     await this.relayDataModel
                         .create<RelayData>({
@@ -258,13 +267,15 @@ export class OnionooService {
 
                             running: relayData.running,
                             consensus_measured: relayData.consensus_measured,
-                            consensus_weight_fraction: relayData.consensus_weight_fraction,
+                            consensus_weight_fraction:
+                                relayData.consensus_weight_fraction,
                             version: relayData.version,
                             version_status: relayData.version_status,
                             bandwidth_rate: relayData.bandwidth_rate,
                             bandwidth_burst: relayData.bandwidth_burst,
                             observed_bandwidth: relayData.observed_bandwidth,
-                            advertised_bandwidth: relayData.advertised_bandwidth
+                            advertised_bandwidth:
+                                relayData.advertised_bandwidth,
                         })
                         .catch((error) => this.logger.error(error))
                 }

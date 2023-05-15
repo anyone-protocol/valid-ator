@@ -4,14 +4,14 @@ import { ValidationQueue } from './processors/validation-queue'
 import { TasksQueue } from './processors/tasks-queue'
 import { TasksService } from './tasks.service'
 import { ConfigService } from '@nestjs/config'
-import { OnionooModule } from 'src/onionoo/onionoo.module'
+import { ValidationModule } from 'src/validation/validation.module'
 import { VerificationQueue } from './processors/verification-queue'
-import { ContractsModule } from 'src/contracts/contracts.module'
+import { VerificationModule } from 'src/verification/verification.module'
 
 @Module({
     imports: [
-        OnionooModule,
-        ContractsModule,
+        ValidationModule,
+        VerificationModule,
         BullModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (

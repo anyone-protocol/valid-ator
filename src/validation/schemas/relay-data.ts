@@ -25,11 +25,11 @@ export class RelayData {
 
     @Prop({ type: Number, required: false, default: 0 })
     consensus_weight_fraction: number
-    
-    @Prop({ type: String, required: false, default: "" })
+
+    @Prop({ type: String, required: false, default: '' })
     version: string
 
-    @Prop({ type: String, required: false, default: "" })
+    @Prop({ type: String, required: false, default: '' })
     version_status: string
 
     @Prop({ type: Number, required: false, default: 0 })

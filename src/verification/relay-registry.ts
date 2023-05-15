@@ -1,9 +1,3 @@
-import {
-    ContractError,
-    ContractInteraction,
-    HandlerResult,
-} from 'warp-contracts'
-
 import { EvolvableState } from '../util/evolvable'
 import { OwnableState } from '../util/ownable'
 import { ContractFunctionInput } from 'src/util/contract-function-input'

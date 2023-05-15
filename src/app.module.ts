@@ -2,15 +2,15 @@ import { Module } from '@nestjs/common'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { TasksModule } from './tasks/tasks.module'
-import { OnionooModule } from './onionoo/onionoo.module'
+import { ValidationModule } from './validation/validation.module'
 import { MongooseModule } from '@nestjs/mongoose'
 import { ConfigModule, ConfigService } from '@nestjs/config'
-import { ContractsModule } from './contracts/contracts.module'
+import { VerificationModule } from './verification/verification.module'
 
 @Module({
     imports: [
         TasksModule,
-        OnionooModule,
+        ValidationModule,
         ConfigModule.forRoot({ isGlobal: true }),
         MongooseModule.forRootAsync({
             inject: [ConfigService<{ MONGO_URI: string }>],
@@ -18,7 +18,7 @@ import { ContractsModule } from './contracts/contracts.module'
                 uri: config.get<string>('MONGO_URI', { infer: true }),
             }),
         }),
-        ContractsModule,
+        VerificationModule,
     ],
     controllers: [AppController],
     providers: [AppService],

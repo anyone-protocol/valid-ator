@@ -1,18 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { OnionooService } from './onionoo.service'
+import { ValidationService } from './validation.service'
 import { HttpModule } from '@nestjs/axios'
 import { MongooseModule } from '@nestjs/mongoose'
 import {
-    OnionooServiceData,
-    OnionooServiceDataSchema,
-} from './schemas/onionoo-service-data'
+    ValidationServiceData,
+    ValidationServiceDataSchema,
+} from './schemas/validation-service-data'
 import { RelayData, RelayDataSchema } from './schemas/relay-data'
 import { ConfigModule } from '@nestjs/config'
 import { ValidationData, ValidationDataSchema } from './schemas/validation-data'
 
-describe('OnionooService', () => {
+describe('ValidationService', () => {
     let testModule: TestingModule
-    let service: OnionooService
+    let service: ValidationService
 
     beforeAll(async () => {
         testModule = await Test.createTestingModule({
@@ -25,17 +25,17 @@ describe('OnionooService', () => {
 
                 MongooseModule.forFeature([
                     {
-                        name: OnionooServiceData.name,
-                        schema: OnionooServiceDataSchema,
+                        name: ValidationServiceData.name,
+                        schema: ValidationServiceDataSchema,
                     },
                     { name: RelayData.name, schema: RelayDataSchema },
                     { name: ValidationData.name, schema: ValidationDataSchema },
                 ]),
             ],
-            providers: [OnionooService],
+            providers: [ValidationService],
         }).compile()
 
-        service = testModule.get<OnionooService>(OnionooService)
+        service = testModule.get<ValidationService>(ValidationService)
     })
 
     it('should be defined', () => {
@@ -168,12 +168,12 @@ describe('OnionooService', () => {
                 contact: relay2.contact,
                 fingerprint: relay2.fingerprint,
                 consensus_weight: 1,
-            
+
                 running: true,
                 consensus_measured: false,
                 consensus_weight_fraction: 0,
-                version: "?",
-                version_status: "",
+                version: '?',
+                version_status: '',
                 bandwidth_rate: 0,
                 bandwidth_burst: 0,
                 observed_bandwidth: 0,
@@ -188,12 +188,12 @@ describe('OnionooService', () => {
             contact:
                 'Some @text @ator:  0xf72a247Dc4546b0291dbbf57648D45a752537802',
             consensus_weight: 1,
-            
+
             running: false,
             consensus_measured: false,
             consensus_weight_fraction: 0,
-            version: "",
-            version_status: "",
+            version: '',
+            version_status: '',
             bandwidth_rate: 0,
             bandwidth_burst: 0,
             observed_bandwidth: 0,
@@ -215,12 +215,12 @@ describe('OnionooService', () => {
             contact:
                 'Some @text @ator:  0xf72a247dc4546b0291dbbf57648D45a752537802',
             consensus_weight: 1,
-        
+
             running: false,
             consensus_measured: false,
             consensus_weight_fraction: 0,
-            version: "",
-            version_status: "",
+            version: '',
+            version_status: '',
             bandwidth_rate: 0,
             bandwidth_burst: 0,
             observed_bandwidth: 0,
@@ -239,12 +239,12 @@ describe('OnionooService', () => {
             contact:
                 'Some @text @ator:  0xf72a247Dc4546b0291dbbf57648D45a752537802',
             consensus_weight: 1,
-            
+
             running: false,
             consensus_measured: false,
             consensus_weight_fraction: 0,
-            version: "",
-            version_status: "",
+            version: '',
+            version_status: '',
             bandwidth_rate: 0,
             bandwidth_burst: 0,
             observed_bandwidth: 0,
