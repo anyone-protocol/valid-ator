@@ -114,7 +114,7 @@ export class VerificationService {
 
         const verificationData: VerificationData = {
             verified_at: verificationStamp,
-            atornauts: atornauts,
+            relays: atornauts,
         }
 
         this.verificationDataModel

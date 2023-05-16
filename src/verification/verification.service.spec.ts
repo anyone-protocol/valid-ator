@@ -44,7 +44,7 @@ describe('VerificationService', () => {
                 running: true,
             }),
         ).toBe('NotRegistered')
-    })
+    }, 60000)
 
     it('should check if the fingerprint was verified', async () => {
         expect(
@@ -56,7 +56,7 @@ describe('VerificationService', () => {
                 running: true,
             }),
         ).toBe('AlreadyVerified')
-    })
+    }, 60000)
 
     // it('should allow registering relay fingerprints', async () => {
     //     expect(

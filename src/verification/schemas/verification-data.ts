@@ -10,7 +10,7 @@ export class VerificationData {
     verified_at: number
 
     @Prop({ type: Array<ValidatedRelay>, required: true })
-    atornauts: ValidatedRelay[]
+    relays: ValidatedRelay[]
 }
 
 export const VerificationDataSchema =
