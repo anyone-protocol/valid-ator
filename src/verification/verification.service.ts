@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
-import { RelayRegistryState, Verify } from './relay-registry'
+import { RelayRegistryState, Verify } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
 import { Wallet } from 'ethers'
 import {

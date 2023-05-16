@@ -8,6 +8,7 @@ import {
     VerifiedRelays,
 } from 'src/verification/dto/verification-result-dto'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
+import { VerificationData } from 'src/verification/schemas/verification-data'
 
 @Processor('verification-queue')
 export class VerificationQueue extends WorkerHost {
@@ -21,7 +22,7 @@ export class VerificationQueue extends WorkerHost {
         super()
     }
 
-    async process(job: Job<any, any, string>): Promise<any> {
+    async process(job: Job<any, any, string>): Promise<VerifiedRelays | VerificationData | undefined> {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {

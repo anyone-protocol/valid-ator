@@ -5,6 +5,7 @@ import { ValidationService } from 'src/validation/validation.service'
 import { TasksService } from '../tasks.service'
 import { RelayInfo } from 'src/validation/interfaces/8_3/relay-info'
 import { RelayDataDto } from 'src/validation/dto/relay-data-dto'
+import { ValidationData } from 'src/validation/schemas/validation-data'
 
 @Processor('validation-queue')
 export class ValidationQueue extends WorkerHost {
@@ -21,7 +22,7 @@ export class ValidationQueue extends WorkerHost {
         super()
     }
 
-    async process(job: Job<any, any, string>): Promise<any> {
+    async process(job: Job<any, any, string>): Promise<RelayInfo[] | RelayDataDto[] | ValidationData | undefined> {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
@@ -69,7 +70,7 @@ export class ValidationQueue extends WorkerHost {
                     return validationData
                 } catch (e) {
                     this.logger.error(e)
-                    return null
+                    return undefined
                 }
 
             default:
