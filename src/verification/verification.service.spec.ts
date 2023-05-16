@@ -1,13 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { VerificationService } from './verification.service'
 import { ConfigModule } from '@nestjs/config'
+import { MongooseModule } from '@nestjs/mongoose'
+import { VerificationData, VerificationDataSchema } from './schemas/verification-data'
 
 describe('VerificationService', () => {
     let service: VerificationService
 
     beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
-            imports: [ConfigModule.forRoot()],
+            imports: [
+                ConfigModule.forRoot(),
+                MongooseModule.forRoot(
+                    'mongodb://localhost/validATOR-onionoo-service-tests',
+                ),
+                MongooseModule.forFeature([
+                    { name: VerificationData.name, schema: VerificationDataSchema },
+                ])
+            ],
             providers: [VerificationService],
         }).compile()
 

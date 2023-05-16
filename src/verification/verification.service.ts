@@ -14,6 +14,8 @@ import { RelayVerificationResult } from './dto/relay-verification-result'
 import { VerificationData } from './schemas/verification-data'
 import { VerifiedRelays } from './dto/verification-result-dto'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
+import { Model } from 'mongoose'
+import { InjectModel } from '@nestjs/mongoose'
 
 @Injectable()
 export class VerificationService {
@@ -33,6 +35,8 @@ export class VerificationService {
             RELAY_REGISTRY_TXID: string
             IS_LIVE: string
         }>,
+        @InjectModel(VerificationData.name)
+        private readonly verificationDataModel: Model<VerificationData>,
     ) {
         LoggerFactory.INST.logLevel('error')
 
@@ -110,10 +114,16 @@ export class VerificationService {
             network_weight: relay.network_weight,
         }))
 
-        return {
+        const verificationData: VerificationData = ({
             verified_at: verificationStamp,
             atornauts: atornauts,
-        }
+        })
+
+        this.verificationDataModel
+            .create<VerificationData>(verificationData)
+            .catch((error) => this.logger.error(error))
+
+        return verificationData
     }
 
     public async finalizeVerification(

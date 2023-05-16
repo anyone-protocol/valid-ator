@@ -22,7 +22,7 @@ export class VerificationQueue extends WorkerHost {
         super()
     }
 
-    async process(job: Job<any, any, string>): Promise<VerifiedRelays | VerificationData | undefined> {
+    async process(job: Job<any, any, string>): Promise<VerifiedRelays | VerificationData> {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
@@ -63,11 +63,18 @@ export class VerificationQueue extends WorkerHost {
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
                 if (verificationResults.length > 0) {
-                    this.logger.log(`Finalizing verification ${job.data}`)
+                    try {
+                        this.logger.debug(`Finalizing verification ${job.data}`)
 
-                    return await this.contracts.finalizeVerification(
-                        verificationResults,
-                    )
+                        return await this.contracts.finalizeVerification(
+                            verificationResults,
+                        )
+                    
+                    } catch (e) {
+                        this.logger.error(`Failed finalizing verification of ${verificationResults.length} relay(s)`)
+                        this.logger.error(e)
+                        return []
+                    }
                 } else {
                     this.logger.debug(`${job.data}> No data was published`)
 
@@ -80,21 +87,28 @@ export class VerificationQueue extends WorkerHost {
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
                 if (verifiedRelays.length > 0) {
-                    this.logger.log(
-                        `Persisting verification of ${verifiedRelays.length} relays`,
-                    )
+                    try {
+                        this.logger.debug(
+                            `Persisting verification of ${verifiedRelays.length} relays`,
+                        )
 
-                    return await this.contracts.storeVerification(
-                        verifiedRelays,
-                    )
+                        return await this.contracts.storeVerification(
+                            verifiedRelays,
+                        )
+                        
+                    } catch (e) {
+                        this.logger.error(`Failed storing verification of ${verifiedRelays.length} relay(s)`)
+                        this.logger.error(e)
+                        return []
+                    }
                 } else {
                     this.logger.log(`No verified relays found to store`)
+                    return []
                 }
-
-                break
 
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)
+                return []
         }
     }
 
