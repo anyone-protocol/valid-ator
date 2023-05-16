@@ -12,7 +12,7 @@ import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
 import { RelayVerificationResult } from './dto/relay-verification-result'
 import { VerificationData } from './schemas/verification-data'
-import { VerifiedRelays } from './dto/verification-result-dto'
+import { VerificationResults } from './dto/verification-result-dto'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
@@ -104,20 +104,18 @@ export class VerificationService {
     }
 
     public async storeVerification(
-        verifiedRelays: VerifiedRelays,
+        verificationResults: VerificationResults,
     ): Promise<VerificationData> {
         const verificationStamp = Date.now()
 
-        const atornauts = verifiedRelays.map((relay, index, array) => ({
-            address: relay.address,
-            fingerprint: relay.fingerprint,
-            network_weight: relay.network_weight,
-        }))
+        const atornauts = verificationResults.map(
+            (result, index, array) => result.relay,
+        )
 
-        const verificationData: VerificationData = ({
+        const verificationData: VerificationData = {
             verified_at: verificationStamp,
             atornauts: atornauts,
-        })
+        }
 
         this.verificationDataModel
             .create<VerificationData>(verificationData)
@@ -126,9 +124,9 @@ export class VerificationService {
         return verificationData
     }
 
-    public async finalizeVerification(
-        data: VerifiedRelays,
-    ): Promise<VerifiedRelays> {
+    public async confirmVerification(
+        data: VerificationResults,
+    ): Promise<VerificationResults> {
         const failed = data.filter(
             (value, index, array) => value.result === 'Failed',
         )
@@ -137,7 +135,7 @@ export class VerificationService {
                 `Failed publishing verification of ${
                     failed.length
                 } relay(s): [${failed
-                    .map((relay, index, array) => relay.fingerprint)
+                    .map((result, index, array) => result.relay.fingerprint)
                     .join(', ')}]`,
             )
         }
@@ -150,7 +148,7 @@ export class VerificationService {
                 `Skipped ${
                     notRegistered.length
                 } not registered relay(s): [${notRegistered
-                    .map((relay, index, array) => relay.fingerprint)
+                    .map((result, index, array) => result.relay.fingerprint)
                     .join(', ')}]`,
             )
         }
@@ -169,14 +167,15 @@ export class VerificationService {
             this.logger.log(`Updated verification of ${ok.length} relay(s)`)
         }
 
-        const verifiedRelays = data.filter(
+        const confirmedRelays = data.filter(
             (value, index, array) =>
-                value.result === 'OK' || value.result === 'AlreadyVerified',
+                (value.result === 'OK' || value.result === 'AlreadyVerified') &&
+                value.relay.running === true,
         )
 
-        this.logger.log(`Total verified relays: ${verifiedRelays.length}`)
+        this.logger.log(`Total confirmed relays: ${confirmedRelays.length}`)
 
-        return verifiedRelays
+        return confirmedRelays
     }
 
     public async verifyRelay(

@@ -228,6 +228,8 @@ export class ValidationService {
                     fingerprint: relay.fingerprint,
                     ator_public_key: this.extractAtorKey(relay.contact),
                     consensus_weight: relay.consensus_weight,
+                    observed_bandwidth: relay.observed_bandwidth,
+                    running: relay.running,
                 }))
                 .filter(
                     (relay, index, array) => relay.ator_public_key.length > 0,

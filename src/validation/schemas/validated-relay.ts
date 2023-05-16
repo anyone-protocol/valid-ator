@@ -13,6 +13,12 @@ export class ValidatedRelay {
 
     @Prop({ type: Number, required: false, default: 0 })
     consensus_weight: number
+
+    @Prop({ type: Number, required: false, default: 0 })
+    observed_bandwidth: number
+
+    @Prop({ type: Boolean, required: false, default: false })
+    running: boolean
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

@@ -51,7 +51,7 @@ export class TasksService implements OnApplicationBootstrap {
             opts: TasksService.jobOpts,
             children: [
                 {
-                    name: 'finalize-verification',
+                    name: 'confirm-verification',
                     queueName: 'verification-queue',
                     data: validation.validated_at,
                     opts: TasksService.jobOpts,

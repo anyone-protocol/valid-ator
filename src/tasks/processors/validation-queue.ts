@@ -16,19 +16,21 @@ export class ValidationQueue extends WorkerHost {
     public static readonly JOB_VALIDATE_RELAYS = 'validate-relays'
 
     constructor(
-        private readonly onionoo: ValidationService,
+        private readonly validation: ValidationService,
         private readonly tasks: TasksService,
     ) {
         super()
     }
 
-    async process(job: Job<any, any, string>): Promise<RelayInfo[] | RelayDataDto[] | ValidationData | undefined> {
+    async process(
+        job: Job<any, any, string>,
+    ): Promise<RelayInfo[] | RelayDataDto[] | ValidationData | undefined> {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
             case ValidationQueue.JOB_FETCH_RELAYS:
                 try {
-                    const relays = await this.onionoo.fetchNewRelays()
+                    const relays = await this.validation.fetchNewRelays()
                     return relays
                 } catch (e) {
                     this.logger.error(e)
@@ -44,7 +46,7 @@ export class ValidationQueue extends WorkerHost {
                         [],
                     )
 
-                    const validated = await this.onionoo.filterRelays(
+                    const validated = await this.validation.filterRelays(
                         fetchedRelays,
                     )
 
@@ -63,7 +65,7 @@ export class ValidationQueue extends WorkerHost {
                         [],
                     )
 
-                    const validationData = await this.onionoo.validateRelays(
+                    const validationData = await this.validation.validateRelays(
                         validatedRelays,
                     )
                     await this.tasks.updateOnionooRelays() // using default delay time in param
