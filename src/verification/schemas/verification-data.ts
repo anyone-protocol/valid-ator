@@ -9,6 +9,9 @@ export class VerificationData {
     @Prop({ type: Number, required: true })
     verified_at: number
 
+    @Prop({ type: String, required: false })
+    permanent_id: string
+
     @Prop({ type: Array<ValidatedRelay>, required: true })
     relays: ValidatedRelay[]
 }

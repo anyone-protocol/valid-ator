@@ -16,6 +16,7 @@ import { VerificationResults } from './dto/verification-result-dto'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
+import Bundlr from '@bundlr-network/client'
 
 @Injectable()
 export class VerificationService {
@@ -24,6 +25,7 @@ export class VerificationService {
     private isLive?: string
 
     private owner
+    private bundlr
 
     private warp: Warp
     private contract: Contract<RelayRegistryState>
@@ -34,6 +36,9 @@ export class VerificationService {
             RELAY_REGISTRY_VALIDATOR_KEY: string
             RELAY_REGISTRY_TXID: string
             IS_LIVE: string
+            BUNDLR_UPLOADER_NODE: string
+            BUNDLR_UPLOADER_KEY_NETWORK: string
+            BUNDLR_UPLOADER_KEY: string
         }>,
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
@@ -41,10 +46,30 @@ export class VerificationService {
         LoggerFactory.INST.logLevel('error')
 
         this.isLive = config.get<string>('IS_LIVE', { infer: true })
-
+        
         this.logger.log(
-            `Initializing Contracts Service IS_LIVE: ${this.isLive}`,
+            `Initializing Verification Service IS_LIVE: ${this.isLive}`,
         )
+
+        this.bundlr = (() => {
+            const node = config.get<string>('BUNDLR_UPLOADER_NODE', { infer: true })
+            const network = config.get<string>('BUNDLR_UPLOADER_KEY_NETWORK', { infer: true })
+            const key = config.get<string>('BUNDLR_UPLOADER_KEY', { infer: true })
+
+            if (node !== undefined && network !== undefined && key !== undefined) {
+                return new Bundlr(node, network, key)
+            } else {
+                return undefined
+            }
+        })()
+
+        if (this.bundlr !== undefined) {
+            this.logger.log(
+                `Initialized Bundlr for address: ${this.bundlr.address}`,
+            )
+        } else {
+            this.logger.error('Failed to initialize Bundlr!')
+        }
 
         const ownerKey = this.config.get<string>(
             'RELAY_REGISTRY_VALIDATOR_KEY',
@@ -108,13 +133,31 @@ export class VerificationService {
     ): Promise<VerificationData> {
         const verificationStamp = Date.now()
 
-        const atornauts = verificationResults.map(
+        const relays = verificationResults.map(
             (result, index, array) => result.relay,
         )
 
+        const tags = [ 
+            { name: 'Protocol', value: 'ator' },
+            { name: 'Protocol-Version', value: '0.1' },
+            { name: 'Content-Timestamp', value: verificationStamp },
+            { name: 'Content-Type', value: 'application/json' },
+            { name: 'Entity-Type', value: 'relay/metrics' },
+        ]
+
+        var permanentId = ''
+        if (this.bundlr !== undefined) {
+            const response = await this.bundlr.upload(JSON.stringify(relays))
+            permanentId = response.id
+            this.logger.log(`Permanently stored batch confirming verification with ${relays.length} relay(s): ${permanentId} `)
+        } else {
+            this.logger.error('Bundler not initialized, not uploading confirmation of verification')
+        }
+
         const verificationData: VerificationData = {
             verified_at: verificationStamp,
-            relays: atornauts,
+            permanent_id: permanentId,
+            relays: relays,
         }
 
         this.verificationDataModel
