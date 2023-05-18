@@ -12,7 +12,7 @@ export class RelayData {
     validated_at: number
 
     @Prop({ type: String, required: true })
-    ator_public_key: string
+    ator_address: string
 
     @Prop({ type: Boolean, required: false, default: false })
     running: boolean

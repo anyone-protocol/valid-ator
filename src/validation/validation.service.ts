@@ -226,13 +226,13 @@ export class ValidationService {
             const validatedRelays = relays
                 .map<ValidatedRelay>((relay, index, array) => ({
                     fingerprint: relay.fingerprint,
-                    ator_public_key: this.extractAtorKey(relay.contact),
+                    ator_address: this.extractAtorKey(relay.contact),
                     consensus_weight: relay.consensus_weight,
                     observed_bandwidth: relay.observed_bandwidth,
                     running: relay.running,
                 }))
                 .filter(
-                    (relay, index, array) => relay.ator_public_key.length > 0,
+                    (relay, index, array) => relay.ator_address.length > 0,
                 )
 
             this.logger.log(
@@ -264,7 +264,7 @@ export class ValidationService {
                         .create<RelayData>({
                             validated_at: validationStamp,
                             fingerprint: relay.fingerprint,
-                            ator_public_key: relay.ator_public_key,
+                            ator_address: relay.ator_address,
                             consensus_weight: relayData.consensus_weight,
 
                             running: relayData.running,

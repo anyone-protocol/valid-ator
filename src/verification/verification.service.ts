@@ -239,12 +239,12 @@ export class VerificationService {
             const verified: boolean = this.isVerified(relay.fingerprint, state)
             const registered = this.isRegistered(
                 relay.fingerprint,
-                relay.ator_public_key,
+                relay.ator_address,
                 state,
             )
 
             this.logger.debug(
-                `${relay.fingerprint}|${relay.ator_public_key} IS_LIVE: ${this.isLive} Registered: ${registered} Verified: ${verified}`,
+                `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Registered: ${registered} Verified: ${verified}`,
             )
 
             if (verified) {
@@ -266,7 +266,7 @@ export class VerificationService {
                             .writeInteraction<Verify>({
                                 function: 'verify',
                                 fingerprint: relay.fingerprint,
-                                address: relay.ator_public_key,
+                                address: relay.ator_address,
                             })
 
                         this.logger.log(

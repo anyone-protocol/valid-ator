@@ -205,7 +205,7 @@ describe('ValidationService', () => {
         expect(
             await service
                 .lastValidationOf(relayDto1.fingerprint)
-                .then((value) => value?.ator_public_key),
+                .then((value) => value?.ator_address),
         ).toEqual('0xf72a247Dc4546b0291dbbf57648D45a752537802')
     })
 

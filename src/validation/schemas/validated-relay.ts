@@ -9,7 +9,7 @@ export class ValidatedRelay {
     fingerprint: string
 
     @Prop({ type: String, required: true })
-    ator_public_key: string
+    ator_address: string
 
     @Prop({ type: Number, required: false, default: 0 })
     consensus_weight: number

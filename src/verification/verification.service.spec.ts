@@ -38,7 +38,7 @@ describe('VerificationService', () => {
         expect(
             await service.verifyRelay({
                 fingerprint: 'AABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
-                ator_public_key: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+                ator_address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
                 consensus_weight: 1,
                 observed_bandwidth: 1,
                 running: true,
@@ -50,7 +50,7 @@ describe('VerificationService', () => {
         expect(
             await service.verifyRelay({
                 fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-                ator_public_key: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
+                ator_address: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
                 consensus_weight: 1,
                 observed_bandwidth: 1,
                 running: true,
