@@ -102,9 +102,8 @@ job "valid-ator-live" {
       template {
         data = <<EOH
         {{with secret "kv/valid-ator/live"}}
-          RELAY_REGISTRY_VALIDATOR_KEY="{{.Data.data.RELAY_REGISTRY_VALIDATOR_KEY}}"
-          BUNDLR_UPLOADER_KEY="{{.Data.data.BUNDLR_UPLOADER_KEY}}"
-          BUNDLR_UPLOADER_KEY_NETWORK="{{.Data.data.BUNDLR_UPLOADER_KEY_NETWORK}}"
+          VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
+          BUNDLR_NETWORK="{{.Data.data.BUNDLR_UPLOADER_KEY_NETWORK}}"
         {{end}}
         EOH
         destination = "secrets/file.env"
@@ -113,15 +112,16 @@ job "valid-ator-live" {
 
       env {
         IS_LIVE="true"
+        VALIDATOR_VERSION="[[.deploy]]"
+        VALIDATOR_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
         MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-dev"
         REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
-        RELAY_REGISTRY_VALIDATOR_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
         RELAY_REGISTRY_TXID="kvPua_H71Iwsvx4q-SwAmSMuw7Y9Tj8DyxUIhFKK-JQ"
-        BUNDLR_UPLOADER_NODE="http://node2.bundlr.network"
+        BUNDLR_NODE="http://node2.bundlr.network"
       }
 
       resources {

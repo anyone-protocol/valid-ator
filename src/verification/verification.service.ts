@@ -32,13 +32,12 @@ export class VerificationService {
 
     constructor(
         private readonly config: ConfigService<{
-            RELAY_REGISTRY_VALIDATOR_ADDRESS: string
-            RELAY_REGISTRY_VALIDATOR_KEY: string
+            VALIDATOR_ADDRESS: string
+            VALIDATOR_KEY: string
             RELAY_REGISTRY_TXID: string
             IS_LIVE: string
-            BUNDLR_UPLOADER_NODE: string
-            BUNDLR_UPLOADER_KEY_NETWORK: string
-            BUNDLR_UPLOADER_KEY: string
+            BUNDLR_NODE: string
+            BUNDLR_NETWORK: string
         }>,
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
@@ -46,48 +45,45 @@ export class VerificationService {
         LoggerFactory.INST.logLevel('error')
 
         this.isLive = config.get<string>('IS_LIVE', { infer: true })
-        
+
         this.logger.log(
             `Initializing Verification Service IS_LIVE: ${this.isLive}`,
         )
 
-        this.bundlr = (() => {
-            const node = config.get<string>('BUNDLR_UPLOADER_NODE', { infer: true })
-            const network = config.get<string>('BUNDLR_UPLOADER_KEY_NETWORK', { infer: true })
-            const key = config.get<string>('BUNDLR_UPLOADER_KEY', { infer: true })
+        const validatorKey = this.config.get<string>('VALIDATOR_KEY', {
+            infer: true,
+        })
 
-            if (node !== undefined && network !== undefined && key !== undefined) {
-                return new Bundlr(node, network, key)
+        if (validatorKey !== undefined) {
+            this.bundlr = (() => {
+                const node = config.get<string>('BUNDLR_NODE', {
+                    infer: true,
+                })
+                const network = config.get<string>('BUNDLR_NETWORK', {
+                    infer: true,
+                })
+
+                if (node !== undefined && network !== undefined) {
+                    return new Bundlr(node, network, validatorKey)
+                } else {
+                    return undefined
+                }
+            })()
+
+            if (this.bundlr !== undefined) {
+                this.logger.log(
+                    `Initialized Bundlr for address: ${this.bundlr.address}`,
+                )
             } else {
-                return undefined
+                this.logger.error('Failed to initialize Bundlr!')
             }
-        })()
 
-        if (this.bundlr !== undefined) {
-            this.logger.log(
-                `Initialized Bundlr for address: ${this.bundlr.address}`,
-            )
-        } else {
-            this.logger.error('Failed to initialize Bundlr!')
-        }
-
-        const ownerKey = this.config.get<string>(
-            'RELAY_REGISTRY_VALIDATOR_KEY',
-            {
-                infer: true,
-            },
-        )
-
-        if (ownerKey !== undefined) {
             this.owner = {
-                address: this.config.get<string>(
-                    'RELAY_REGISTRY_VALIDATOR_ADDRESS',
-                    {
-                        infer: true,
-                    },
-                ),
-                key: ownerKey,
-                signer: new Wallet(ownerKey),
+                address: this.config.get<string>('VALIDATOR_ADDRESS', {
+                    infer: true,
+                }),
+                key: validatorKey,
+                signer: new Wallet(validatorKey),
             }
 
             this.warp = WarpFactory.forMainnet({
@@ -103,6 +99,7 @@ export class VerificationService {
                     infer: true,
                 },
             )
+
             if (registryTxId !== undefined) {
                 this.warp.use(new StateUpdatePlugin(registryTxId, this.warp))
                 this.contract =
@@ -137,7 +134,7 @@ export class VerificationService {
             (result, index, array) => result.relay,
         )
 
-        const tags = [ 
+        const tags = [
             { name: 'Protocol', value: 'ator' },
             { name: 'Protocol-Version', value: '0.1' },
             { name: 'Content-Timestamp', value: verificationStamp },
@@ -147,11 +144,23 @@ export class VerificationService {
 
         var permanentId = ''
         if (this.bundlr !== undefined) {
-            const response = await this.bundlr.upload(JSON.stringify(relays))
-            permanentId = response.id
-            this.logger.log(`Permanently stored batch confirming verification with ${relays.length} relay(s): ${permanentId} `)
+            if (this.isLive === 'true') {
+                const response = await this.bundlr.upload(
+                    JSON.stringify(relays),
+                )
+                permanentId = response.id
+                this.logger.log(
+                    `Permanently stored batch confirming verification with ${relays.length} relay(s): ${permanentId} `,
+                )
+            } else {
+                this.logger.warn(
+                    `NOT LIVE: Not perma-storing batch confirming verification with ${relays.length} relay(s) `,
+                )
+            }
         } else {
-            this.logger.error('Bundler not initialized, not uploading confirmation of verification')
+            this.logger.error(
+                'Bundler not initialized, not uploading confirmation of verification',
+            )
         }
 
         const verificationData: VerificationData = {
