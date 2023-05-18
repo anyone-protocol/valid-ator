@@ -78,7 +78,7 @@ export class VerificationService {
             }
 
             const signer = new Wallet(validatorKey)
-            
+
             this.owner = {
                 address: signer.address,
                 key: validatorKey,
@@ -183,9 +183,7 @@ export class VerificationService {
         )
         if (failed.length > 0) {
             this.logger.log(
-                `Failed verification of ${
-                    failed.length
-                } relay(s): [${failed
+                `Failed verification of ${failed.length} relay(s): [${failed
                     .map((result, index, array) => result.relay.fingerprint)
                     .join(', ')}]`,
             )
@@ -270,7 +268,7 @@ export class VerificationService {
                                 fingerprint: relay.fingerprint,
                                 address: relay.ator_public_key,
                             })
-                            
+
                         this.logger.log(
                             `Verified validated relay [${relay.fingerprint}]: ${response?.originalTxId}`,
                         )
@@ -287,7 +285,7 @@ export class VerificationService {
                 }
             } else {
                 this.logger.log(
-                    `Not registered relay [${relay.fingerprint}], skipping validation`,
+                    `Skipping not registered relay [${relay.fingerprint}]`,
                 )
                 return 'NotRegistered'
             }

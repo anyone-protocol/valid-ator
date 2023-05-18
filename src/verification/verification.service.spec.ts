@@ -58,12 +58,15 @@ describe('VerificationService', () => {
         ).toBe('AlreadyVerified')
     }, 60000)
 
-    // it('should allow registering relay fingerprints', async () => {
+    // it('should allow verifying relay fingerprints', async () => {
     //     expect(
     //         await service.verifyRelay({
-    //             fingerprint: 'FAE2B62C2A081FB5F6959773E7DD7068C3A8C822',
-    //             ator_public_key: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A'
+    //             fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    //             ator_public_key: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
+    //             consensus_weight: 1,
+    //             observed_bandwidth: 1,
+    //             running: true,
     //     }),
     //     ).toBe('OK')
-    // })
+    // }, 60000)
 })
