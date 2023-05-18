@@ -32,7 +32,6 @@ export class VerificationService {
 
     constructor(
         private readonly config: ConfigService<{
-            VALIDATOR_ADDRESS: string
             VALIDATOR_KEY: string
             RELAY_REGISTRY_TXID: string
             IS_LIVE: string
@@ -78,12 +77,12 @@ export class VerificationService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
+            const signer = new Wallet(validatorKey)
+            
             this.owner = {
-                address: this.config.get<string>('VALIDATOR_ADDRESS', {
-                    infer: true,
-                }),
+                address: signer.address,
                 key: validatorKey,
-                signer: new Wallet(validatorKey),
+                signer: signer,
             }
 
             this.warp = WarpFactory.forMainnet({
@@ -150,11 +149,11 @@ export class VerificationService {
                 )
                 permanentId = response.id
                 this.logger.log(
-                    `Permanently stored batch confirming verification with ${relays.length} relay(s): ${permanentId} `,
+                    `Permanently storing relay metrics ${verificationStamp} with ${relays.length} relay(s): ${permanentId} `,
                 )
             } else {
                 this.logger.warn(
-                    `NOT LIVE: Not perma-storing batch confirming verification with ${relays.length} relay(s) `,
+                    `NOT LIVE: Not storing relay metrics ${verificationStamp} with ${relays.length} relay(s) `,
                 )
             }
         } else {

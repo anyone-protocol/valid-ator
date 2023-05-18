@@ -113,7 +113,6 @@ job "valid-ator-live" {
       env {
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.deploy]]"
-        VALIDATOR_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
         MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-dev"
         REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
