@@ -34,8 +34,7 @@ export class VerificationQueue extends WorkerHost {
                 try {
                     if (
                         validatedRelay !== undefined &&
-                        typeof job.data.fingerprint === 'string' &&
-                        job.data.fingerprint.length === 40
+                        validatedRelay.fingerprint.length === 40
                     ) {
                         verifyResult = await this.verification.verifyRelay(
                             validatedRelay,
@@ -46,8 +45,7 @@ export class VerificationQueue extends WorkerHost {
                         )
                     }
                 } catch (e) {
-                    this.logger.error(`Failed verifying validated relay`)
-                    this.logger.error(e)
+                    this.logger.error(`Failed verifying validated relay ${e}`)
                 }
 
                 const verifiedRelay: VerificationResultDto = {

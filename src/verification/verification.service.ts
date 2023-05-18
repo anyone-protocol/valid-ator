@@ -183,7 +183,7 @@ export class VerificationService {
         )
         if (failed.length > 0) {
             this.logger.log(
-                `Failed publishing verification of ${
+                `Failed verification of ${
                     failed.length
                 } relay(s): [${failed
                     .map((result, index, array) => result.relay.fingerprint)
@@ -260,11 +260,7 @@ export class VerificationService {
                     const evmSig = await buildEvmSignature(this.owner.signer)
 
                     if (this.isLive === 'true') {
-                        this.logger.log(
-                            `Verifying validated relay [${relay.fingerprint}]`,
-                        )
-
-                        await this.contract
+                        const response = await this.contract
                             .connect({
                                 signer: evmSig,
                                 type: 'ethereum',
@@ -274,6 +270,10 @@ export class VerificationService {
                                 fingerprint: relay.fingerprint,
                                 address: relay.ator_public_key,
                             })
+                            
+                        this.logger.log(
+                            `Verified validated relay [${relay.fingerprint}]: ${response?.originalTxId}`,
+                        )
                     } else {
                         this.logger.warn(
                             `NOT LIVE - skipped contract call to verify relay [${relay.fingerprint}]`,
