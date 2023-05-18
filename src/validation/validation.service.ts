@@ -30,13 +30,13 @@ export class ValidationService {
         @InjectModel(RelayData.name)
         private readonly relayDataModel: Model<RelayData>,
         @InjectModel(ValidationServiceData.name)
-        private readonly onionooServiceDataModel: Model<ValidationServiceData>,
+        private readonly validationServiceDataModel: Model<ValidationServiceData>,
         @InjectModel(ValidationData.name)
         private readonly validationDataModel: Model<ValidationData>,
     ) {}
 
     async initServiceData(): Promise<void> {
-        const newData = await this.onionooServiceDataModel.create({
+        const newData = await this.validationServiceDataModel.create({
             apiVersion: this.currentApiVersion,
             last_seen: '',
         })
@@ -44,12 +44,12 @@ export class ValidationService {
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        const hasData = await this.onionooServiceDataModel.exists({
+        const hasData = await this.validationServiceDataModel.exists({
             apiVersion: this.currentApiVersion,
         })
 
         if (hasData) {
-            const initData = await this.onionooServiceDataModel
+            const initData = await this.validationServiceDataModel
                 .findOne({ apiVersion: this.currentApiVersion })
                 .catch((error) => {
                     this.logger.error(error)
@@ -67,7 +67,7 @@ export class ValidationService {
         } else this.initServiceData()
 
         this.logger.log(
-            `Bootstrapping Onionoo Connector [seen: ${this.lastSeen}, id: ${this.dataId}]`,
+            `Bootstrapped Onionoo Connector [seen: ${this.lastSeen}, id: ${this.dataId}]`,
         )
     }
 
@@ -114,7 +114,7 @@ export class ValidationService {
                     requestStamp > Date.parse(lastMod)
                 ) {
                     this.lastSeen = new Date(lastMod).toUTCString()
-                    await this.onionooServiceDataModel.findByIdAndUpdate(
+                    await this.validationServiceDataModel.findByIdAndUpdate(
                         this.dataId,
                         { apiVersion: data.version, last_seen: this.lastSeen },
                     )

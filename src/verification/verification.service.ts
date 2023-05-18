@@ -284,7 +284,7 @@ export class VerificationService {
                     return 'Failed'
                 }
             } else {
-                this.logger.log(
+                this.logger.debug(
                     `Skipping not registered relay [${relay.fingerprint}]`,
                 )
                 return 'NotRegistered'
