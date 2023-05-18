@@ -103,7 +103,7 @@ job "valid-ator-live" {
         data = <<EOH
         {{with secret "kv/valid-ator/live"}}
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
-          BUNDLR_NETWORK="{{.Data.data.BUNDLR_UPLOADER_KEY_NETWORK}}"
+          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
         {{end}}
         EOH
         destination = "secrets/file.env"
