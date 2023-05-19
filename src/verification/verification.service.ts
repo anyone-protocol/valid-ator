@@ -136,7 +136,7 @@ export class VerificationService {
         const tags = [
             { name: 'Protocol', value: 'ator' },
             { name: 'Protocol-Version', value: '0.1' },
-            { name: 'Content-Timestamp', value: verificationStamp },
+            { name: 'Content-Timestamp', value: 'verificationStamp' },
             { name: 'Content-Type', value: 'application/json' },
             { name: 'Entity-Type', value: 'relay/metrics' },
         ]
@@ -146,6 +146,9 @@ export class VerificationService {
             if (this.isLive === 'true') {
                 const response = await this.bundlr.upload(
                     JSON.stringify(relays),
+                    {
+                        tags: tags,
+                    }
                 )
                 permanentId = response.id
                 this.logger.log(
