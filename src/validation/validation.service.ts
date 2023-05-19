@@ -231,9 +231,7 @@ export class ValidationService {
                     observed_bandwidth: relay.observed_bandwidth,
                     running: relay.running,
                 }))
-                .filter(
-                    (relay, index, array) => relay.ator_address.length > 0,
-                )
+                .filter((relay, index, array) => relay.ator_address.length > 0)
 
             this.logger.log(
                 `Storing validation ${validationStamp} with ${validatedRelays.length} relays`,

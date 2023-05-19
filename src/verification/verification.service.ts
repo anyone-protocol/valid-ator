@@ -136,7 +136,7 @@ export class VerificationService {
         const tags = [
             { name: 'Protocol', value: 'ator' },
             { name: 'Protocol-Version', value: '0.1' },
-            { name: 'Content-Timestamp', value: 'verificationStamp' },
+            { name: 'Content-Timestamp', value: verificationStamp.toString() },
             { name: 'Content-Type', value: 'application/json' },
             { name: 'Entity-Type', value: 'relay/metrics' },
         ]
@@ -148,7 +148,7 @@ export class VerificationService {
                     JSON.stringify(relays),
                     {
                         tags: tags,
-                    }
+                    },
                 )
                 permanentId = response.id
                 this.logger.log(
