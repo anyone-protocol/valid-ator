@@ -46,7 +46,7 @@ export class TasksService implements OnApplicationBootstrap {
         validation: ValidationData,
     ): FlowJob {
         return {
-            name: 'store-verification',
+            name: 'persist-verification',
             queueName: 'verification-queue',
             opts: TasksService.jobOpts,
             children: [

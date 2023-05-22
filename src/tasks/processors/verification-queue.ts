@@ -16,7 +16,7 @@ export class VerificationQueue extends WorkerHost {
 
     public static readonly JOB_VERIFY_RELAY = 'verify-relay'
     public static readonly JOB_CONFIRM_VERIFICATION = 'confirm-verification'
-    public static readonly JOB_STORE_VERIFICATION = 'store-verification'
+    public static readonly JOB_PERSIST_VERIFICATION = 'persist-verification'
 
     constructor(private readonly verification: VerificationService) {
         super()
@@ -64,12 +64,9 @@ export class VerificationQueue extends WorkerHost {
                     try {
                         this.logger.debug(`Finalizing verification ${job.data}`)
 
-                        const verifiedRelays =
-                            await this.verification.confirmVerification(
-                                verificationResults,
-                            )
+                        this.verification.logVerification(verificationResults)
 
-                        return verifiedRelays
+                        return verificationResults
                     } catch (e) {
                         this.logger.error(
                             `Failed finalizing verification of ${verificationResults.length} relay(s)`,
@@ -82,7 +79,7 @@ export class VerificationQueue extends WorkerHost {
 
                 return []
 
-            case VerificationQueue.JOB_STORE_VERIFICATION:
+            case VerificationQueue.JOB_PERSIST_VERIFICATION:
                 const verifiedRelays: VerificationResults = Object.values(
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
@@ -93,7 +90,7 @@ export class VerificationQueue extends WorkerHost {
                             `Persisting verification of ${verifiedRelays.length} relays`,
                         )
 
-                        return await this.verification.storeVerification(
+                        return await this.verification.persistVerification(
                             verifiedRelays,
                         )
                     } catch (e) {
