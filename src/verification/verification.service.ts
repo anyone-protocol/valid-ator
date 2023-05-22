@@ -210,6 +210,9 @@ export class VerificationService {
                     consensus_weight:
                         previous.consensus_weight +
                         current.relay.consensus_weight,
+                    consensus_weight_fraction: 
+                        previous.consensus_weight_fraction +
+                        current.relay.consensus_weight_fraction,
                     observed_bandwidth:
                         previous.observed_bandwidth +
                         current.relay.observed_bandwidth,
@@ -238,6 +241,13 @@ export class VerificationService {
                             current.relay.running
                                 ? current.relay.consensus_weight
                                 : 0),
+                    consensus_weight_fraction:
+                        previous.verified_and_running.consensus_weight_fraction +
+                        ((current.result === 'OK' ||
+                            current.result === 'AlreadyVerified') &&
+                        current.relay.running
+                            ? current.relay.consensus_weight_fraction
+                            : 0),
                         observed_bandwidth:
                             previous.verified_and_running.observed_bandwidth +
                             ((current.result === 'OK' ||
@@ -250,6 +260,7 @@ export class VerificationService {
             },
             {
                 consensus_weight: 0,
+                consensus_weight_fraction: 0,
                 observed_bandwidth: 0,
                 verification: {
                     failed: 0,
@@ -259,6 +270,7 @@ export class VerificationService {
                 },
                 verified_and_running: {
                     consensus_weight: 0,
+                    consensus_weight_fraction: 0,
                     observed_bandwidth: 0,
                 },
             },

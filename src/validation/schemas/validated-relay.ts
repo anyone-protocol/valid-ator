@@ -15,6 +15,9 @@ export class ValidatedRelay {
     consensus_weight: number
 
     @Prop({ type: Number, required: false, default: 0 })
+    consensus_weight_fraction: number
+
+    @Prop({ type: Number, required: false, default: 0 })
     observed_bandwidth: number
 
     @Prop({ type: Boolean, required: false, default: false })
