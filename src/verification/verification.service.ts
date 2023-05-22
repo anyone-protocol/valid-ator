@@ -201,26 +201,10 @@ export class VerificationService {
         return ''
     }
 
-    public async persistVerification(
+    private getValidationStats(
         data: VerificationResults,
-    ): Promise<VerificationData> {
-        const verificationStamp = Date.now()
-
-        const verifiedRelays = data.filter(
-            (value, index, array) =>
-                value.result === 'OK' || value.result === 'AlreadyVerified',
-        )
-
-        const relayMetrics = verifiedRelays.map(
-            (result, index, array) => result.relay,
-        )
-
-        const relayMetricsTx = await this.storeRelayMetrics(
-            verificationStamp,
-            verifiedRelays,
-        )
-
-        const validatedStats: RelayValidationStatsDto = data.reduce(
+    ): RelayValidationStatsDto {
+        return data.reduce(
             (previous, current, index, array) => {
                 return {
                     consensus_weight:
@@ -279,17 +263,37 @@ export class VerificationService {
                 },
             },
         )
+    }
+
+    public async persistVerification(
+        data: VerificationResults,
+    ): Promise<VerificationData> {
+        const verificationStamp = Date.now()
+
+        const verifiedRelays = data.filter(
+            (value, index, array) =>
+                value.result === 'OK' || value.result === 'AlreadyVerified',
+        )
+
+        const relayMetricsTx = await this.storeRelayMetrics(
+            verificationStamp,
+            verifiedRelays,
+        )
+
+        const validationStats: RelayValidationStatsDto = this.getValidationStats(data)
 
         const validationStatsTx = await this.storeValidationStats(
             verificationStamp,
-            validatedStats,
+            validationStats,
         )
 
         const verificationData: VerificationData = {
             verified_at: verificationStamp,
             relay_metrics_tx: relayMetricsTx,
             validation_stats_tx: validationStatsTx,
-            relays: relayMetrics,
+            relays: data.map(
+                (result, index, array) => result.relay,
+            ),
         }
 
         this.verificationDataModel
