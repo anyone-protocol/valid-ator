@@ -1,15 +1,15 @@
-job "valid-ator-live" {
+job "valid-ator-stage" {
   datacenters = ["ator-fin"]
   type = "service"
 
-  group "valid-ator-live-group" {
+  group "valid-ator-stage-group" {
     
     count = 1
 
-    volume "mongodb" {
+    volume "mongodb-stage" {
       type = "host"
       read_only = false
-      source = "mongodb"
+      source = "mongodb-stage"
     }
 
     network {
@@ -25,7 +25,7 @@ job "valid-ator-live" {
       }
     }
 
-    task "valid-ator-live-mongo" {
+    task "valid-ator-stage-mongo" {
       driver = "docker"
       config {
         image = "mongo:5.0"
@@ -37,7 +37,7 @@ job "valid-ator-live" {
       }
 
       volume_mount {
-        volume = "mongodb"
+        volume = "mongodb-stage"
         destination = "/data/db"
         read_only = false
       }
@@ -48,11 +48,11 @@ job "valid-ator-live" {
       }
 
       service {
-        name = "valid-ator-live-mongo"
+        name = "valid-ator-stage-mongo"
         port = "mongodb"
         
         check {
-          name     = "MongoDB health check"
+          name     = "Stage MongoDB health check"
           type     = "tcp"
           interval = "5s"
           timeout  = "10s"
@@ -60,7 +60,7 @@ job "valid-ator-live" {
       }
     }
 
-    task "valid-ator-live-redis" {
+    task "valid-ator-stage-redis" {
       driver = "docker"
       config {
         image = "redis:7"
@@ -77,11 +77,11 @@ job "valid-ator-live" {
       }
 
       service {
-        name = "valid-ator-live-redis"
+        name = "valid-ator-stage-redis"
         port = "rediscache"
         
         check {
-          name     = "Redis health check"
+          name     = "Stage Redis health check"
           type     = "tcp"
           interval = "5s"
           timeout  = "10s"
@@ -89,19 +89,19 @@ job "valid-ator-live" {
       }
     }
 
-    task "valid-ator-live-service" {
+    task "valid-ator-stage-service" {
       driver = "docker"
       config {
         image = "ghcr.io/ator-development/valid-ator:[[.deploy]]"
       }
 
       vault {
-        policies = ["valid-ator-live"]
+        policies = ["valid-ator-stage"]
       }
 
       template {
         data = <<EOH
-        {{with secret "kv/valid-ator/live"}}
+        {{with secret "kv/valid-ator/stage"}}
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
         {{end}}
@@ -111,9 +111,9 @@ job "valid-ator-live" {
       }
 
       env {
-        IS_LIVE="true"
+        IS_LIVE="false"
         VALIDATOR_VERSION="[[.deploy]]"
-        MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-live"
+        MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-stage"
         REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
@@ -129,11 +129,11 @@ job "valid-ator-live" {
       }
 
       service {
-        name = "valid-ator-live"
+        name = "valid-ator-stage"
         port = "validator"
         
         check {
-          name     = "valid-ator health check"
+          name     = "Stage valid-ator health check"
           type     = "http"
           path     = "/health"
           interval = "5s"

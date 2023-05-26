@@ -53,6 +53,6 @@ jobs:
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
-          ./levant deploy -var-file="deploy-vars.json" valid-ator-live.hcl
+          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -var-file="deploy-vars.json" valid-ator-stage.hcl || ./levant deploy -var-file="deploy-vars.json" valid-ator-live.hcl
 
           
