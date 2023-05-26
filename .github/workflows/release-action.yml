@@ -16,6 +16,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
@@ -34,7 +36,7 @@ jobs:
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
           # Use Docker `latest` tag convention
-          [ "$VERSION" == "main" ] && VERSION=staging
+          [ "$VERSION" == "main" ] && VERSION=stage
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
 
@@ -46,7 +48,7 @@ jobs:
       - name: Deploy new version
         env:
           NOMAD_CACERT: admin-ui-ca.crt
-          NOMAD_TOKEN: ${{ secrets.DEPLOY_SECRET }}
+          NOMAD_TOKEN: ${{ secrets.VALIDATOR_DEPLOY_SECRET }}
           NOMAD_ADDR: ${{ secrets.ATOR_DEPLOY_ADDR }}
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
