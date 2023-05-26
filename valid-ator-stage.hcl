@@ -119,7 +119,7 @@ job "valid-ator-stage" {
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
-        RELAY_REGISTRY_TXID="kvPua_H71Iwsvx4q-SwAmSMuw7Y9Tj8DyxUIhFKK-JQ"
+        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         BUNDLR_NODE="http://node2.bundlr.network"
       }
 
