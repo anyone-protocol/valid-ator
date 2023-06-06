@@ -73,7 +73,7 @@ job "valid-ator-stage" {
 
       resources {
         cpu    = 2048
-        memory = 4096
+        memory = 8192
       }
 
       service {
