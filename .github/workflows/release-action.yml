@@ -2,6 +2,7 @@ name: Release New Version
 
 on:
   push:
+    branches: main
     tags:
       - v*
 env:
