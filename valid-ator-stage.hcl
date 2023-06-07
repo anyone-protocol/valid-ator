@@ -93,6 +93,7 @@ job "valid-ator-stage" {
       driver = "docker"
       config {
         image = "ghcr.io/ator-development/valid-ator:[[.deploy]]"
+        force_pull = true
       }
 
       vault {
