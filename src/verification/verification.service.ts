@@ -97,6 +97,10 @@ export class VerificationService {
                 signer: signer,
             }
 
+            this.logger.log(
+                `Initialized Validator for address: ${this.owner.address}`,
+            )
+
             this.warp = WarpFactory.forMainnet({
                 inMemory: true,
                 dbLocation: '-ator',
@@ -112,6 +116,9 @@ export class VerificationService {
             )
 
             if (registryTxId !== undefined) {
+                this.logger.log(
+                    `Initialized Validator with relay-registry: ${registryTxId}`,
+                )
                 this.warp.use(new StateUpdatePlugin(registryTxId, this.warp))
                 this.contract =
                     this.warp.contract<RelayRegistryState>(registryTxId)
