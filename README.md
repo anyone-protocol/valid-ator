@@ -2,6 +2,41 @@
 
 ## Protocol data structures
 
+### Querying for protocol data
+
+[*] Use graphQL to query Arweave - https://arweave.net/graphql
+
+[*] Fetch most recent transaction (change Entity-Type to match protocol data type)
+```
+query {
+  transactions(
+    first:1,
+    tags:[
+      {
+          name: "Protocol",
+          values: ["ator"]
+      },
+      {
+        name: "Entity-Type",
+        values: ["validation/stats"]
+      }
+    ]
+  ){
+    edges {
+      node {
+        id
+        tags {
+            name
+            value
+        }
+      }
+    }
+  }
+}
+```
+
+[*] Access data of the transaction using its tx id (eg. http://arweave.net/bQ-Ky1Zoe8iuJ_vZC-2D_C5yyhudQdp_wQfDKtRpcXk)
+
 ### Tags
 ```
 Protocol: 'ator'
