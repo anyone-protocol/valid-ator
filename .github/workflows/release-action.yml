@@ -41,7 +41,7 @@ jobs:
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
 
-          echo -e "{\"deploy\":\"$VERSION\"}" > deploy-vars.json
+          echo -e "{\"deploy\":\"$VERSION\",\"commit_sha\":\"${GITHUB_SHA}\"}" > deploy-vars.json
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
