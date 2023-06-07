@@ -4,9 +4,9 @@
 
 ### Querying for protocol data
 
-[*] Use graphQL to query Arweave - https://arweave.net/graphql
+- Use graphQL to query Arweave - https://arweave.net/graphql
 
-[*] Fetch most recent transaction (change Entity-Type to match protocol data type)
+- Fetch most recent transaction (change Entity-Type to match protocol data type)
 ```
 query {
   transactions(
@@ -35,7 +35,7 @@ query {
 }
 ```
 
-[*] Access data of the transaction using its tx id (eg. http://arweave.net/bQ-Ky1Zoe8iuJ_vZC-2D_C5yyhudQdp_wQfDKtRpcXk)
+- Access data of the transaction using its tx id (eg. http://arweave.net/bQ-Ky1Zoe8iuJ_vZC-2D_C5yyhudQdp_wQfDKtRpcXk)
 
 ### Tags
 ```
@@ -48,7 +48,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 
 ### Entity types and data format
 
-[*] Entity-Type: `relay/metrics` - contains an array of objects with relay verification results and associated relay metrics observed during the verification process. [http://arweave.net/bKdUd6vonjrZS4-FUGMPr5ecOeF405pR2DdO_at1D9I](View live sample)
+* Entity-Type: `relay/metrics` - contains an array of objects with relay verification results and associated relay metrics observed during the verification process. [View live sample](http://arweave.net/bKdUd6vonjrZS4-FUGMPr5ecOeF405pR2DdO_at1D9I)
 
 ```
 {
@@ -64,7 +64,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
-[*] Entity-Type: `validation/stats` - contains and object detailing the metrics of the relay verification process.  [http://arweave.net/AHtmz9nOA1L8QSdBf_miBN9CzwbbNPi-YyE9V1d2U9c](View live sample)
+* Entity-Type: `validation/stats` - contains and object detailing the metrics of the relay verification process.  [View live sample](http://arweave.net/AHtmz9nOA1L8QSdBf_miBN9CzwbbNPi-YyE9V1d2U9c)
 
 ```
 {
@@ -84,15 +84,13 @@ Entity-Type: <string with the type of entities stored in the datafile>
     }
 }
 ```
+## Development
 
-
-## Running in local
+### Running in local
 
 ```bash
 $ docker compose up
 ```
-
-## Development
 
 ### Runtime requirements
 
