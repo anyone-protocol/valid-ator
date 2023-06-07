@@ -7,27 +7,53 @@ export type EvmAddress = string
 
 export type RelayRegistryState = OwnableState &
     EvolvableState & {
-        claims: { [address in EvmAddress as string]: Fingerprint[] }
-        verified: { [fingerprint: Fingerprint]: EvmAddress }
+        claimable: { [address in Fingerprint as string]: EvmAddress }
+        verified: { [address in Fingerprint as string]: EvmAddress }
     }
 
-export interface Register extends ContractFunctionInput {
-    function: 'register'
-    fingerprint: Fingerprint
-}
-
-export interface Verify extends ContractFunctionInput {
-    function: 'verify'
+export interface AddClaimable extends ContractFunctionInput {
+    function: 'addClaimable'
     fingerprint: Fingerprint
     address: EvmAddress
 }
 
-export interface Unregister extends ContractFunctionInput {
-    function: 'unregister'
+export interface RemoveClaimable extends ContractFunctionInput {
+    function: 'removeClaimable'
     fingerprint: Fingerprint
 }
 
-export interface RemoveStale extends ContractFunctionInput {
-    function: 'remove-stale'
+export interface Claimable extends ContractFunctionInput {
+    function: 'claimable'
+    address?: EvmAddress
+}
+
+export interface IsClaimable extends ContractFunctionInput {
+    function: 'isClaimable'
+    fingerprint: Fingerprint
+    address: EvmAddress
+}
+
+export interface Claim extends ContractFunctionInput {
+    function: 'claim'
+    fingerprint: Fingerprint
+}
+
+export interface Renounce extends ContractFunctionInput {
+    function: 'renounce'
+    fingerprint: Fingerprint
+}
+
+export interface RemoveVerified extends ContractFunctionInput {
+    function: 'removeVerified'
+    fingerprint: Fingerprint
+}
+
+export interface Verified extends ContractFunctionInput {
+    function: 'verified'
+    address?: EvmAddress
+}
+
+export interface IsVerified extends ContractFunctionInput {
+    function: 'isVerified'
     fingerprint: Fingerprint
 }

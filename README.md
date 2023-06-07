@@ -7,7 +7,7 @@
 Protocol: 'ator'
 Protocol-Version: '0.1'
 Content-Type: 'application/json'
-Content-Timestamp: <string with current unix timestamp>
+Content-Timestamp: <string number of milliseconds elapsed since midnight, January 1, 1970 UTC>
 Entity-Type: <string with the type of entities stored in the datafile>
 ```
 
@@ -17,7 +17,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 
 ```
 {
-    result: 'OK' | 'AlreadyVerified' | 'NotRegistered' | 'Failed'
+    result: 'OK' | 'AlreadyVerified' | 'AlreadyRegistered' | 'Failed'
     relay: {
         fingerprint: string (required)
         ator_address: string (required)

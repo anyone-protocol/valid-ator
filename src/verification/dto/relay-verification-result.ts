@@ -1,5 +1,5 @@
 export type RelayVerificationResult =
     | 'OK'
     | 'AlreadyVerified'
-    | 'NotRegistered'
+    | 'AlreadyRegistered'
     | 'Failed'

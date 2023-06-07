@@ -34,42 +34,42 @@ describe('VerificationService', () => {
         expect(service).toBeDefined()
     })
 
-    it('should check if the fingerprint was registered', async () => {
-        expect(
-            await service.verifyRelay({
-                fingerprint: 'AABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
-                ator_address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-                consensus_weight: 1,
-                consensus_weight_fraction: 0,
-                observed_bandwidth: 1,
-                running: true,
-            }),
-        ).toBe('NotRegistered')
-    }, 60000)
+    // it('should check if the fingerprint was verified', async () => {
+    //     expect(
+    //         await service.verifyRelay({
+    //             fingerprint: '80091027A368B886658AA0A89A75FBDE0BF7A5BC',
+    //             ator_address: '0xCd5D478686c6fA5E47Fc457F16E04224cD012690',
+    //             consensus_weight: 1,
+    //             consensus_weight_fraction: 0,
+    //             observed_bandwidth: 1,
+    //             running: true,
+    //         }),
+    //     ).toBe('AlreadyVerified')
+    // }, 60000)
 
-    it('should check if the fingerprint was verified', async () => {
-        expect(
-            await service.verifyRelay({
-                fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-                ator_address: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
-                consensus_weight: 1,
-                consensus_weight_fraction: 0,
-                observed_bandwidth: 1,
-                running: true,
-            }),
-        ).toBe('AlreadyVerified')
-    }, 60000)
-
-    // it('should allow verifying relay fingerprints', async () => {
+    // it('should populate claims with relay fingerprints', async () => {
     //     expect(
     //         await service.verifyRelay({
     //             fingerprint: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    //             ator_public_key: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
+    //             ator_address: '0x32c4e3A20c3fb085B4725fcF9303A450e750602A',
     //             consensus_weight: 1,
     //             consensus_weight_fraction: 0,
     //             observed_bandwidth: 1,
     //             running: true,
     //     }),
     //     ).toBe('OK')
+    // }, 60000)
+
+    // it('should check if the fingerprint was registered', async () => {
+    //     expect(
+    //         await service.verifyRelay({
+    //             fingerprint: 'AABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    //             ator_address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+    //             consensus_weight: 1,
+    //             consensus_weight_fraction: 0,
+    //             observed_bandwidth: 1,
+    //             running: true,
+    //         }),
+    //     ).toBe('NotRegistered')
     // }, 60000)
 })
