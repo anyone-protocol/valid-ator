@@ -64,7 +64,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
-* Entity-Type: `validation/stats` - contains and object detailing the metrics of the relay verification process.  [View live sample](http://arweave.net/AHtmz9nOA1L8QSdBf_miBN9CzwbbNPi-YyE9V1d2U9c)
+* Entity-Type: `validation/stats` - contains an object detailing the metrics of the relay verification process.  [View live sample](http://arweave.net/AHtmz9nOA1L8QSdBf_miBN9CzwbbNPi-YyE9V1d2U9c)
 
 ```
 {
