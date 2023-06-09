@@ -2,6 +2,13 @@
 
 ## Protocol data structures
 
+### Validator adresses
+Use the owners field to select deployment phase using the valid-ator's address.
+```
+stage: x0cuVieEDTFjtxI5m5i22u2IMr-WpBiTS-Vir8U3dbw
+live: 53E8wWz8XkP9pGDQrgTi69GLAzZ6geX8bJckcifBr1Q
+```
+
 ### Querying for protocol data
 
 - Use graphQL to query Arweave - https://arweave.net/graphql
@@ -20,7 +27,8 @@ query {
         name: "Entity-Type",
         values: ["validation/stats"]
       }
-    ]
+    ],
+    owners: ["53E8wWz8XkP9pGDQrgTi69GLAzZ6geX8bJckcifBr1Q"]
   ){
     edges {
       node {
