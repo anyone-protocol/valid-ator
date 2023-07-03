@@ -67,7 +67,8 @@ jobs:
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
-          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-stage.hcl
-          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-live.hcl || echo "Skipping live deploy"
+          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-stage.hcl > runtime-job.hcl
+          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-live.hcl > runtime-job.hcl
+          nomad job run runtime-job.hcl
 
           
