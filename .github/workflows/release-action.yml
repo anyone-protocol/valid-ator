@@ -26,6 +26,13 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
       - name: Push image
+        env:
+          TOKEN_VALID_ATOR_LIVE: ${{ secrets.VALID_ATOR_LIVE }}
+          TOKEN_VALID_ATOR_LIVE_MONGO: ${{ secrets.VALID_ATOR_LIVE_MONGO }}
+          TOKEN_VALID_ATOR_LIVE_REDIS: ${{ secrets.VALID_ATOR_LIVE_REDIS }}
+          TOKEN_VALID_ATOR_STAGE: ${{ secrets.VALID_ATOR_STAGE }}
+          TOKEN_VALID_ATOR_STAGE_MONGO: ${{ secrets.VALID_ATOR_STAGE_MONGO }}
+          TOKEN_VALID_ATOR_STAGE_REDIS: ${{ secrets.VALID_ATOR_STAGE_REDIS }}
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
 
@@ -41,6 +48,11 @@ jobs:
           echo VERSION=$VERSION
 
           echo -e "{\"deploy\":\"$VERSION\"}" > deploy-vars.json
+          [[ -n $(grep "stage" deploy-vars.json) ]] && echo -e \
+            "{\"service_token\":\"$TOKEN_VALID_ATOR_STAGE\", \"mongo_token\":\"$TOKEN_VALID_ATOR_STAGE_MONGO\", \"redis_token\":\"$TOKEN_VALID_ATOR_STAGE_REDIS\"}" \
+            > token-vars.json || echo -e \
+            "{\"service_token\":\"$TOKEN_VALID_LIVE_STAGE\", \"mongo_token\":\"$TOKEN_VALID_ATOR_LIVE_MONGO\", \"redis_token\":\"$TOKEN_VALID_ATOR_LIVE_REDIS\"}" \
+            > token-vars.json
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
