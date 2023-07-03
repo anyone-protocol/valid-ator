@@ -74,7 +74,7 @@ job "valid-ator-live" {
 
       resources {
         cpu    = 2048
-        memory = 4096
+        memory = 8192
       }
 
       service {
@@ -107,6 +107,7 @@ job "valid-ator-live" {
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
         {{end}}
+        RELAY_REGISTRY_TXID="{{ key "smart-contracts/live/relay-registry-address" }}"
         EOH
         destination = "secrets/file.env"
         env         = true
@@ -114,20 +115,19 @@ job "valid-ator-live" {
 
       env {
         IS_LIVE="true"
-        VALIDATOR_VERSION="[[.deploy]]"
+        VALIDATOR_VERSION="[[.commit_sha]]"
         MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-live"
         REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
-        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
         BUNDLR_NODE="http://node2.bundlr.network"
       }
 
       resources {
         cpu    = 4096
-        memory = 4096
+        memory = 8192
       }
 
       service {

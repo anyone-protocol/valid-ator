@@ -2,6 +2,7 @@ name: Release New Version
 
 on:
   push:
+    branches: main
     tags:
       - v*
 env:
@@ -47,7 +48,7 @@ jobs:
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
 
-          echo -e "{\"deploy\":\"$VERSION\"}" > deploy-vars.json
+          echo -e "{\"deploy\":\"$VERSION\",\"commit_sha\":\"${GITHUB_SHA}\"}" > deploy-vars.json
           [[ -n $(grep "stage" deploy-vars.json) ]] && echo -e \
             "{\"service_token\":\"$TOKEN_VALID_ATOR_STAGE\", \"mongo_token\":\"$TOKEN_VALID_ATOR_STAGE_MONGO\", \"redis_token\":\"$TOKEN_VALID_ATOR_STAGE_REDIS\"}" \
             > token-vars.json || echo -e \
@@ -65,6 +66,7 @@ jobs:
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
-          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -var-file="deploy-vars.json" valid-ator-stage.hcl || ./levant deploy -var-file="deploy-vars.json" valid-ator-live.hcl
+          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-stage.hcl
+          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-live.hcl || echo "Skipping live deploy"
 
           

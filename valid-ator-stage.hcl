@@ -74,7 +74,7 @@ job "valid-ator-stage" {
 
       resources {
         cpu    = 2048
-        memory = 4096
+        memory = 8192
       }
 
       service {
@@ -95,6 +95,7 @@ job "valid-ator-stage" {
       driver = "docker"
       config {
         image = "ghcr.io/ator-development/valid-ator:[[.deploy]]"
+        force_pull = true
       }
 
       vault {
@@ -107,27 +108,27 @@ job "valid-ator-stage" {
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
         {{end}}
+        RELAY_REGISTRY_TXID="{{ key "smart-contracts/stage/relay-registry-address" }}"
         EOH
         destination = "secrets/file.env"
         env         = true
       }
 
       env {
-        IS_LIVE="false"
-        VALIDATOR_VERSION="[[.deploy]]"
+        IS_LIVE="true"
+        VALIDATOR_VERSION="[[.commit_sha]]"
         MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-stage"
         REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
-        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         BUNDLR_NODE="http://node2.bundlr.network"
       }
 
       resources {
         cpu    = 4096
-        memory = 4096
+        memory = 8192
       }
 
       service {

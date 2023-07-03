@@ -1,6 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
-import { RelayRegistryState, Verify } from './interfaces/relay-registry'
+import {
+    Contract,
+    LoggerFactory,
+    SigningFunction,
+    Warp,
+    WarpFactory,
+} from 'warp-contracts'
+import {
+    AddClaimable,
+    IsClaimable,
+    IsVerified,
+    RelayRegistryState,
+} from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
 import { Wallet } from 'ethers'
 import {
@@ -86,6 +97,10 @@ export class VerificationService {
                 signer: signer,
             }
 
+            this.logger.log(
+                `Initialized Validator for address: ${this.owner.address}`,
+            )
+
             this.warp = WarpFactory.forMainnet({
                 inMemory: true,
                 dbLocation: '-ator',
@@ -101,6 +116,9 @@ export class VerificationService {
             )
 
             if (registryTxId !== undefined) {
+                this.logger.log(
+                    `Initialized Validator with relay-registry: ${registryTxId}`,
+                )
                 this.warp.use(new StateUpdatePlugin(registryTxId, this.warp))
                 this.contract =
                     this.warp.contract<RelayRegistryState>(registryTxId)
@@ -108,21 +126,32 @@ export class VerificationService {
         } else this.logger.error('Missing contract owner key...')
     }
 
-    private isVerified(
-        fingerprint: string,
-        state: RelayRegistryState,
-    ): boolean {
-        return fingerprint in state.verified
+    private async isVerified(fingerprint: string): Promise<boolean> {
+        const interactionResult = await this.contract.viewState<
+            IsVerified,
+            boolean
+        >({
+            function: 'isVerified',
+            fingerprint: fingerprint,
+        })
+
+        return interactionResult.result
     }
 
-    private isRegistered(
+    public async isClaimable(
         fingerprint: string,
-        key: string,
-        state: RelayRegistryState,
-    ): boolean {
-        if (state.claims[key] !== undefined)
-            return state.claims[key].includes(fingerprint)
-        else return false
+        address: string,
+    ): Promise<boolean> {
+        const interactionResult = await this.contract.viewState<
+            IsClaimable,
+            boolean
+        >({
+            function: 'isClaimable',
+            fingerprint: fingerprint,
+            address: address,
+        })
+
+        return interactionResult.result
     }
 
     private async storeRelayMetrics(
@@ -187,11 +216,15 @@ export class VerificationService {
                     },
                 )
 
-                this.logger.log(`Permanently stored validation/stats ${stamp}: ${response.id}`)
+                this.logger.log(
+                    `Permanently stored validation/stats ${stamp}: ${response.id}`,
+                )
 
                 return response.id
             } else {
-                this.logger.warn(`NOT LIVE: Not storing validation/stats ${stamp}`)
+                this.logger.warn(
+                    `NOT LIVE: Not storing validation/stats ${stamp}`,
+                )
             }
         } else {
             this.logger.error(
@@ -210,7 +243,7 @@ export class VerificationService {
                     consensus_weight:
                         previous.consensus_weight +
                         current.relay.consensus_weight,
-                    consensus_weight_fraction: 
+                    consensus_weight_fraction:
                         previous.consensus_weight_fraction +
                         current.relay.consensus_weight_fraction,
                     observed_bandwidth:
@@ -222,7 +255,7 @@ export class VerificationService {
                             (current.result === 'Failed' ? 1 : 0),
                         unclaimed:
                             previous.verification.unclaimed +
-                            (current.result === 'NotRegistered' ? 1 : 0),
+                            (current.result === 'AlreadyRegistered' ? 1 : 0),
                         verified:
                             previous.verification.verified +
                             (current.result === 'OK' ||
@@ -241,13 +274,14 @@ export class VerificationService {
                             current.relay.running
                                 ? current.relay.consensus_weight
                                 : 0),
-                    consensus_weight_fraction:
-                        previous.verified_and_running.consensus_weight_fraction +
-                        ((current.result === 'OK' ||
-                            current.result === 'AlreadyVerified') &&
-                        current.relay.running
-                            ? current.relay.consensus_weight_fraction
-                            : 0),
+                        consensus_weight_fraction:
+                            previous.verified_and_running
+                                .consensus_weight_fraction +
+                            ((current.result === 'OK' ||
+                                current.result === 'AlreadyVerified') &&
+                            current.relay.running
+                                ? current.relay.consensus_weight_fraction
+                                : 0),
                         observed_bandwidth:
                             previous.verified_and_running.observed_bandwidth +
                             ((current.result === 'OK' ||
@@ -283,8 +317,7 @@ export class VerificationService {
         const verificationStamp = Date.now()
 
         const verifiedRelays = data.filter(
-            (value, index, array) =>
-                value.result === 'OK' || value.result === 'AlreadyVerified',
+            (value, index, array) => value.result === 'AlreadyVerified',
         )
 
         const relayMetricsTx = await this.storeRelayMetrics(
@@ -292,7 +325,8 @@ export class VerificationService {
             verifiedRelays,
         )
 
-        const validationStats: RelayValidationStatsDto = this.getValidationStats(data)
+        const validationStats: RelayValidationStatsDto =
+            this.getValidationStats(data)
 
         const validationStatsTx = await this.storeValidationStats(
             verificationStamp,
@@ -303,9 +337,7 @@ export class VerificationService {
             verified_at: verificationStamp,
             relay_metrics_tx: relayMetricsTx,
             validation_stats_tx: validationStatsTx,
-            relays: data.map(
-                (result, index, array) => result.relay,
-            ),
+            relays: data.map((result, index, array) => result.relay),
         }
 
         this.verificationDataModel
@@ -327,14 +359,14 @@ export class VerificationService {
             )
         }
 
-        const notRegistered = data.filter(
-            (value, index, array) => value.result === 'NotRegistered',
+        const claimable = data.filter(
+            (value, index, array) => value.result === 'AlreadyRegistered',
         )
-        if (notRegistered.length > 0) {
+        if (claimable.length > 0) {
             this.logger.log(
                 `Skipped ${
-                    notRegistered.length
-                } not registered relay(s): [${notRegistered
+                    claimable.length
+                } already registered/claimable relay(s): [${claimable
                     .map((result, index, array) => result.relay.fingerprint)
                     .join(', ')}]`,
             )
@@ -351,12 +383,13 @@ export class VerificationService {
 
         const ok = data.filter((value, index, array) => value.result === 'OK')
         if (ok.length > 0) {
-            this.logger.log(`Updated verification of ${ok.length} relay(s)`)
+            this.logger.log(
+                `Registered (for user claims) ${ok.length} relay(s)`,
+            )
         }
 
         const verifiedRelays = data.filter(
-            (value, index, array) =>
-                value.result === 'OK' || value.result === 'AlreadyVerified',
+            (value, index, array) => value.result === 'AlreadyVerified',
         )
 
         this.logger.log(`Total verified relays: ${verifiedRelays.length}`)
@@ -365,67 +398,58 @@ export class VerificationService {
     public async verifyRelay(
         relay: ValidatedRelay,
     ): Promise<RelayVerificationResult> {
-        if (this.contract !== undefined) {
-            const data = await this.contract.readState()
-            const {
-                cachedValue: { state },
-            } = data
-
-            const verified: boolean = this.isVerified(relay.fingerprint, state)
-            const registered = this.isRegistered(
+        if (this.contract !== undefined && this.owner !== undefined) {
+            const verified: boolean = await this.isVerified(relay.fingerprint)
+            const claimable: boolean = await this.isClaimable(
                 relay.fingerprint,
                 relay.ator_address,
-                state,
             )
 
             this.logger.debug(
-                `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Registered: ${registered} Verified: ${verified}`,
+                `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Claimable: ${claimable} Verified: ${verified}`,
             )
 
             if (verified) {
                 this.logger.debug(
-                    `Already validated relay [${relay.fingerprint}]`,
+                    `Already verified relay [${relay.fingerprint}]`,
                 )
                 return 'AlreadyVerified'
             }
-            if (registered) {
-                if (this.owner !== undefined) {
-                    const evmSig = await buildEvmSignature(this.owner.signer)
 
-                    if (this.isLive === 'true') {
-                        const response = await this.contract
-                            .connect({
-                                signer: evmSig,
-                                type: 'ethereum',
-                            })
-                            .writeInteraction<Verify>({
-                                function: 'verify',
-                                fingerprint: relay.fingerprint,
-                                address: relay.ator_address,
-                            })
-
-                        this.logger.log(
-                            `Verified validated relay [${relay.fingerprint}]: ${response?.originalTxId}`,
-                        )
-                    } else {
-                        this.logger.warn(
-                            `NOT LIVE - skipped contract call to verify relay [${relay.fingerprint}]`,
-                        )
-                    }
-
-                    return 'OK'
-                } else {
-                    this.logger.error('Contract owner not defined')
-                    return 'Failed'
-                }
-            } else {
+            if (claimable) {
                 this.logger.debug(
-                    `Skipping not registered relay [${relay.fingerprint}]`,
+                    `Already registered (can be claimed) relay [${relay.fingerprint}]`,
                 )
-                return 'NotRegistered'
+                return 'AlreadyRegistered'
             }
+
+            if (this.isLive === 'true') {
+                const evmSig = await buildEvmSignature(this.owner.signer)
+                const response = await this.contract
+                    .connect({
+                        signer: evmSig,
+                        type: 'ethereum',
+                    })
+                    .writeInteraction<AddClaimable>({
+                        function: 'addClaimable',
+                        fingerprint: relay.fingerprint,
+                        address: relay.ator_address,
+                    })
+
+                this.logger.log(
+                    `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
+                )
+            } else {
+                this.logger.warn(
+                    `NOT LIVE - skipped contract call to add a claimable relay [${relay.fingerprint}]`,
+                )
+            }
+
+            return 'OK'
         } else {
-            this.logger.error('Contract not initialized')
+            this.logger.error(
+                'Contract not initialized or validator key not defined',
+            )
             return 'Failed'
         }
     }
