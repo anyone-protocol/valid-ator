@@ -49,11 +49,12 @@ jobs:
           echo VERSION=$VERSION
 
           echo -e "{\"deploy\":\"$VERSION\",\"commit_sha\":\"${GITHUB_SHA}\"}" > deploy-vars.json
+
           [[ -n $(grep "stage" deploy-vars.json) ]] && echo -e \
-            "{\"service_token\":\"$TOKEN_VALID_ATOR_STAGE\", \"mongo_token\":\"$TOKEN_VALID_ATOR_STAGE_MONGO\", \"redis_token\":\"$TOKEN_VALID_ATOR_STAGE_REDIS\"}" \
-            > token-vars.json || echo -e \
-            "{\"service_token\":\"$TOKEN_VALID_LIVE_STAGE\", \"mongo_token\":\"$TOKEN_VALID_ATOR_LIVE_MONGO\", \"redis_token\":\"$TOKEN_VALID_ATOR_LIVE_REDIS\"}" \
-            > token-vars.json
+            "{\"service_token\":\"$TOKEN_VALID_ATOR_STAGE\", \"mongo_token\":\"$TOKEN_VALID_ATOR_STAGE_MONGO\", \"redis_token\":\"$TOKEN_VALID_ATOR_STAGE_REDIS\"}" > token-vars.json 
+          
+          [[ -z $(grep "stage" deploy-vars.json) ]] && echo -e \
+            "{\"service_token\":\"$TOKEN_VALID_LIVE_STAGE\", \"mongo_token\":\"$TOKEN_VALID_ATOR_LIVE_MONGO\", \"redis_token\":\"$TOKEN_VALID_ATOR_LIVE_REDIS\"}" > token-vars.json
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
@@ -66,7 +67,7 @@ jobs:
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
-          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-stage.hcl
-          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-live.hcl || echo "Skipping live deploy"
+          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-stage.hcl
+          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-live.hcl || echo "Skipping live deploy"
 
           
