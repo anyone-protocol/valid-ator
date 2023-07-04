@@ -69,6 +69,8 @@ jobs:
           unzip levant.zip
           [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-stage.hcl > runtime-job.hcl
           [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -var-file="token-vars.json" valid-ator-live.hcl > runtime-job.hcl
-          nomad job run runtime-job.hcl
+          curl -L https://releases.hashicorp.com/nomad/1.5.6/nomad_1.5.6_linux_amd64.zip -o nomad.zip
+          unzip nomad.zip
+          ./nomad job run runtime-job.hcl
 
           
