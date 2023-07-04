@@ -49,8 +49,7 @@ job "valid-ator-stage" {
 
       service {
         name = "valid-ator-stage-mongo"
-        port = "mongodb"
-        token = "[[.mongo_token]]"
+        port = "mongodb"        
         
         check {
           name     = "Stage MongoDB health check"
@@ -80,7 +79,6 @@ job "valid-ator-stage" {
       service {
         name = "valid-ator-stage-redis"
         port = "rediscache"
-        token = "[[.redis_token]]"
         
         check {
           name     = "Stage Redis health check"
@@ -134,7 +132,6 @@ job "valid-ator-stage" {
       service {
         name = "valid-ator-stage"
         port = "validator"
-        token = "[[.service_token]]"
         
         check {
           name     = "Stage valid-ator health check"

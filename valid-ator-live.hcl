@@ -50,7 +50,6 @@ job "valid-ator-live" {
       service {
         name = "valid-ator-live-mongo"
         port = "mongodb"
-        token = "[[.mongo_token]]"
 
         check {
           name     = "MongoDB health check"
@@ -80,7 +79,6 @@ job "valid-ator-live" {
       service {
         name = "valid-ator-live-redis"
         port = "rediscache"
-        token = "[[.redis_token]]"
         
         check {
           name     = "Redis health check"
@@ -133,7 +131,6 @@ job "valid-ator-live" {
       service {
         name = "valid-ator-live"
         port = "validator"
-        token = "[[.service_token]]"
         
         check {
           name     = "valid-ator health check"
