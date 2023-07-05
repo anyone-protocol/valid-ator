@@ -62,10 +62,7 @@ jobs:
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
-          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" valid-ator-stage.hcl > runtime-job.hcl
-          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" valid-ator-live.hcl > runtime-job.hcl
-          curl -L https://releases.hashicorp.com/nomad/1.5.6/nomad_1.5.6_linux_amd64.zip -o nomad.zip
-          unzip nomad.zip
-          ./nomad job run runtime-job.hcl
+          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-stage.hcl > runtime-job.hcl
+          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-live.hcl || echo "Skipped live deploy"
 
           
