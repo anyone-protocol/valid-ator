@@ -128,6 +128,8 @@ job "valid-ator-stage" {
         cpu    = 4096
         memory = 8192
       }
+      
+      consul_token = "[[.consul_token]]"
 
       service {
         name = "valid-ator-stage"

@@ -128,6 +128,8 @@ job "valid-ator-live" {
         memory = 8192
       }
 
+      consul_token = "[[.consul_token]]"
+
       service {
         name = "valid-ator-live"
         port = "validator"

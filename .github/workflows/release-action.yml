@@ -58,11 +58,14 @@ jobs:
           NOMAD_CACERT: admin-ui-ca.crt
           NOMAD_TOKEN: ${{ secrets.VALIDATOR_DEPLOY_SECRET }}
           NOMAD_ADDR: ${{ secrets.ATOR_DEPLOY_ADDR }}
-          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+          CONSUL_HTTP_TOKEN: ${{ secrets.VALIDATOR_CONSUL_SERVICE_TOKEN }}
+          CONSUL_DATA_TOKEN: ${{ secrets.VALIDATOR_CONSUL_DATA_TOKEN }}
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
-          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-stage.hcl > runtime-job.hcl
-          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" valid-ator-live.hcl || echo "Skipped live deploy"
+          echo -e "{\"consul_token\":\"$CONSUL_DATA_TOKEN\"}" > consul-token.json
+          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" -var-file="consul-token.json" valid-ator-stage.hcl
+          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant deploy -force -var-file="deploy-vars.json" -var-file="consul-token.json" valid-ator-live.hcl || echo "Skipped live deploy"
+          rm consul-token.json
 
           
