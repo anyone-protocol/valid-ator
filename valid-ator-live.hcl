@@ -105,7 +105,7 @@ job "valid-ator-live" {
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
         {{end}}
-        RELAY_REGISTRY_TXID="{{ key "smart-contracts/live/relay-registry-address" }}"
+        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
         EOH
         destination = "secrets/file.env"
         env         = true
