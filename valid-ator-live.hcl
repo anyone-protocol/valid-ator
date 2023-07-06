@@ -1,7 +1,6 @@
 job "valid-ator-live" {
   datacenters = ["ator-fin"]
   type = "service"
-  consul_token = "[[.consul_token]]"
 
   group "valid-ator-live-group" {
     
