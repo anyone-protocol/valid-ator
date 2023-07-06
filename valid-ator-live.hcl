@@ -1,6 +1,7 @@
 job "valid-ator-live" {
   datacenters = ["ator-fin"]
   type = "service"
+  consul_token = "[[.consul_token]]"
 
   group "valid-ator-live-group" {
     
@@ -121,7 +122,6 @@ job "valid-ator-live" {
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
         BUNDLR_NODE="http://node2.bundlr.network"
-        CONSUL_HTTP_TOKEN="[[.consul_token]]"
       }
 
       resources {
