@@ -15,7 +15,7 @@ job "valid-ator-stage" {
     network {
       mode = "bridge"
       port "mongodb" {
-        to = 27001
+        static = 37002
         host_network = "wireguard"
       }
       port "rediscache" {
@@ -32,6 +32,7 @@ job "valid-ator-stage" {
       driver = "docker"
       config {
         image = "mongo:5.0"
+        command = "mongod --port 37002"
       }
 
       lifecycle {
@@ -108,6 +109,8 @@ job "valid-ator-stage" {
         {{with secret "kv/valid-ator/stage"}}
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
+          MONGO_URI="{{.Data.data.MONGO_URI}}"
+          REDIS_HOSTNAME="{{.Data.data.REDIS_HOSTNAME}}"
         {{end}}
         RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         EOH
@@ -118,8 +121,6 @@ job "valid-ator-stage" {
       env {
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.commit_sha]]"
-        MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-stage"
-        REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
