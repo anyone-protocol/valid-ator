@@ -15,13 +15,16 @@ job "valid-ator-live" {
     network {
       mode = "bridge"
       port "mongodb" {
-        to = 27017
+        static = 27017
+        host_network = "wireguard"
       }
       port "rediscache" {
         to = 6379
+        host_network = "wireguard"
       }
       port "validator" {
         to = 3000
+        host_network = "wireguard"
       }
     }
 

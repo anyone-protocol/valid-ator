@@ -15,13 +15,16 @@ job "valid-ator-stage" {
     network {
       mode = "bridge"
       port "mongodb" {
-        to = 27017
+        to = 27001
+        host_network = "wireguard"
       }
       port "rediscache" {
         to = 6379
+        host_network = "wireguard"
       }
       port "validator" {
         to = 3000
+        host_network = "wireguard"
       }
     }
 
