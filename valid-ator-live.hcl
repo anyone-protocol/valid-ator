@@ -108,8 +108,6 @@ job "valid-ator-live" {
         {{with secret "kv/valid-ator/live"}}
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
-          MONGO_URI="{{.Data.data.MONGO_URI}}"
-          REDIS_HOSTNAME="{{.Data.data.REDIS_HOSTNAME}}"
         {{end}}
         RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
         EOH
@@ -120,6 +118,8 @@ job "valid-ator-live" {
       env {
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.commit_sha]]"
+        MONGO_URI="mongodb://localhost:37002/valid-ator-live"
+        REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
