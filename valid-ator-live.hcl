@@ -32,7 +32,7 @@ job "valid-ator-live" {
       driver = "docker"
       config {
         image = "mongo:5.0"
-        command = "mongod --port 37001"
+        args = [ "--port", "${NOMAD_PORT_mongodb}" ]
       }
 
       lifecycle {
