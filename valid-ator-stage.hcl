@@ -119,7 +119,7 @@ job "valid-ator-stage" {
       env {
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.commit_sha]]"
-        MONGO_URI="mongodb://localhost:37002/valid-ator-stage"
+        MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-stage"
         REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000

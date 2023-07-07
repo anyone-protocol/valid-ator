@@ -118,7 +118,7 @@ job "valid-ator-live" {
       env {
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.commit_sha]]"
-        MONGO_URI="mongodb://localhost:37002/valid-ator-live"
+        MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-live"
         REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
