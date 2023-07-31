@@ -56,7 +56,7 @@ export class DistributionQueue extends WorkerHost {
                         return false
                     }
                 } else {
-                    this.logger.log('Nothing to distribute, skipping flow')
+                    this.logger.debug('Nothing to distribute, skipping flow')
                     return false
                 }
 
