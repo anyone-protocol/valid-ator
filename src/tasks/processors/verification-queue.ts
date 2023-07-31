@@ -24,7 +24,7 @@ export class VerificationQueue extends WorkerHost {
 
     async process(
         job: Job<any, any, string>,
-    ): Promise<VerificationResults | VerificationData> {
+    ): Promise<VerificationResults | VerificationData | undefined> {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
@@ -102,11 +102,11 @@ export class VerificationQueue extends WorkerHost {
                 } else {
                     this.logger.debug(`No verified relays found to store`)
                 }
-                return []
+                return undefined
 
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)
-                return []
+                return undefined
         }
     }
 

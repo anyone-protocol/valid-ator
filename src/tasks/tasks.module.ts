@@ -7,11 +7,14 @@ import { ConfigService } from '@nestjs/config'
 import { ValidationModule } from 'src/validation/validation.module'
 import { VerificationQueue } from './processors/verification-queue'
 import { VerificationModule } from 'src/verification/verification.module'
+import { DistributionQueue } from './processors/distribution-queue'
+import { DistributionModule } from 'src/distribution/distribution.module'
 
 @Module({
     imports: [
         ValidationModule,
         VerificationModule,
+        DistributionModule,
         BullModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (
@@ -31,7 +34,9 @@ import { VerificationModule } from 'src/verification/verification.module'
         BullModule.registerFlowProducer({ name: 'validation-flow' }),
         BullModule.registerQueue({ name: 'verification-queue' }),
         BullModule.registerFlowProducer({ name: 'verification-flow' }),
+        BullModule.registerQueue({ name: 'distribution-queue' }),
+        BullModule.registerFlowProducer({ name: 'distribution-flow' }),
     ],
-    providers: [TasksService, TasksQueue, ValidationQueue, VerificationQueue],
+    providers: [TasksService, TasksQueue, ValidationQueue, VerificationQueue, DistributionQueue],
 })
 export class TasksModule {}

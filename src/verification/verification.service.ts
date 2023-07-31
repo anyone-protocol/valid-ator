@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common'
 import {
     Contract,
     LoggerFactory,
-    SigningFunction,
     Warp,
     WarpFactory,
 } from 'warp-contracts'
@@ -39,8 +38,8 @@ export class VerificationService {
     private owner
     private bundlr
 
-    private warp: Warp
-    private contract: Contract<RelayRegistryState>
+    private relayRegistryWarp: Warp
+    private relayRegistryContract: Contract<RelayRegistryState>
 
     constructor(
         private readonly config: ConfigService<{
@@ -49,6 +48,7 @@ export class VerificationService {
             IS_LIVE: string
             BUNDLR_NODE: string
             BUNDLR_NETWORK: string
+            DISTRIBUTION_CONTRACT_TXID: string
         }>,
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
@@ -83,7 +83,7 @@ export class VerificationService {
 
             if (this.bundlr !== undefined) {
                 this.logger.log(
-                    `Initialized Bundlr for address: ${this.bundlr.address}`,
+                    `Initialized Bundlr in Verification service for address: ${this.bundlr.address}`,
                 )
             } else {
                 this.logger.error('Failed to initialize Bundlr!')
@@ -101,13 +101,6 @@ export class VerificationService {
                 `Initialized Validator for address: ${this.owner.address}`,
             )
 
-            this.warp = WarpFactory.forMainnet({
-                inMemory: true,
-                dbLocation: '-ator',
-            })
-                .use(new EthersExtension())
-                .use(new EvmSignatureVerificationServerPlugin())
-
             const registryTxId = this.config.get<string>(
                 'RELAY_REGISTRY_TXID',
                 {
@@ -119,15 +112,24 @@ export class VerificationService {
                 this.logger.log(
                     `Initialized Validator with relay-registry: ${registryTxId}`,
                 )
-                this.warp.use(new StateUpdatePlugin(registryTxId, this.warp))
-                this.contract =
-                    this.warp.contract<RelayRegistryState>(registryTxId)
-            } else this.logger.error('Missing regustry txid')
+
+                this.relayRegistryWarp = WarpFactory.forMainnet({
+                    inMemory: true,
+                    dbLocation: '-relay-registry',
+                })
+                    .use(new EthersExtension())
+                    .use(new EvmSignatureVerificationServerPlugin())
+                this.relayRegistryWarp.use(new StateUpdatePlugin(registryTxId, this.relayRegistryWarp))
+                
+                this.relayRegistryContract =
+                    this.relayRegistryWarp.contract<RelayRegistryState>(registryTxId)
+            } else this.logger.error('Missing relay registry contract txid')
+
         } else this.logger.error('Missing contract owner key...')
     }
 
     private async isVerified(fingerprint: string): Promise<boolean> {
-        const interactionResult = await this.contract.viewState<
+        const interactionResult = await this.relayRegistryContract.viewState<
             IsVerified,
             boolean
         >({
@@ -142,7 +144,7 @@ export class VerificationService {
         fingerprint: string,
         address: string,
     ): Promise<boolean> {
-        const interactionResult = await this.contract.viewState<
+        const interactionResult = await this.relayRegistryContract.viewState<
             IsClaimable,
             boolean
         >({
@@ -310,7 +312,7 @@ export class VerificationService {
             },
         )
     }
-
+    
     public async persistVerification(
         data: VerificationResults,
     ): Promise<VerificationData> {
@@ -398,7 +400,7 @@ export class VerificationService {
     public async verifyRelay(
         relay: ValidatedRelay,
     ): Promise<RelayVerificationResult> {
-        if (this.contract !== undefined && this.owner !== undefined) {
+        if (this.relayRegistryContract !== undefined && this.owner !== undefined) {
             const verified: boolean = await this.isVerified(relay.fingerprint)
             const claimable: boolean = await this.isClaimable(
                 relay.fingerprint,
@@ -425,7 +427,7 @@ export class VerificationService {
 
             if (this.isLive === 'true') {
                 const evmSig = await buildEvmSignature(this.owner.signer)
-                const response = await this.contract
+                const response = await this.relayRegistryContract
                     .connect({
                         signer: evmSig,
                         type: 'ethereum',

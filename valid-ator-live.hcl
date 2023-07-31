@@ -108,8 +108,10 @@ job "valid-ator-live" {
         {{with secret "kv/valid-ator/live"}}
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
+          DISTRIBUTION_CONTRACT_DATA_KEY="{{.Data.data.DISTRIBUTION_CONTRACT_DATA_KEY}}"
         {{end}}
         RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
+        DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/live/distribution-address" ]]"
         EOH
         destination = "secrets/file.env"
         env         = true

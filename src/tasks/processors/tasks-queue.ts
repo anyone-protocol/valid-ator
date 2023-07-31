@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
 import { TasksService } from '../tasks.service'
 import { ValidationData } from 'src/validation/schemas/validation-data'
+import { VerificationData } from 'src/verification/schemas/verification-data'
 
 @Processor('tasks-queue')
 export class TasksQueue extends WorkerHost {
@@ -11,6 +12,7 @@ export class TasksQueue extends WorkerHost {
     public static readonly JOB_VALIDATE_ONIONOO_RELAYS =
         'validate-onionoo-relays'
     public static readonly JOB_PUBLISH_VALIDATION = 'publish-validation'
+    public static readonly JOB_RUN_DISTRIBUTION = 'run-distribution'
 
     constructor(private readonly tasks: TasksService) {
         super()
@@ -41,6 +43,25 @@ export class TasksQueue extends WorkerHost {
                     this.logger.warn(
                         'Nothing to publish, this should not happen',
                     )
+                break
+
+            case TasksQueue.JOB_RUN_DISTRIBUTION:
+                const verificationData: VerificationData[] = Object.values(
+                    await job.getChildrenValues(),
+                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                
+
+                if (verificationData.length > 0) {
+                    this.tasks.distributionQueue.add(
+                        'start-distribution', 
+                        verificationData[0],
+                        TasksService.jobOpts 
+                    )
+                } else {
+                    this.logger.warn(
+                        'Nothing to distribute, this should not happen',
+                    )
+                }
                 break
 
             default:

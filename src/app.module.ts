@@ -6,6 +6,8 @@ import { ValidationModule } from './validation/validation.module'
 import { MongooseModule } from '@nestjs/mongoose'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { VerificationModule } from './verification/verification.module'
+import { EventsModule } from './events/events.module';
+import { DistributionModule } from './distribution/distribution.module';
 
 @Module({
     imports: [
@@ -19,6 +21,8 @@ import { VerificationModule } from './verification/verification.module'
             }),
         }),
         VerificationModule,
+        EventsModule,
+        DistributionModule,
     ],
     controllers: [AppController],
     providers: [AppService],
