@@ -4,7 +4,7 @@ import { ScoreData } from './schemas/score-data';
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts';
 import { AddScores, DistributionState, Score } from 'src/distribution/interfaces/distribution';
 import { ConfigService } from '@nestjs/config';
-import { Wallet } from 'ethers';
+import { Wallet, ethers } from 'ethers';
 import { EthersExtension } from 'warp-contracts-plugin-ethers';
 import {
     buildEvmSignature,
@@ -13,6 +13,8 @@ import {
 } from 'warp-contracts-plugin-signature/server'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin';
 import { Distribute } from './interfaces/distribution';
+import { RewardAllocationData } from './dto/reward-allocation-data';
+import { Claimable } from 'src/verification/interfaces/relay-registry';
 
 @Injectable()
 export class DistributionService {
@@ -85,6 +87,37 @@ export class DistributionService {
             } else this.logger.error('Missing distribution contract txid')
 
         } else this.logger.error('Missing contract owner key...')
+    }
+
+    public async getAllocation(address: string): Promise<RewardAllocationData | undefined> {
+        if (this.owner != undefined) {
+            const evmSig = await buildEvmSignature(this.owner.signer)
+            const response = await this.distributionContract
+                .connect({
+                    signer: evmSig,
+                    type: 'ethereum',
+                })
+                .viewState<
+                    Claimable,
+                    string
+                >({
+                    function: 'claimable',
+                    address: address,
+                })
+            
+            if (response.result == undefined) {
+                this.logger.error(`Failed to fetch distribution state: ${response.errorMessage}`)
+                return undefined
+            } else {
+                return {
+                    address: address,
+                    amount: response.result
+                }
+            }
+        } else {
+            this.logger.error(`Owner is undefined. Failed get distribution data`)
+            return undefined
+        }
     }
 
     public groupScoreJobs(

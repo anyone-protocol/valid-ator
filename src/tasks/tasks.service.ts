@@ -2,8 +2,8 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer, FlowJob } from 'bullmq'
 import { ValidationData } from 'src/validation/schemas/validation-data'
-import { DistributionData } from 'src/distribution/schemas/distribution-data'
 import { ScoreData } from 'src/distribution/schemas/score-data'
+import { AddressLike } from 'ethers'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -99,21 +99,44 @@ export class TasksService implements OnApplicationBootstrap {
         @InjectQueue('validation-queue') public validationQueue: Queue,
         @InjectQueue('verification-queue') public verificationQueue: Queue,
         @InjectQueue('distribution-queue') public distributionQueue: Queue,
+        @InjectQueue('facilitator-updates-queue') public facilitatorUpdatesQueue: Queue,
         @InjectFlowProducer('validation-flow')
         public validationFlow: FlowProducer,
         @InjectFlowProducer('verification-flow')
         public publishingFlow: FlowProducer,
         @InjectFlowProducer('distribution-flow')
-        public distributionFlow: FlowProducer
+        public distributionFlow: FlowProducer,
+        @InjectFlowProducer('facilitator-updates-flow')
+        public facilitatorUpdatesFlow: FlowProducer
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
         this.logger.log('Bootstrapping Tasks Service')
         await this.tasksQueue.obliterate({ force: true })
+
+        // TODO: some of these queues should persist beyond app reboot in live
         await this.validationQueue.obliterate({ force: true })
         await this.verificationQueue.obliterate({ force: true })
         await this.distributionQueue.obliterate({ force: true })
+        await this.facilitatorUpdatesQueue.obliterate({ force: true })
+
         await this.updateOnionooRelays(0)
+    }
+
+    public async requestFacilityUpdate(address: string): Promise<void> {
+        await this.facilitatorUpdatesFlow.add(
+            {
+                name: 'update-allocation',
+                queueName: 'facilitator-updates-queue',
+                opts: TasksService.jobOpts,
+                children: [{
+                    name: 'get-current-rewards',
+                    queueName: 'facilitator-updates-queue',
+                    opts: TasksService.jobOpts,
+                    data: address
+                }],
+            }
+        )
     }
 
     public async updateOnionooRelays(

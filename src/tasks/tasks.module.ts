@@ -9,12 +9,15 @@ import { VerificationQueue } from './processors/verification-queue'
 import { VerificationModule } from 'src/verification/verification.module'
 import { DistributionQueue } from './processors/distribution-queue'
 import { DistributionModule } from 'src/distribution/distribution.module'
+import { EventsModule } from 'src/events/events.module'
+import { FacilitatorUpdatesQueue } from './processors/facilitator-updates-queue'
 
 @Module({
     imports: [
         ValidationModule,
         VerificationModule,
         DistributionModule,
+        EventsModule,
         BullModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (
@@ -36,7 +39,10 @@ import { DistributionModule } from 'src/distribution/distribution.module'
         BullModule.registerFlowProducer({ name: 'verification-flow' }),
         BullModule.registerQueue({ name: 'distribution-queue' }),
         BullModule.registerFlowProducer({ name: 'distribution-flow' }),
+        BullModule.registerQueue({ name: 'facilitator-updates-queue' }),
+        BullModule.registerFlowProducer({ name: 'facilitator-updates-flow' }),
     ],
-    providers: [TasksService, TasksQueue, ValidationQueue, VerificationQueue, DistributionQueue],
+    providers: [TasksService, TasksQueue, ValidationQueue, VerificationQueue, DistributionQueue, FacilitatorUpdatesQueue],
+    exports: [TasksService]
 })
 export class TasksModule {}

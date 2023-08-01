@@ -110,9 +110,12 @@ job "valid-ator-stage" {
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
           DISTRIBUTION_CONTRACT_DATA_KEY="{{.Data.data.DISTRIBUTION_CONTRACT_DATA_KEY}}"
+          JSON_RPC="{{.Data.data.JSON_RPC}}"
+          FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
         {{end}}
         RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
+        FACILITY_CONTRACT_ADDRESS"[[ consulKey "facilitator-goerli/address" ]]"
         EOH
         destination = "secrets/file.env"
         env         = true

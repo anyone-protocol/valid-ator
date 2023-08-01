@@ -4,6 +4,7 @@ import { Job } from 'bullmq'
 import { TasksService } from '../tasks.service'
 import { ValidationData } from 'src/validation/schemas/validation-data'
 import { VerificationData } from 'src/verification/schemas/verification-data'
+import { ethers } from 'ethers'
 
 @Processor('tasks-queue')
 export class TasksQueue extends WorkerHost {
@@ -13,6 +14,7 @@ export class TasksQueue extends WorkerHost {
         'validate-onionoo-relays'
     public static readonly JOB_PUBLISH_VALIDATION = 'publish-validation'
     public static readonly JOB_RUN_DISTRIBUTION = 'run-distribution'
+    public static readonly JOB_REQUEST_FACILITY_UPDATE = 'request-facility-update'
 
     constructor(private readonly tasks: TasksService) {
         super()
@@ -61,6 +63,16 @@ export class TasksQueue extends WorkerHost {
                     this.logger.warn(
                         'Nothing to distribute, this should not happen',
                     )
+                }
+                break
+
+            case TasksQueue.JOB_REQUEST_FACILITY_UPDATE:
+                const address = job.data as string
+                if (address != undefined) {
+                    this.logger.log(`Starting rewards update for ${address}`)
+                    await this.tasks.requestFacilityUpdate(address)
+                } else {
+                    this.logger.error('Trying to request facility update but missing address in job data')
                 }
                 break
 
