@@ -28,16 +28,16 @@ export class EventsService implements OnApplicationBootstrap {
           "inputs": [
             {
               "internalType": "address",
-              "name": "_account",
+              "name": "addr",
               "type": "address"
             },
             {
               "internalType": "uint256",
-              "name": "_value",
+              "name": "allocated",
               "type": "uint256"
             }
           ],
-          "name": "updateAllocation",
+          "name": "updateAndClaim",
           "outputs": [],
           "stateMutability": "nonpayable",
           "type": "function"
