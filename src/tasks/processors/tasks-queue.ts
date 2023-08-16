@@ -4,7 +4,7 @@ import { Job } from 'bullmq'
 import { TasksService } from '../tasks.service'
 import { ValidationData } from 'src/validation/schemas/validation-data'
 import { VerificationData } from 'src/verification/schemas/verification-data'
-import { ethers } from 'ethers'
+import { VerificationService } from 'src/verification/verification.service'
 
 @Processor('tasks-queue')
 export class TasksQueue extends WorkerHost {
@@ -16,7 +16,10 @@ export class TasksQueue extends WorkerHost {
     public static readonly JOB_RUN_DISTRIBUTION = 'run-distribution'
     public static readonly JOB_REQUEST_FACILITY_UPDATE = 'request-facility-update'
 
-    constructor(private readonly tasks: TasksService) {
+    constructor(
+        private readonly tasks: TasksService,
+        private readonly verification: VerificationService
+    ) {
         super()
     }
 
@@ -28,6 +31,8 @@ export class TasksQueue extends WorkerHost {
                 this.tasks.validationFlow.add(
                     TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
                 )
+
+                await this.tasks.updateOnionooRelays() // using default delay time in param
                 break
 
             case TasksQueue.JOB_PUBLISH_VALIDATION:
@@ -48,22 +53,25 @@ export class TasksQueue extends WorkerHost {
                 break
 
             case TasksQueue.JOB_RUN_DISTRIBUTION:
-                const verificationData: VerificationData[] = Object.values(
-                    await job.getChildrenValues(),
-                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
-                
 
-                if (verificationData.length > 0) {
+                const verificationData: VerificationData | null = await this.verification.getMostRecent()
+
+                if (verificationData != null) {
+                    const distribution_time = Date.now()
+                    const currentData = Object.assign({}, verificationData, { verified_at: distribution_time })
+
                     this.tasks.distributionQueue.add(
                         'start-distribution', 
-                        verificationData[0],
+                        currentData,
                         TasksService.jobOpts 
                     )
+                    this.tasks.queueDistributing() // using default delay time in param
                 } else {
                     this.logger.warn(
-                        'Nothing to distribute, this should not happen',
+                        'Nothing to distribute, this should not happen, or just wait for the first distribution to happen',
                     )
                 }
+                
                 break
 
             case TasksQueue.JOB_REQUEST_FACILITY_UPDATE:

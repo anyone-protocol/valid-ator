@@ -349,6 +349,17 @@ export class VerificationService {
         return verificationData
     }
 
+    public async getMostRecent(): Promise<VerificationData | null> {
+        return await this.verificationDataModel
+            .findOne({})
+            .sort({ verified_at: -1})
+            .exec()
+            .catch((error) => {
+                this.logger.error(error)
+                return null
+            })
+    }
+
     public logVerification(data: VerificationResults) {
         const failed = data.filter(
             (value, index, array) => value.result === 'Failed',

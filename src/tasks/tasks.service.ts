@@ -48,10 +48,10 @@ export class TasksService implements OnApplicationBootstrap {
         validation: ValidationData,
     ): FlowJob {
         return {
-            name: 'run-distribution',
-            queueName: 'tasks-queue',
-            opts: TasksService.jobOpts,
-            children: [{
+            // name: 'run-distribution',
+            // queueName: 'tasks-queue',
+            // opts: TasksService.jobOpts,
+            // children: [{
                 name: 'persist-verification',
                 queueName: 'verification-queue',
                 opts: TasksService.jobOpts,
@@ -69,7 +69,7 @@ export class TasksService implements OnApplicationBootstrap {
                         })),
                     },
                 ],
-            }]
+            // }]
         }
     }
 
@@ -121,6 +121,7 @@ export class TasksService implements OnApplicationBootstrap {
         await this.facilitatorUpdatesQueue.obliterate({ force: true })
 
         await this.updateOnionooRelays(0)
+        await this.queueDistributing(0)
     }
 
     public async requestFacilityUpdate(address: string): Promise<void> {
@@ -136,6 +137,20 @@ export class TasksService implements OnApplicationBootstrap {
                     data: address
                 }],
             }
+        )
+    }
+
+    public async queueDistributing(
+        delayJob: number = 1000 * 60 * 10,
+    ): Promise<void> {
+        await this.tasksQueue.add(
+            'run-distribution',
+            {},
+            {
+                delay: delayJob,
+                removeOnComplete: TasksService.keepCompleted,
+                removeOnFail: TasksService.keepFailed,
+            },
         )
     }
 

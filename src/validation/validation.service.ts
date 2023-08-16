@@ -51,6 +51,7 @@ export class ValidationService {
         if (hasData) {
             const initData = await this.validationServiceDataModel
                 .findOne({ apiVersion: this.currentApiVersion })
+                .exec()
                 .catch((error) => {
                     this.logger.error(error)
                 })
@@ -293,6 +294,10 @@ export class ValidationService {
             .findOne<RelayData>({ fingerprint: fingerprint })
             .sort({ validated_at: 'desc' })
             .exec()
+            .catch((error) => {
+                this.logger.error(error)
+                return null
+            })
     }
 
     public async lastValidation(): Promise<ValidationData | null> {
@@ -300,5 +305,9 @@ export class ValidationService {
             .findOne<ValidationData>()
             .sort({ validated_at: 'desc' })
             .exec()
+            .catch((error) => {
+                this.logger.error(error)
+                return null
+            })
     }
 }

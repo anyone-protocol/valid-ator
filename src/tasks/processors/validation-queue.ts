@@ -2,7 +2,6 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
 import { ValidationService } from 'src/validation/validation.service'
-import { TasksService } from '../tasks.service'
 import { RelayInfo } from 'src/validation/interfaces/8_3/relay-info'
 import { RelayDataDto } from 'src/validation/dto/relay-data-dto'
 import { ValidationData } from 'src/validation/schemas/validation-data'
@@ -17,7 +16,6 @@ export class ValidationQueue extends WorkerHost {
 
     constructor(
         private readonly validation: ValidationService,
-        private readonly tasks: TasksService,
     ) {
         super()
     }
@@ -68,7 +66,7 @@ export class ValidationQueue extends WorkerHost {
                     const validationData = await this.validation.validateRelays(
                         validatedRelays,
                     )
-                    await this.tasks.updateOnionooRelays() // using default delay time in param
+                    
                     return validationData
                 } catch (e) {
                     this.logger.error(e)
