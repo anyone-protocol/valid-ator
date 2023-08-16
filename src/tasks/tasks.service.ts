@@ -141,7 +141,7 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     public async queueDistributing(
-        delayJob: number = 1000 * 60 * 10,
+        delayJob: number = 1000 * 60 * 60,
     ): Promise<void> {
         await this.tasksQueue.add(
             'run-distribution',

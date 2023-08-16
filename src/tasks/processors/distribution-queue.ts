@@ -32,7 +32,7 @@ export class DistributionQueue extends WorkerHost {
             case DistributionQueue.JOB_START_DISTRIBUTION:
                 const data: VerificationData = job.data as VerificationData
                 if (data != undefined) {
-                    this.logger.log(`Starting distribution ${data.verified_at}`)
+                    this.logger.log(`Starting distribution ${data.verified_at} with ${data.relays.length} relays`)
                     try {
                         const scoreJobs = this.distribution.groupScoreJobs({
                             complete: false,
@@ -56,7 +56,7 @@ export class DistributionQueue extends WorkerHost {
                         return false
                     }
                 } else {
-                    this.logger.debug('Nothing to distribute, skipping flow')
+                    this.logger.debug('Nothing to distribute, data is undefined. Skipping flow')
                     return false
                 }
 

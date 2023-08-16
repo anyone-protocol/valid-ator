@@ -58,8 +58,8 @@ export class TasksQueue extends WorkerHost {
 
                 if (verificationData != null) {
                     const distribution_time = Date.now()
-                    const currentData = Object.assign({}, verificationData, { verified_at: distribution_time })
-
+                    const currentData = Object.assign(verificationData, { verified_at: distribution_time })
+                    this.logger.log(`Running distribution ${currentData.verified_at} with ${currentData.relays.length}`)
                     this.tasks.distributionQueue.add(
                         'start-distribution', 
                         currentData,
