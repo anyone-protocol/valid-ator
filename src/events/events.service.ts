@@ -35,9 +35,14 @@ export class EventsService implements OnApplicationBootstrap {
               "internalType": "uint256",
               "name": "allocated",
               "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "doClaim",
+              "type": "bool"
             }
           ],
-          "name": "updateAndClaim",
+          "name": "updateAllocation",
           "outputs": [],
           "stateMutability": "nonpayable",
           "type": "function"
