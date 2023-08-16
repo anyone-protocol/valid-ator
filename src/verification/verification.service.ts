@@ -58,7 +58,7 @@ export class VerificationService {
         this.isLive = config.get<string>('IS_LIVE', { infer: true })
 
         this.logger.log(
-            `Initializing Verification Service IS_LIVE: ${this.isLive}`,
+            `Initializing verification service (IS_LIVE: ${this.isLive})`,
         )
 
         const validatorKey = this.config.get<string>('VALIDATOR_KEY', {
@@ -83,7 +83,7 @@ export class VerificationService {
 
             if (this.bundlr !== undefined) {
                 this.logger.log(
-                    `Initialized Bundlr in Verification service for address: ${this.bundlr.address}`,
+                    `Initialized Bundlr for address: ${this.bundlr.address}`,
                 )
             } else {
                 this.logger.error('Failed to initialize Bundlr!')
@@ -98,7 +98,7 @@ export class VerificationService {
             }
 
             this.logger.log(
-                `Initialized Validator for address: ${this.owner.address}`,
+                `Initialized for address: ${this.owner.address}`,
             )
 
             const registryTxId = this.config.get<string>(
@@ -110,7 +110,7 @@ export class VerificationService {
 
             if (registryTxId !== undefined) {
                 this.logger.log(
-                    `Initialized Validator with relay-registry: ${registryTxId}`,
+                    `Initialized with relay-registry: ${registryTxId}`,
                 )
 
                 this.relayRegistryWarp = WarpFactory.forMainnet({

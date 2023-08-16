@@ -40,7 +40,7 @@ export class DistributionService {
         this.isLive = config.get<string>('IS_LIVE', { infer: true })
 
         this.logger.log(
-            `Initializing Verification Service IS_LIVE: ${this.isLive}`,
+            `Initializing distribution service (IS_LIVE: ${this.isLive})`,
         )
 
         const distributionDataKey = this.config.get<string>('DISTRIBUTION_CONTRACT_DATA_KEY', {
@@ -58,7 +58,7 @@ export class DistributionService {
             }
 
             this.logger.log(
-                `Initialized Validator in Distribution service for address: ${this.owner.address}`,
+                `Initialized distribution service for address: ${this.owner.address}`,
             )
 
             const distributionContractTxId = this.config.get<string>(
@@ -70,7 +70,7 @@ export class DistributionService {
 
             if (distributionContractTxId != undefined) {
                 this.logger.log(
-                    `Initialized Validator with distribution contract: ${distributionContractTxId}`,
+                    `Initialized distribution contract: ${distributionContractTxId}`,
                 )
                 
                 this.distributionWarp = WarpFactory.forMainnet({
