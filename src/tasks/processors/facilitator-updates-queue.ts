@@ -1,7 +1,6 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
-import { ethers } from 'ethers'
 import { DistributionService } from 'src/distribution/distribution.service'
 import { RewardAllocationData } from 'src/distribution/dto/reward-allocation-data'
 import { EventsService } from 'src/events/events.service'
@@ -50,7 +49,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 )
 
                 if (data.length > 0) {
-                    this.logger.log(`Updating rewards ${data[0].amount}:${data[0].address}`)
+                    this.logger.log(`Updating rewards for ${data[0].address}`)
                     try {
                         await this.events.updateAllocation(data[0])
                         return true
