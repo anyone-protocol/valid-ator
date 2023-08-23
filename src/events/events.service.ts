@@ -87,7 +87,7 @@ export class EventsService implements OnApplicationBootstrap {
         if (this.signerContract == undefined) {
             this.logger.error('Facility signer contract not initialized, skipping allocation update')
         } else {
-            await this.signerContract.updateAllocation(data.address, BigNumber(data.amount).toFixed(), true)
+            await this.signerContract.updateAllocation(data.address, BigNumber(data.amount).toFixed(0), true)
         }
     }
 
