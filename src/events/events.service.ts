@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import BigNumber from 'bignumber.js';
 import { ethers } from 'ethers';
 import { RewardAllocationData } from 'src/distribution/dto/reward-allocation-data';
 import { TasksService } from 'src/tasks/tasks.service';
@@ -86,7 +87,7 @@ export class EventsService implements OnApplicationBootstrap {
         if (this.signerContract == undefined) {
             this.logger.error('Facility signer contract not initialized, skipping allocation update')
         } else {
-            await this.signerContract.updateAllocation(data.address, ethers.parseUnits(data.amount, 0), true)
+            await this.signerContract.updateAllocation(data.address, BigNumber(data.amount).toFixed(), true)
         }
     }
 
