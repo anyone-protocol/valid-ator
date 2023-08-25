@@ -321,28 +321,38 @@ export class VerificationService {
         const verifiedRelays = data.filter(
             (value, index, array) => value.result === 'AlreadyVerified',
         )
+        
+        let relayMetricsTx = 'missing'
+        try {
+            relayMetricsTx = await this.storeRelayMetrics(
+                verificationStamp,
+                verifiedRelays,
+            )
+        } catch(e) {
+            this.logger.warn(`Failed to store relay metrics: ${e}`)
+        }
 
-        const relayMetricsTx = await this.storeRelayMetrics(
-            verificationStamp,
-            verifiedRelays,
-        )
+        let validationStatsTx = 'missing'
+        try {
+            const validationStats: RelayValidationStatsDto =
+                this.getValidationStats(data)
 
-        const validationStats: RelayValidationStatsDto =
-            this.getValidationStats(data)
-
-        const validationStatsTx = await this.storeValidationStats(
-            verificationStamp,
-            validationStats,
-        )
+            validationStatsTx = await this.storeValidationStats(
+                verificationStamp,
+                validationStats,
+            )
+        } catch(e) {
+            this.logger.warn(`Failed generating / storing validation stats: ${e}`)
+        }
 
         const verificationData: VerificationData = {
             verified_at: verificationStamp,
             relay_metrics_tx: relayMetricsTx,
             validation_stats_tx: validationStatsTx,
-            relays: data.map((result, index, array) => result.relay),
+            relays: verifiedRelays.map((result, index, array) => result.relay),
         }
 
-        this.verificationDataModel
+        await this.verificationDataModel
             .create<VerificationData>(verificationData)
             .catch((error) => this.logger.error(error))
 
