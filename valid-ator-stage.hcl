@@ -149,7 +149,7 @@ job "valid-ator-stage" {
           interval = "5s"
           timeout  = "10s"
           check_restart {
-            limit = 30
+            limit = 180
             grace = "15s"
           }
         }
