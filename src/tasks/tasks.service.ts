@@ -9,12 +9,12 @@ import { AddressLike } from 'ethers'
 export class TasksService implements OnApplicationBootstrap {
     private readonly logger = new Logger(TasksService.name)
 
-    private static readonly keepCompleted: 128
-    private static readonly keepFailed: 1024
+    private static readonly removeOnComplete: true
+    private static readonly removeOnFail: 8
 
     public static jobOpts = {
-        removeOnComplete: TasksService.keepCompleted,
-        removeOnFail: TasksService.keepFailed,
+        removeOnComplete: TasksService.removeOnComplete,
+        removeOnFail: TasksService.removeOnFail,
     }
 
     public static VALIDATE_ONIONOO_RELAYS_FLOW: FlowJob = {
@@ -48,28 +48,23 @@ export class TasksService implements OnApplicationBootstrap {
         validation: ValidationData,
     ): FlowJob {
         return {
-            // name: 'run-distribution',
-            // queueName: 'tasks-queue',
-            // opts: TasksService.jobOpts,
-            // children: [{
-                name: 'persist-verification',
-                queueName: 'verification-queue',
-                opts: TasksService.jobOpts,
-                children: [
-                    {
-                        name: 'confirm-verification',
+            name: 'persist-verification',
+            queueName: 'verification-queue',
+            opts: TasksService.jobOpts,
+            children: [
+                {
+                    name: 'confirm-verification',
+                    queueName: 'verification-queue',
+                    data: validation.validated_at,
+                    opts: TasksService.jobOpts,
+                    children: validation.relays.map((relay, index, array) => ({
+                        name: 'verify-relay',
                         queueName: 'verification-queue',
-                        data: validation.validated_at,
                         opts: TasksService.jobOpts,
-                        children: validation.relays.map((relay, index, array) => ({
-                            name: 'verify-relay',
-                            queueName: 'verification-queue',
-                            opts: TasksService.jobOpts,
-                            data: relay,
-                        })),
-                    },
-                ],
-            // }]
+                        data: relay,
+                    })),
+                },
+            ],
         }
     }
 
@@ -148,8 +143,8 @@ export class TasksService implements OnApplicationBootstrap {
             {},
             {
                 delay: delayJob,
-                removeOnComplete: TasksService.keepCompleted,
-                removeOnFail: TasksService.keepFailed,
+                removeOnComplete: TasksService.removeOnComplete,
+                removeOnFail: TasksService.removeOnFail,
             },
         )
     }
@@ -162,8 +157,8 @@ export class TasksService implements OnApplicationBootstrap {
             {},
             {
                 delay: delayJob,
-                removeOnComplete: TasksService.keepCompleted,
-                removeOnFail: TasksService.keepFailed,
+                removeOnComplete: TasksService.removeOnComplete,
+                removeOnFail: TasksService.removeOnFail,
             },
         )
     }
