@@ -165,7 +165,7 @@ export class DistributionService {
                     })
                 if (response?.originalTxId != undefined) {
                     return scores
-                } else {
+                } else {                    
                     this.logger.error(`Failed storing scores for ${stamp}`)
                     return []
                 }

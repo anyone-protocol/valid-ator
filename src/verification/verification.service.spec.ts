@@ -34,6 +34,16 @@ describe('VerificationService', () => {
         expect(service).toBeDefined()
     })
 
+    
+  it.todo('should attempt to retry failed relay data upload');
+  it.todo('should attempt to retry failed stats data upload');
+
+  it.todo('should warn about relay uploads that are locked');
+  it.todo('should warn about stats uploads that are locked');
+
+  it.todo('should maintain events continuity between reboots');
+  it.todo('should warn about account funds depleting within a month');
+
     // it('should check if the fingerprint was verified', async () => {
     //     expect(
     //         await service.verifyRelay({

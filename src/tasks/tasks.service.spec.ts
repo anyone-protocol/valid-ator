@@ -28,6 +28,22 @@ describe('TasksService', () => {
                     name: 'verification-flow',
                     connection: { host: 'localhost', port: 6379 },
                 }),
+                BullModule.registerQueue({
+                    name: 'distribution-queue',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
+                BullModule.registerFlowProducer({
+                    name: 'distribution-flow',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
+                BullModule.registerQueue({
+                    name: 'facilitator-updates-queue',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
+                BullModule.registerFlowProducer({
+                    name: 'facilitator-updates-flow',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
             ],
             providers: [TasksService],
         }).compile()
