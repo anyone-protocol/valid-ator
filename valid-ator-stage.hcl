@@ -107,7 +107,6 @@ job "valid-ator-stage" {
       template {
         data = <<EOH
         {{with secret "kv/valid-ator/stage"}}
-          VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
           RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
           DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
