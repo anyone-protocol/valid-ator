@@ -43,8 +43,8 @@ export class VerificationService {
 
     constructor(
         private readonly config: ConfigService<{
-            VALIDATOR_KEY: string
-            RELAY_REGISTRY_TXID: string
+            RELAY_REGISTRY_OPERATOR_KEY: string
+            RELAY_REGISTRY_CONTRACT_TXID: string
             IS_LIVE: string
             BUNDLR_NODE: string
             BUNDLR_NETWORK: string
@@ -61,11 +61,11 @@ export class VerificationService {
             `Initializing verification service (IS_LIVE: ${this.isLive})`,
         )
 
-        const validatorKey = this.config.get<string>('VALIDATOR_KEY', {
+        const relayRegistryOperatorKey = this.config.get<string>('RELAY_REGISTRY_OPERATOR_KEY', {
             infer: true,
         })
 
-        if (validatorKey !== undefined) {
+        if (relayRegistryOperatorKey !== undefined) {
             this.bundlr = (() => {
                 const node = config.get<string>('BUNDLR_NODE', {
                     infer: true,
@@ -75,7 +75,7 @@ export class VerificationService {
                 })
 
                 if (node !== undefined && network !== undefined) {
-                    return new Bundlr(node, network, validatorKey)
+                    return new Bundlr(node, network, relayRegistryOperatorKey)
                 } else {
                     return undefined
                 }
@@ -89,11 +89,11 @@ export class VerificationService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new Wallet(validatorKey)
+            const signer = new Wallet(relayRegistryOperatorKey)
 
             this.owner = {
                 address: signer.address,
-                key: validatorKey,
+                key: relayRegistryOperatorKey,
                 signer: signer,
             }
 
@@ -102,7 +102,7 @@ export class VerificationService {
             )
 
             const registryTxId = this.config.get<string>(
-                'RELAY_REGISTRY_TXID',
+                'RELAY_REGISTRY_CONTRACT_TXID',
                 {
                     infer: true,
                 },

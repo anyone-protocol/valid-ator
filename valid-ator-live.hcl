@@ -106,13 +106,13 @@ job "valid-ator-live" {
       template {
         data = <<EOH
         {{with secret "kv/valid-ator/live"}}
-          VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
-          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
-          DISTRIBUTION_CONTRACT_DATA_KEY="{{.Data.data.DISTRIBUTION_CONTRACT_DATA_KEY}}"
-          JSON_RPC="{{.Data.data.JSON_RPC}}"
+          RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
+          DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
+          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
+          JSON_RPC="{{.Data.data.JSON_RPC}}"
         {{end}}
-        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
+        RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/live/distribution-address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/live/address" ]]"
         EOH

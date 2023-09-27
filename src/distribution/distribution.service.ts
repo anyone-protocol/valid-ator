@@ -32,7 +32,7 @@ export class DistributionService {
         private readonly config: ConfigService<{
             IS_LIVE: string
             DISTRIBUTION_CONTRACT_TXID: string
-            DISTRIBUTION_CONTRACT_DATA_KEY: string
+            DISTRIBUTION_OPERATOR_KEY: string
         }>,
     ) {
         LoggerFactory.INST.logLevel('error')
@@ -43,7 +43,7 @@ export class DistributionService {
             `Initializing distribution service (IS_LIVE: ${this.isLive})`,
         )
 
-        const distributionDataKey = this.config.get<string>('DISTRIBUTION_CONTRACT_DATA_KEY', {
+        const distributionDataKey = this.config.get<string>('DISTRIBUTION_OPERATOR_KEY', {
             infer: true,
         })
 

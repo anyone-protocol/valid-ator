@@ -108,12 +108,13 @@ job "valid-ator-stage" {
         data = <<EOH
         {{with secret "kv/valid-ator/stage"}}
           VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
-          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
-          DISTRIBUTION_CONTRACT_DATA_KEY="{{.Data.data.DISTRIBUTION_CONTRACT_DATA_KEY}}"
-          JSON_RPC="{{.Data.data.JSON_RPC}}"
+          RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
+          DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
+          JSON_RPC="{{.Data.data.JSON_RPC}}"
+          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
         {{end}}
-        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
+        RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/stage/address" ]]"
         EOH
