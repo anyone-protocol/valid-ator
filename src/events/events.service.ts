@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
-import { Queue, FlowProducer, FlowJob } from 'bullmq'
+import { Queue, FlowProducer } from 'bullmq'
 import { ConfigService } from '@nestjs/config';
 import BigNumber from 'bignumber.js';
 import { ethers, AddressLike } from 'ethers';
@@ -100,17 +100,57 @@ export class EventsService implements OnApplicationBootstrap {
         }    
     }
 
-    public async updateAllocation(data: RewardAllocationData): Promise<void> {
+    private checkIfPassableReason(reason: string): boolean {
+        switch(reason) {
+            case 'Facility: no tokens allocated for sender': return true;
+            case 'Facility: no tokens available to claim': return true;
+            default: return false;
+        }
+    }
+
+    private checkForInternalWarnings(reason: string): boolean {
+        switch(reason) {
+            case 'Facility: not enough tokens to claim': return true;
+            case 'Facility: transfer of claimable tokens failed': return true;
+            default: return false;
+        }
+    }
+
+    public async updateAllocation(data: RewardAllocationData): Promise<boolean> {
         if (this.isLive === 'true') {
             if (this.signerContract == undefined) {
                 this.logger.error('Facility signer contract not initialized, skipping allocation update')
             } else {
-                await this.signerContract.updateAllocation(data.address, BigNumber(data.amount).toFixed(0), true)
+                try {
+                    await this.signerContract.updateAllocation(data.address, BigNumber(data.amount).toFixed(0), true)
+                    return true
+                } catch (updateError) {
+                    if (updateError.reason) {
+                        const isWarning = this.checkForInternalWarnings(updateError.reason)
+                        if (isWarning) {
+                            this.logger.error(`UpdateAllocation needs manual intervention: ${updateError.reason}`);
+                            return false;
+                        }
+
+                        const isPassable = this.checkIfPassableReason(updateError.reason)
+                        if (isPassable) {
+                            this.logger.warn(`UpdateAllocation tx rejected: ${updateError.reason}`);
+                        } else {
+                            this.logger.error(`UpdateAllocation transaction failed: ${updateError.reason}`);
+                        }
+                        return isPassable;
+                    } else {
+                        this.logger.error(`Error while calling updateAllocation for ${data.address}:`, updateError);
+                    }
+                }
             }
+            return false;
         } else {
             this.logger.warn(
                 `NOT LIVE: Not storing updating allocation of ${data.address} to ${BigNumber(data.amount).toFixed(0).toString()} relay(s) `,
             )
+            
+            return true;
         }
     }
 
@@ -128,11 +168,11 @@ export class EventsService implements OnApplicationBootstrap {
                 if (this.facilitatorAddress == undefined) {
                     this.logger.error('Missing FACILITY_CONTRACT_ADDRESS. Skipping facilitator subscription')
                 } else {
-                    this.logger.log(`Subscribing to the Facilitator contract (${this.facilitatorAddress}) with ${this.operator.address}...`)
+                    this.logger.log(`Subscribing to the Facilitator contract ${this.facilitatorAddress} with ${this.operator.address}...`)
 
                     this.contract = new ethers.Contract(this.facilitatorAddress, this.facilitatorABI, this.provider)
                     this.signerContract = this.contract.connect(this.operator)
-                    this.contract.on('RequestingUpdate', async (_account: ethers.AddressLike) => {
+                    this.contract.on('RequestingUpdate', async (_account: AddressLike) => {
                         let accountString: string
                         if (_account instanceof Promise) {
                             accountString = await _account

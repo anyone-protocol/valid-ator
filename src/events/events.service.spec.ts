@@ -29,9 +29,9 @@ describe('EventsService', () => {
     expect(service).toBeDefined();
   });
 
-  it.todo('should attempt to retry failed transactions for an update.');
-  it.todo('should warn about updates that are locked');
+  it.todo('should flag for retry failed updateAllocation transactions.');
+  it.todo('should skip retrying invalid updateAllocation transactions.');
+  it.todo('should warn about problematic updateAllocation transactions.');
+  it.todo('should provide error info with updates that are locked out');
   it.todo('should maintain events continuity between reboots');
-  it.todo('should warn about account funds depleting within a month');
-
 });

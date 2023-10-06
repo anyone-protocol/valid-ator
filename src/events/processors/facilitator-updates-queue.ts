@@ -51,7 +51,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 if (data.length > 0) {
                     this.logger.log(`Updating rewards for ${data[0].address}`)
                     try {
-                        await this.events.updateAllocation(data[0])
+                        const isPassed = await this.events.updateAllocation(data[0])
                         return true
                     } catch (e) {
                         this.logger.error(e)
