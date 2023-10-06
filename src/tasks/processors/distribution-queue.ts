@@ -32,7 +32,9 @@ export class DistributionQueue extends WorkerHost {
             case DistributionQueue.JOB_START_DISTRIBUTION:
                 const data: VerificationData = job.data as VerificationData
                 if (data != undefined) {
-                    this.logger.log(`Starting distribution ${data.verified_at} with ${data.relays.length} relays`)
+                    this.logger.log(
+                        `Starting distribution ${data.verified_at} with ${data.relays.length} relays`,
+                    )
                     try {
                         const scoreJobs = this.distribution.groupScoreJobs({
                             complete: false,
@@ -40,14 +42,17 @@ export class DistributionQueue extends WorkerHost {
                             scores: data.relays.map((relay, index, array) => ({
                                 ator_address: relay.ator_address,
                                 fingerprint: relay.fingerprint,
-                                score: relay.consensus_weight
-                            }))
+                                score: relay.consensus_weight,
+                            })),
                         })
-                        
-                        this.logger.log(`Created ${scoreJobs.length} groups out of ${data.relays.length}`)
+
+                        this.logger.log(
+                            `Created ${scoreJobs.length} groups out of ${data.relays.length}`,
+                        )
                         this.tasks.distributionFlow.add(
                             TasksService.DISTRIBUTE_RELAY_SCORES(
-                                data.verified_at, scoreJobs
+                                data.verified_at,
+                                scoreJobs,
                             ),
                         )
                         return true
@@ -56,22 +61,30 @@ export class DistributionQueue extends WorkerHost {
                         return false
                     }
                 } else {
-                    this.logger.debug('Nothing to distribute, data is undefined. Skipping flow')
+                    this.logger.debug(
+                        'Nothing to distribute, data is undefined. Skipping flow',
+                    )
                     return false
                 }
 
             case DistributionQueue.JOB_ADD_SCORES:
                 try {
-                    const data = job.data as { stamp: number, scores: ScoreData[] }
+                    const data = job.data as {
+                        stamp: number
+                        scores: ScoreData[]
+                    }
                     if (data != undefined) {
-                        this.logger.log(`Adding ${data.scores.length} scores for ${data.stamp}`)
-                    
-                        const result = await this.distribution.addScores(data.stamp, 
+                        this.logger.log(
+                            `Adding ${data.scores.length} scores for ${data.stamp}`,
+                        )
+
+                        const result = await this.distribution.addScores(
+                            data.stamp,
                             data.scores.map((data) => ({
                                 fingerprint: data.fingerprint,
                                 address: data.ator_address,
-                                score: data.score.toString()
-                            }))
+                                score: data.score.toString(),
+                            })),
                         )
                         return result
                     } else {
@@ -95,18 +108,20 @@ export class DistributionQueue extends WorkerHost {
                     if (stamp != undefined) {
                         this.logger.log(`Completing distribution ${stamp}`)
                         const result = await this.distribution.distribute(stamp)
-                        
+
                         return {
                             complete: result,
                             stamp: stamp,
                             scores: processedScores.map((score) => ({
                                 ator_address: score.address,
                                 fingerprint: score.fingerprint,
-                                score: Number.parseInt(score.score)
-                            }))
+                                score: Number.parseInt(score.score),
+                            })),
                         }
                     } else {
-                        this.logger.error('Failed to complete distribution without a timestamp')
+                        this.logger.error(
+                            'Failed to complete distribution without a timestamp',
+                        )
                         return undefined
                     }
                 } catch (e) {

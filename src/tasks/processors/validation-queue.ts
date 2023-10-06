@@ -14,9 +14,7 @@ export class ValidationQueue extends WorkerHost {
     public static readonly JOB_FILTER_RELAYS = 'filter-relays'
     public static readonly JOB_VALIDATE_RELAYS = 'validate-relays'
 
-    constructor(
-        private readonly validation: ValidationService,
-    ) {
+    constructor(private readonly validation: ValidationService) {
         super()
     }
 
@@ -66,7 +64,7 @@ export class ValidationQueue extends WorkerHost {
                     const validationData = await this.validation.validateRelays(
                         validatedRelays,
                     )
-                    
+
                     return validationData
                 } catch (e) {
                     this.logger.error(e)

@@ -82,7 +82,7 @@ export class TasksService implements OnApplicationBootstrap {
                 opts: TasksService.jobOpts,
                 data: {
                     stamp: stamp,
-                    scores: scores
+                    scores: scores,
                 },
             })),
         }
@@ -98,7 +98,7 @@ export class TasksService implements OnApplicationBootstrap {
         @InjectFlowProducer('verification-flow')
         public publishingFlow: FlowProducer,
         @InjectFlowProducer('distribution-flow')
-        public distributionFlow: FlowProducer
+        public distributionFlow: FlowProducer,
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
