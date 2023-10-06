@@ -41,6 +41,8 @@ export class VerificationService {
     private relayRegistryWarp: Warp
     private relayRegistryContract: Contract<RelayRegistryState>
 
+    private maxUploadRetries = 3
+
     constructor(
         private readonly config: ConfigService<{
             RELAY_REGISTRY_OPERATOR_KEY: string

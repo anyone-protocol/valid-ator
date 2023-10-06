@@ -3,7 +3,6 @@ import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer, FlowJob } from 'bullmq'
 import { ValidationData } from 'src/validation/schemas/validation-data'
 import { ScoreData } from 'src/distribution/schemas/score-data'
-import { AddressLike } from 'ethers'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -94,15 +93,12 @@ export class TasksService implements OnApplicationBootstrap {
         @InjectQueue('validation-queue') public validationQueue: Queue,
         @InjectQueue('verification-queue') public verificationQueue: Queue,
         @InjectQueue('distribution-queue') public distributionQueue: Queue,
-        @InjectQueue('facilitator-updates-queue') public facilitatorUpdatesQueue: Queue,
         @InjectFlowProducer('validation-flow')
         public validationFlow: FlowProducer,
         @InjectFlowProducer('verification-flow')
         public publishingFlow: FlowProducer,
         @InjectFlowProducer('distribution-flow')
-        public distributionFlow: FlowProducer,
-        @InjectFlowProducer('facilitator-updates-flow')
-        public facilitatorUpdatesFlow: FlowProducer
+        public distributionFlow: FlowProducer
     ) {}
 
     async onApplicationBootstrap(): Promise<void> {
@@ -113,26 +109,9 @@ export class TasksService implements OnApplicationBootstrap {
         await this.validationQueue.obliterate({ force: true })
         await this.verificationQueue.obliterate({ force: true })
         await this.distributionQueue.obliterate({ force: true })
-        await this.facilitatorUpdatesQueue.obliterate({ force: true })
 
         await this.updateOnionooRelays(0)
         await this.queueDistributing(0)
-    }
-
-    public async requestFacilityUpdate(address: string): Promise<void> {
-        await this.facilitatorUpdatesFlow.add(
-            {
-                name: 'update-allocation',
-                queueName: 'facilitator-updates-queue',
-                opts: TasksService.jobOpts,
-                children: [{
-                    name: 'get-current-rewards',
-                    queueName: 'facilitator-updates-queue',
-                    opts: TasksService.jobOpts,
-                    data: address
-                }],
-            }
-        )
     }
 
     public async queueDistributing(

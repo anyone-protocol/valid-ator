@@ -1,11 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventsService } from './events.service';
+import { BullModule } from '@nestjs/bullmq';
+import { ConfigModule } from '@nestjs/config';
 
 describe('EventsService', () => {
   let service: EventsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot(),
+        BullModule.registerQueue({
+          name: 'facilitator-updates-queue',
+          connection: { host: 'localhost', port: 6379 },
+        }),
+        BullModule.registerFlowProducer({
+            name: 'facilitator-updates-flow',
+            connection: { host: 'localhost', port: 6379 },
+        }),
+      ],
       providers: [EventsService],
     }).compile();
 

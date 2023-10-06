@@ -1,15 +1,24 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
+import { Queue, FlowProducer, FlowJob } from 'bullmq'
 import { ConfigService } from '@nestjs/config';
 import BigNumber from 'bignumber.js';
-import { ethers } from 'ethers';
+import { ethers, AddressLike } from 'ethers';
 import { RewardAllocationData } from 'src/distribution/dto/reward-allocation-data';
-import { TasksService } from 'src/tasks/tasks.service';
 
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
     private readonly logger = new Logger(EventsService.name)
 
     private isLive? : string
+
+    private static readonly removeOnComplete: true
+    private static readonly removeOnFail: 8
+
+    public static jobOpts = {
+        removeOnComplete: EventsService.removeOnComplete,
+        removeOnFail: EventsService.removeOnFail,
+    }
 
     private facilitatorABI = [
         {
@@ -65,15 +74,23 @@ export class EventsService implements OnApplicationBootstrap {
             JSON_RPC: string
             IS_LIVE: string
         }>,
-        private readonly tasks: TasksService,
+        @InjectQueue('facilitator-updates-queue') public facilitatorUpdatesQueue: Queue,
+        @InjectFlowProducer('facilitator-updates-flow')
+        public facilitatorUpdatesFlow: FlowProducer
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
+
         this.facilitatorAddress = this.config.get<string>('FACILITY_CONTRACT_ADDRESS', { infer: true })
         this.jsonRpc = this.config.get<string>('JSON_RPC', { infer: true })
         this.facilityOperatorKey = this.config.get<string>('FACILITY_OPERATOR_KEY', { infer: true })
+        
+        this.logger.log(
+            `Initializing events service (IS_LIVE: ${this.isLive}, FACILITATOR: ${this.facilitatorAddress})`,
+        )
     }
 
     async onApplicationBootstrap(): Promise<void> {
+        await this.facilitatorUpdatesQueue.obliterate({ force: true })
         if (this.facilitatorAddress != undefined) {            
             this.subscribeToFacilitator()
                 .catch((error) => console.error('Failed subscribing to facilitator events:', error))
@@ -84,10 +101,16 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     public async updateAllocation(data: RewardAllocationData): Promise<void> {
-        if (this.signerContract == undefined) {
-            this.logger.error('Facility signer contract not initialized, skipping allocation update')
+        if (this.isLive === 'true') {
+            if (this.signerContract == undefined) {
+                this.logger.error('Facility signer contract not initialized, skipping allocation update')
+            } else {
+                await this.signerContract.updateAllocation(data.address, BigNumber(data.amount).toFixed(0), true)
+            }
         } else {
-            await this.signerContract.updateAllocation(data.address, BigNumber(data.amount).toFixed(0), true)
+            this.logger.warn(
+                `NOT LIVE: Not storing updating allocation of ${data.address} to ${BigNumber(data.amount).toFixed(0).toString()} relay(s) `,
+            )
         }
     }
 
@@ -118,7 +141,25 @@ export class EventsService implements OnApplicationBootstrap {
                         } else {
                             accountString = _account
                         }
-                        await this.tasks.tasksQueue.add('request-facility-update', accountString, TasksService.jobOpts) 
+                        
+                        if (accountString != undefined) {
+                            this.logger.log(`Starting rewards update for ${accountString}`)
+                            await this.facilitatorUpdatesFlow.add(
+                                {
+                                    name: 'update-allocation',
+                                    queueName: 'facilitator-updates-queue',
+                                    opts: EventsService.jobOpts,
+                                    children: [{
+                                        name: 'get-current-rewards',
+                                        queueName: 'facilitator-updates-queue',
+                                        opts: EventsService.jobOpts,
+                                        data: accountString
+                                    }],
+                                }
+                            )
+                        } else {
+                            this.logger.error('Trying to request facility update but missing address in data')
+                        }
                     })
                 }
             }

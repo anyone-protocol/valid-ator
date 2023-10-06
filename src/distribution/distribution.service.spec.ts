@@ -1,16 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DistributionService } from './distribution.service';
+import { ConfigModule } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 
 describe('DistributionService', () => {
   let service: DistributionService;
+  let testModule: TestingModule
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [DistributionService],
-    }).compile();
+  beforeAll(async () => {
+      testModule = await Test.createTestingModule({
+        imports: [
+          ConfigModule.forRoot(),
+        ],
+        providers: [DistributionService],
+      }).compile()
 
-    service = module.get<DistributionService>(DistributionService);
-  });
+      service = testModule.get<DistributionService>(DistributionService)
+  })
 
   it('should be defined', () => {
     expect(service).toBeDefined();

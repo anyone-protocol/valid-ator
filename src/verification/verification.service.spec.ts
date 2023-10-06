@@ -35,7 +35,8 @@ describe('VerificationService', () => {
     })
 
     
-  it.todo('should attempt to retry failed relay data upload');
+  it.todo('should attempt to retry failed relay metrics upload');
+
   it.todo('should attempt to retry failed stats data upload');
 
   it.todo('should warn about relay uploads that are locked');

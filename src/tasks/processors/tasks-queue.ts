@@ -14,7 +14,6 @@ export class TasksQueue extends WorkerHost {
         'validate-onionoo-relays'
     public static readonly JOB_PUBLISH_VALIDATION = 'publish-validation'
     public static readonly JOB_RUN_DISTRIBUTION = 'run-distribution'
-    public static readonly JOB_REQUEST_FACILITY_UPDATE = 'request-facility-update'
 
     constructor(
         private readonly tasks: TasksService,
@@ -72,16 +71,6 @@ export class TasksQueue extends WorkerHost {
                     )
                 }
                 
-                break
-
-            case TasksQueue.JOB_REQUEST_FACILITY_UPDATE:
-                const address = job.data as string
-                if (address != undefined) {
-                    this.logger.log(`Starting rewards update for ${address}`)
-                    await this.tasks.requestFacilityUpdate(address)
-                } else {
-                    this.logger.error('Trying to request facility update but missing address in job data')
-                }
                 break
 
             default:
