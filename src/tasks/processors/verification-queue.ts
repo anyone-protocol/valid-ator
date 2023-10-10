@@ -44,8 +44,8 @@ export class VerificationQueue extends WorkerHost {
                             `Incorrect fingerprint [${job.data.fingerprint}]`,
                         )
                     }
-                } catch (e) {
-                    this.logger.error(`Failed verifying validated relay ${e}`)
+                } catch (error) {
+                    this.logger.error('Exception while verifying validated relay:', error)
                 }
 
                 const verifiedRelay: VerificationResultDto = {
@@ -56,36 +56,34 @@ export class VerificationQueue extends WorkerHost {
                 return [verifiedRelay]
 
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
-                const verificationResults: VerificationResults = Object.values(
-                    await job.getChildrenValues(),
-                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                try {
+                    const verificationResults: VerificationResults = Object.values(
+                        await job.getChildrenValues(),
+                    ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
-                if (verificationResults.length > 0) {
-                    try {
+                    if (verificationResults.length > 0) {
                         this.logger.debug(`Finalizing verification ${job.data}`)
-
                         this.verification.logVerification(verificationResults)
 
                         return verificationResults
-                    } catch (e) {
-                        this.logger.error(
-                            `Failed finalizing verification of ${verificationResults.length} relay(s)`,
-                        )
-                        this.logger.error(e)
+                    } else {
+                        this.logger.debug(`${job.data}> No data was published`)
                     }
-                } else {
-                    this.logger.debug(`${job.data}> No data was published`)
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while confirming verification of relay(s)`, error
+                    )
                 }
 
                 return []
 
             case VerificationQueue.JOB_PERSIST_VERIFICATION:
-                const verifiedRelays: VerificationResults = Object.values(
-                    await job.getChildrenValues(),
-                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                try {
+                    const verifiedRelays: VerificationResults = Object.values(
+                        await job.getChildrenValues(),
+                    ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
-                if (verifiedRelays.length > 0) {
-                    try {
+                    if (verifiedRelays.length > 0) {
                         this.logger.debug(
                             `Persisting verification of ${verifiedRelays.length} relays`,
                         )
@@ -93,14 +91,13 @@ export class VerificationQueue extends WorkerHost {
                         return await this.verification.persistVerification(
                             verifiedRelays,
                         )
-                    } catch (e) {
-                        this.logger.error(
-                            `Failed storing verification of ${verifiedRelays.length} relay(s)`,
-                        )
-                        this.logger.error(e)
+                    } else {
+                        this.logger.debug(`No verified relays found to store`)
                     }
-                } else {
-                    this.logger.debug(`No verified relays found to store`)
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while persisting verification results`, error
+                    )
                 }
                 return undefined
 

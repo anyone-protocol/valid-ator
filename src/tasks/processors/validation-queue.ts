@@ -29,7 +29,7 @@ export class ValidationQueue extends WorkerHost {
                     const relays = await this.validation.fetchNewRelays()
                     return relays
                 } catch (e) {
-                    this.logger.error(e)
+                    this.logger.error('Exception while fetching relays:', e)
                     return []
                 }
 
@@ -48,7 +48,7 @@ export class ValidationQueue extends WorkerHost {
 
                     return validated
                 } catch (e) {
-                    this.logger.error(e)
+                    this.logger.error('Exception while filtering relays:', e)
                     return []
                 }
 
@@ -67,7 +67,7 @@ export class ValidationQueue extends WorkerHost {
 
                     return validationData
                 } catch (e) {
-                    this.logger.error(e)
+                    this.logger.error('Exception while validating relays:', e)
                     return undefined
                 }
 

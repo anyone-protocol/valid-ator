@@ -30,12 +30,12 @@ export class DistributionQueue extends WorkerHost {
 
         switch (job.name) {
             case DistributionQueue.JOB_START_DISTRIBUTION:
-                const data: VerificationData = job.data as VerificationData
-                if (data != undefined) {
-                    this.logger.log(
-                        `Starting distribution ${data.verified_at} with ${data.relays.length} relays`,
-                    )
-                    try {
+                try {
+                    const data: VerificationData = job.data as VerificationData
+                    if (data != undefined) {
+                        this.logger.log(
+                            `Starting distribution ${data.verified_at} with ${data.relays.length} relays`,
+                        )
                         const scoreJobs = this.distribution.groupScoreJobs({
                             complete: false,
                             stamp: data.verified_at,
@@ -56,14 +56,14 @@ export class DistributionQueue extends WorkerHost {
                             ),
                         )
                         return true
-                    } catch (e) {
-                        this.logger.error(e)
+                    } else {
+                        this.logger.debug(
+                            'Nothing to distribute, data is undefined. Skipping flow',
+                        )
                         return false
                     }
-                } else {
-                    this.logger.debug(
-                        'Nothing to distribute, data is undefined. Skipping flow',
-                    )
+                } catch (e) {
+                    this.logger.error('Exception while starting distribution', e)
                     return false
                 }
 
@@ -86,13 +86,20 @@ export class DistributionQueue extends WorkerHost {
                                 score: data.score.toString(),
                             })),
                         )
-                        return result
+
+                        if (result.length == data.scores.length) {
+                            return result
+                        } else {
+                            this.logger.warn(`Failed adding ${data.scores.length - result.length} out of ${data.scores.length} scores`)
+                            return []
+                        }
+                        
                     } else {
                         this.logger.error('Missing scores in job data')
                         return []
                     }
                 } catch (e) {
-                    this.logger.error(e)
+                    this.logger.error('Exception while adding scores', e)
                     return []
                 }
 
@@ -125,7 +132,7 @@ export class DistributionQueue extends WorkerHost {
                         return undefined
                     }
                 } catch (e) {
-                    this.logger.error(e)
+                    this.logger.error('Exception while completing distribution', e)
                     return undefined
                 }
 

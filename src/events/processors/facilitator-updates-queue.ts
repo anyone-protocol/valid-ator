@@ -29,19 +29,19 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
 
         switch (job.name) {
             case FacilitatorUpdatesQueue.JOB_GET_CURRENT_REWARDS:
-                const address = job.data as string
-                if (address != undefined) {
-                    this.logger.log(
-                        `Fetching current rewards from distribution for ${address}`,
-                    )
-                    try {
+                try {
+                    const address = job.data as string
+                    if (address != undefined) {
+                        this.logger.log(
+                            `Fetching current rewards from distribution for ${address}`,
+                        )
                         return await this.distribution.getAllocation(address)
-                    } catch (e) {
-                        this.logger.error(e)
+                    } else {
+                        this.logger.error('Missing address in job data')
                         return undefined
                     }
-                } else {
-                    this.logger.error('Missing address in job data')
+                } catch (error) {
+                    this.logger.error('Exception while getting current rewards:', error)
                     return undefined
                 }
 
@@ -50,11 +50,11 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
-                if (rewardData.length > 0) {
-                    this.logger.log(
-                        `Updating rewards for ${rewardData[0].address}`,
-                    )
-                    try {
+                try {
+                    if (rewardData.length > 0) {
+                        this.logger.log(
+                            `Updating rewards for ${rewardData[0].address}`,
+                        )
                         const hasPassedUpdate = await this.events.updateAllocation(
                             rewardData[0],
                         )
@@ -63,20 +63,20 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                         }
 
                         return true
-                    } catch (e) {
-                        this.logger.error('Failed updating allocation:', e)
+                    } else {
+                        this.logger.error('Missing address in job data')
                         return false
                     }
-                } else {
-                    this.logger.error('Missing address in job data')
+                } catch (e) {
+                    this.logger.error('Exception when updating allocation:', e)
                     return false
                 }
 
             case FacilitatorUpdatesQueue.JOB_RECOVER_UPDATE_ALLOCATION:
-                const recoverData: RecoverUpdateAllocationData =
-                    job.data as RecoverUpdateAllocationData
-                if (recoverData.retries > 0) {
-                    try {
+                try {
+                    const recoverData: RecoverUpdateAllocationData =
+                        job.data as RecoverUpdateAllocationData
+                    if (recoverData.retries > 0) {
                         const hasPassedRecovery = await this.events.updateAllocation({
                             address: recoverData.address,
                             amount: recoverData.amount,
@@ -91,16 +91,16 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                             }
                         }
                         return hasPassedRecovery
-                    } catch (e) {
-                        this.logger.error('Failed recovering allocation:', e)
-                        return false
+                    } else {
+                        this.logger.warn(
+                            'No more retries to try while recovering allocation',
+                        )
                     }
-                } else {
-                    this.logger.warn(
-                        'No more retries to try while recovering allocation',
-                    )
+                    return true    
+                } catch (e) {
+                    this.logger.error('Exception while recovering allocation:', e)
+                    return false
                 }
-                return true
 
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)

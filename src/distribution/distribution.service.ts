@@ -105,26 +105,33 @@ export class DistributionService {
     ): Promise<RewardAllocationData | undefined> {
         if (this.owner != undefined) {
             const evmSig = await buildEvmSignature(this.owner.signer)
-            const response = await this.distributionContract
-                .connect({
-                    signer: evmSig,
-                    type: 'ethereum',
-                })
-                .viewState<Claimable, string>({
-                    function: 'claimable',
-                    address: address,
-                })
+            try {
+                const response = await this.distributionContract
+                    .connect({
+                        signer: evmSig,
+                        type: 'ethereum',
+                    })
+                    .viewState<Claimable, string>({
+                        function: 'claimable',
+                        address: address,
+                    })
 
-            if (response.result == undefined) {
+                if (response.result == undefined) {
+                    this.logger.error(
+                        `Failed to fetch distribution state: ${response.errorMessage}`,
+                    )
+                    return undefined
+                } else {
+                    return {
+                        address: address,
+                        amount: response.result,
+                    }
+                }
+            } catch (error) {
                 this.logger.error(
-                    `Failed to fetch distribution state: ${response.errorMessage}`,
+                    `Exception in getAllocation:`, error,
                 )
                 return undefined
-            } else {
-                return {
-                    address: address,
-                    amount: response.result,
-                }
             }
         } else {
             this.logger.error(
@@ -169,20 +176,26 @@ export class DistributionService {
         if (this.owner != undefined) {
             if (this.isLive === 'true') {
                 const evmSig = await buildEvmSignature(this.owner.signer)
-                const response = await this.distributionContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
-                    .writeInteraction<AddScores>({
-                        function: 'addScores',
-                        timestamp: stamp.toString(),
-                        scores: scores,
-                    })
-                if (response?.originalTxId != undefined) {
-                    return scores
-                } else {
-                    this.logger.error(`Failed storing scores for ${stamp}`)
+                try {
+                    const response = await this.distributionContract
+                        .connect({
+                            signer: evmSig,
+                            type: 'ethereum',
+                        })
+                        .writeInteraction<AddScores>({
+                            function: 'addScores',
+                            timestamp: stamp.toString(),
+                            scores: scores,
+                        })
+
+                        if (response?.originalTxId != undefined) {
+                            return scores
+                        } else {
+                            this.logger.error(`Failed storing scores for ${stamp}`)
+                            return []
+                        }
+                } catch (error) {
+                    this.logger.error(`Exception in addScores`, error)
                     return []
                 }
             } else {
@@ -201,20 +214,25 @@ export class DistributionService {
         if (this.owner != undefined) {
             if (this.isLive === 'true') {
                 const evmSig = await buildEvmSignature(this.owner.signer)
-                const response = await this.distributionContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
-                    .writeInteraction<Distribute>({
-                        function: 'distribute',
-                        timestamp: stamp.toString(),
-                    })
-                if (response?.originalTxId != undefined) {
-                    this.logger.log(`Completed distribution for ${stamp}`)
-                    return true
-                } else {
-                    this.logger.error(`Failed distribution for ${stamp}`)
+                try {
+                    const response = await this.distributionContract
+                        .connect({
+                            signer: evmSig,
+                            type: 'ethereum',
+                        })
+                        .writeInteraction<Distribute>({
+                            function: 'distribute',
+                            timestamp: stamp.toString(),
+                        })
+                    if (response?.originalTxId != undefined) {
+                        this.logger.log(`Completed distribution for ${stamp}`)
+                        return true
+                    } else {
+                        this.logger.error(`Failed distribution for ${stamp}`)
+                        return false
+                    }
+                } catch (error) {
+                    this.logger.error('Exception in distribute', error)
                     return false
                 }
             } else {
