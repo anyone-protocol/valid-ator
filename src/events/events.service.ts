@@ -100,7 +100,9 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        await this.facilitatorUpdatesQueue.obliterate({ force: true })
+        if (this.isLive != 'true') {
+            await this.facilitatorUpdatesQueue.obliterate({ force: true })
+        }
         if (this.facilitatorAddress != undefined) {
             this.subscribeToFacilitator().catch((error) =>
                 this.logger.error(

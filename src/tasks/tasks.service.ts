@@ -3,10 +3,13 @@ import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer, FlowJob } from 'bullmq'
 import { ValidationData } from 'src/validation/schemas/validation-data'
 import { ScoreData } from 'src/distribution/schemas/score-data'
+import { ConfigService } from '@nestjs/config'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
     private readonly logger = new Logger(TasksService.name)
+
+    private isLive?: string
 
     private static readonly removeOnComplete: true
     private static readonly removeOnFail: 8
@@ -69,13 +72,19 @@ export class TasksService implements OnApplicationBootstrap {
 
     public static DISTRIBUTE_RELAY_SCORES(
         stamp: number,
+        total: number,
+        retries: number,
         scoreJobs: ScoreData[][],
     ): FlowJob {
         return {
             name: 'complete-distribution',
             queueName: 'distribution-queue',
             opts: TasksService.jobOpts,
-            data: stamp,
+            data: {
+                stamp: stamp,
+                total: total,
+                retries: retries,
+            },
             children: scoreJobs.map((scores, index, array) => ({
                 name: 'add-scores',
                 queueName: 'distribution-queue',
@@ -89,6 +98,9 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     constructor(
+        private readonly config: ConfigService<{
+            IS_LIVE: string
+        }>,
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
         @InjectQueue('validation-queue') public validationQueue: Queue,
         @InjectQueue('verification-queue') public verificationQueue: Queue,
@@ -99,18 +111,25 @@ export class TasksService implements OnApplicationBootstrap {
         public publishingFlow: FlowProducer,
         @InjectFlowProducer('distribution-flow')
         public distributionFlow: FlowProducer,
-    ) {}
+    ) {
+        this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
+    }
 
     async onApplicationBootstrap(): Promise<void> {
         this.logger.log('Bootstrapping Tasks Service')
         await this.tasksQueue.obliterate({ force: true })
 
-        // TODO: some of these queues should persist beyond app reboot in live
-        await this.validationQueue.obliterate({ force: true })
-        await this.verificationQueue.obliterate({ force: true })
-        await this.distributionQueue.obliterate({ force: true })
+        if (this.isLive != 'true') {
+            await this.validationQueue.obliterate({ force: true })
+            await this.verificationQueue.obliterate({ force: true })
+            await this.distributionQueue.obliterate({ force: true })
+        }
 
-        await this.updateOnionooRelays(0)
+        // TODO: make sure there is onionoo updates queued or in progress and create one if there isnt
+        await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
+
+        // TODO: make sure there is distribution queued or in progress and create one if there isnt
+        const delayToRhythmDistribution = 0
         await this.queueDistributing(0)
     }
 

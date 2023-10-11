@@ -45,7 +45,10 @@ export class VerificationQueue extends WorkerHost {
                         )
                     }
                 } catch (error) {
-                    this.logger.error('Exception while verifying validated relay:', error)
+                    this.logger.error(
+                        'Exception while verifying validated relay:',
+                        error,
+                    )
                 }
 
                 const verifiedRelay: VerificationResultDto = {
@@ -57,9 +60,11 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
                 try {
-                    const verificationResults: VerificationResults = Object.values(
-                        await job.getChildrenValues(),
-                    ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                    const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
+                        )
 
                     if (verificationResults.length > 0) {
                         this.logger.debug(`Finalizing verification ${job.data}`)
@@ -71,7 +76,8 @@ export class VerificationQueue extends WorkerHost {
                     }
                 } catch (error) {
                     this.logger.error(
-                        `Exception while confirming verification of relay(s)`, error
+                        `Exception while confirming verification of relay(s)`,
+                        error,
                     )
                 }
 
@@ -81,7 +87,10 @@ export class VerificationQueue extends WorkerHost {
                 try {
                     const verifiedRelays: VerificationResults = Object.values(
                         await job.getChildrenValues(),
-                    ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                    ).reduce(
+                        (prev, curr) => (prev as []).concat(curr as []),
+                        [],
+                    )
 
                     if (verifiedRelays.length > 0) {
                         this.logger.debug(
@@ -96,7 +105,8 @@ export class VerificationQueue extends WorkerHost {
                     }
                 } catch (error) {
                     this.logger.error(
-                        `Exception while persisting verification results`, error
+                        `Exception while persisting verification results`,
+                        error,
                     )
                 }
                 return undefined

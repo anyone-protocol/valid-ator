@@ -28,6 +28,7 @@ export class DistributionService {
     private owner
 
     private static readonly scoresPerBatch = 8
+    public static readonly maxDistributionRetries: 6
 
     private distributionWarp: Warp
     private distributionContract: Contract<DistributionState>
@@ -128,9 +129,7 @@ export class DistributionService {
                     }
                 }
             } catch (error) {
-                this.logger.error(
-                    `Exception in getAllocation:`, error,
-                )
+                this.logger.error(`Exception in getAllocation:`, error)
                 return undefined
             }
         } else {
@@ -142,7 +141,7 @@ export class DistributionService {
     }
 
     public groupScoreJobs(data: DistributionData): ScoreData[][] {
-        return data.scores
+        const result = data.scores
             .filter((score, index, array) => score.score > 0)
             .reduce<ScoreData[][]>(
                 (curr, score, index, array): ScoreData[][] => {
@@ -170,9 +169,15 @@ export class DistributionService {
                 },
                 [],
             )
+
+        this.logger.debug(
+            `Created ${result.length} groups out of ${data.scores.length}`,
+        )
+
+        return result
     }
 
-    public async addScores(stamp: number, scores: Score[]): Promise<Score[]> {
+    public async addScores(stamp: number, scores: Score[]): Promise<boolean> {
         if (this.owner != undefined) {
             if (this.isLive === 'true') {
                 const evmSig = await buildEvmSignature(this.owner.signer)
@@ -188,25 +193,27 @@ export class DistributionService {
                             scores: scores,
                         })
 
-                        if (response?.originalTxId != undefined) {
-                            return scores
-                        } else {
-                            this.logger.error(`Failed storing scores for ${stamp}`)
-                            return []
-                        }
+                    if (response?.originalTxId != undefined) {
+                        return true
+                    } else {
+                        this.logger.error(
+                            `Failed storing ${scores.length} scores for ${stamp}`,
+                        )
+                        return false
+                    }
                 } catch (error) {
                     this.logger.error(`Exception in addScores`, error)
-                    return []
+                    return false
                 }
             } else {
                 this.logger.warn(
                     `NOT LIVE: Not adding ${scores.length} scores to distribution contract `,
                 )
-                return []
+                return false
             }
         } else {
             this.logger.error('Owner is undefined... skipping adding scores ')
-            return []
+            return false
         }
     }
 
@@ -224,6 +231,7 @@ export class DistributionService {
                             function: 'distribute',
                             timestamp: stamp.toString(),
                         })
+
                     if (response?.originalTxId != undefined) {
                         this.logger.log(`Completed distribution for ${stamp}`)
                         return true

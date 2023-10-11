@@ -41,7 +41,10 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                         return undefined
                     }
                 } catch (error) {
-                    this.logger.error('Exception while getting current rewards:', error)
+                    this.logger.error(
+                        'Exception while getting current rewards:',
+                        error,
+                    )
                     return undefined
                 }
 
@@ -55,9 +58,8 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                         this.logger.log(
                             `Updating rewards for ${rewardData[0].address}`,
                         )
-                        const hasPassedUpdate = await this.events.updateAllocation(
-                            rewardData[0],
-                        )
+                        const hasPassedUpdate =
+                            await this.events.updateAllocation(rewardData[0])
                         if (!hasPassedUpdate) {
                             this.events.recoverUpdateAllocation(rewardData[0])
                         }
@@ -77,10 +79,11 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                     const recoverData: RecoverUpdateAllocationData =
                         job.data as RecoverUpdateAllocationData
                     if (recoverData.retries > 0) {
-                        const hasPassedRecovery = await this.events.updateAllocation({
-                            address: recoverData.address,
-                            amount: recoverData.amount,
-                        })
+                        const hasPassedRecovery =
+                            await this.events.updateAllocation({
+                                address: recoverData.address,
+                                amount: recoverData.amount,
+                            })
                         if (!hasPassedRecovery) {
                             if (recoverData.retries > 1) {
                                 this.events.retryUpdateAllocation(recoverData)
@@ -96,9 +99,12 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                             'No more retries to try while recovering allocation',
                         )
                     }
-                    return true    
+                    return true
                 } catch (e) {
-                    this.logger.error('Exception while recovering allocation:', e)
+                    this.logger.error(
+                        'Exception while recovering allocation:',
+                        e,
+                    )
                     return false
                 }
 

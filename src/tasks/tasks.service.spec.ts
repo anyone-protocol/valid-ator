@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { TasksService } from './tasks.service'
 import { BullModule } from '@nestjs/bullmq'
+import { ConfigModule } from '@nestjs/config'
 
 describe('TasksService', () => {
     let service: TasksService
@@ -8,6 +9,7 @@ describe('TasksService', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
+                ConfigModule.forRoot(),
                 BullModule.registerQueue({
                     name: 'tasks-queue',
                     connection: { host: 'localhost', port: 6379 },
