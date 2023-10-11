@@ -27,9 +27,13 @@ export class TasksQueue extends WorkerHost {
 
         switch (job.name) {
             case TasksQueue.JOB_VALIDATE_ONIONOO_RELAYS:
-                this.tasks.validationFlow.add(
-                    TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
-                )
+                try {
+                    this.tasks.validationFlow.add(
+                        TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
+                    )
+                } catch (error) {
+                    this.logger.error('Exception while adding validate relays job', error)
+                }
 
                 await this.tasks.updateOnionooRelays() // using default delay time in param
                 break
@@ -52,28 +56,32 @@ export class TasksQueue extends WorkerHost {
                 break
 
             case TasksQueue.JOB_RUN_DISTRIBUTION:
-                const verificationData: VerificationData | null =
-                    await this.verification.getMostRecent()
+                try {
+                    const verificationData: VerificationData | null =
+                        await this.verification.getMostRecent()
 
-                if (verificationData != null) {
-                    const distribution_time = Date.now()
-                    const currentData = Object.assign(verificationData, {
-                        verified_at: distribution_time,
-                    })
-                    this.logger.log(
-                        `Running distribution ${currentData.verified_at} with ${currentData.relays.length}`,
-                    )
-                    this.tasks.distributionQueue.add(
-                        'start-distribution',
-                        currentData,
-                        TasksService.jobOpts,
-                    )
-                    this.tasks.queueDistributing() // using default delay time in param
-                } else {
-                    this.logger.warn(
-                        'Nothing to distribute, this should not happen, or just wait for the first distribution to happen',
-                    )
+                    if (verificationData != null) {
+                        const distribution_time = Date.now()
+                        const currentData = Object.assign(verificationData, {
+                            verified_at: distribution_time,
+                        })
+                        this.logger.log(
+                            `Running distribution ${currentData.verified_at} with ${currentData.relays.length}`,
+                        )
+                        this.tasks.distributionQueue.add(
+                            'start-distribution',
+                            currentData,
+                            TasksService.jobOpts,
+                        )
+                    } else {
+                        this.logger.warn(
+                            'Nothing to distribute, this should not happen, or just wait for the first verification to happen',
+                        )
+                    }
+                } catch (error) {
+                    this.logger.error('Exception while running distribution', error)
                 }
+                await this.tasks.queueDistributing() // using default delay time in param
 
                 break
 

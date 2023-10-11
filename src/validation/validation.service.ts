@@ -35,7 +35,7 @@ export class ValidationService {
         private readonly validationDataModel: Model<ValidationData>,
     ) {}
 
-    async initServiceData(): Promise<void> {
+    private async createServiceState(): Promise<void> {
         const newData = await this.validationServiceDataModel.create({
             apiVersion: this.currentApiVersion,
             last_seen: '',
@@ -49,23 +49,23 @@ export class ValidationService {
         })
 
         if (hasData) {
-            const initData = await this.validationServiceDataModel
+            const serviceData = await this.validationServiceDataModel
                 .findOne({ apiVersion: this.currentApiVersion })
                 .exec()
                 .catch((error) => {
                     this.logger.error(error)
                 })
 
-            if (initData != null) {
-                this.lastSeen = initData.last_seen
-                this.dataId = initData._id
+            if (serviceData != null) {
+                this.lastSeen = serviceData.last_seen
+                this.dataId = serviceData._id
             } else {
                 this.logger.warn(
                     'This should not happen. Data was deleted, or is incorrect',
                 )
-                this.initServiceData()
+                this.createServiceState()
             }
-        } else this.initServiceData()
+        } else this.createServiceState()
 
         this.logger.log(
             `Bootstrapped Onionoo Connector [seen: ${this.lastSeen}, id: ${this.dataId}]`,

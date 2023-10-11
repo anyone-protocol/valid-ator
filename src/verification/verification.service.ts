@@ -392,9 +392,7 @@ export class VerificationService {
             this.logger.log(
                 `Skipped ${
                     claimable.length
-                } already registered/claimable relay(s): [${claimable
-                    .map((result, index, array) => result.relay.fingerprint)
-                    .join(', ')}]`,
+                } already registered/claimable relay(s)`,
             )
         }
 

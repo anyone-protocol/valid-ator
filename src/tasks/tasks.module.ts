@@ -8,6 +8,8 @@ import { VerificationQueue } from './processors/verification-queue'
 import { VerificationModule } from 'src/verification/verification.module'
 import { DistributionQueue } from './processors/distribution-queue'
 import { DistributionModule } from 'src/distribution/distribution.module'
+import { TaskServiceData, TaskServiceDataSchema } from './schemas/task-service-data'
+import { MongooseModule } from '@nestjs/mongoose'
 
 @Module({
     imports: [
@@ -21,6 +23,12 @@ import { DistributionModule } from 'src/distribution/distribution.module'
         BullModule.registerFlowProducer({ name: 'verification-flow' }),
         BullModule.registerQueue({ name: 'distribution-queue' }),
         BullModule.registerFlowProducer({ name: 'distribution-flow' }),
+        MongooseModule.forFeature([
+            {
+                name: TaskServiceData.name,
+                schema: TaskServiceDataSchema,
+            },
+        ]),
     ],
     providers: [
         TasksService,

@@ -4,12 +4,17 @@ import { Queue, FlowProducer, FlowJob } from 'bullmq'
 import { ValidationData } from 'src/validation/schemas/validation-data'
 import { ScoreData } from 'src/distribution/schemas/score-data'
 import { ConfigService } from '@nestjs/config'
+import { TaskServiceData } from './schemas/task-service-data'
+import { InjectModel } from '@nestjs/mongoose'
+import { Model, Types } from 'mongoose'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
     private readonly logger = new Logger(TasksService.name)
 
     private isLive?: string
+    private dataId: Types.ObjectId
+    private state: TaskServiceData
 
     private static readonly removeOnComplete: true
     private static readonly removeOnFail: 8
@@ -111,31 +116,87 @@ export class TasksService implements OnApplicationBootstrap {
         public publishingFlow: FlowProducer,
         @InjectFlowProducer('distribution-flow')
         public distributionFlow: FlowProducer,
+        @InjectModel(TaskServiceData.name)
+        private readonly taskServiceDataModel: Model<TaskServiceData>,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
+        this.state = {
+            isDistributing: false,
+            isValidating: false,
+        }
+    }
+
+    private async createServiceState(): Promise<void> {
+        const newData = await this.taskServiceDataModel.create(this.state)
+        this.dataId = newData._id
+    }
+
+    private async updateServiceState(): Promise<void> {
+        const updateResult = await this.taskServiceDataModel.updateOne(this.dataId, this.state)
+        if (!updateResult.acknowledged) {
+            this.logger.error('Failed to acknowledge update of the task service state')
+        }
     }
 
     async onApplicationBootstrap(): Promise<void> {
         this.logger.log('Bootstrapping Tasks Service')
-        await this.tasksQueue.obliterate({ force: true })
+        const hasData = await this.taskServiceDataModel.exists({})
+
+        if (hasData) {
+            const serviceData = await this.taskServiceDataModel
+                .findOne({})
+                .exec()
+                .catch((error) => {
+                    this.logger.error(error)
+                })
+
+            if (serviceData != null) {
+                this.dataId = serviceData._id
+                this.state = {
+                    isValidating: serviceData.isValidating,
+                    isDistributing: serviceData.isDistributing
+                }
+            } else {
+                this.logger.warn(
+                    'This should not happen. Data was deleted, or is incorrect',
+                )
+                this.createServiceState()
+            }
+        } else this.createServiceState()
+
+        this.logger.log(
+            `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}, isDistributing: ${this.state.isDistributing}]`,
+        )
 
         if (this.isLive != 'true') {
+            await this.tasksQueue.obliterate({ force: true })
+
             await this.validationQueue.obliterate({ force: true })
             await this.verificationQueue.obliterate({ force: true })
             await this.distributionQueue.obliterate({ force: true })
         }
 
-        // TODO: make sure there is onionoo updates queued or in progress and create one if there isnt
-        await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
+        if (!this.state.isValidating) {
+            await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
+        } else {
+            this.logger.log('The validation of relays should be already queued')
+        }
 
-        // TODO: make sure there is distribution queued or in progress and create one if there isnt
-        const delayToRhythmDistribution = 0
-        await this.queueDistributing(0)
+        if (!this.state.isDistributing) {
+            await this.queueDistributing(0)
+        } else {
+            this.logger.log('The distribution of tokens should be already queued')
+        }
     }
 
     public async queueDistributing(
         delayJob: number = 1000 * 60 * 60,
     ): Promise<void> {
+        if (!this.state.isDistributing) {
+            this.state.isDistributing = true
+            await this.updateServiceState()
+        }
+
         await this.tasksQueue.add(
             'run-distribution',
             {},
@@ -150,6 +211,11 @@ export class TasksService implements OnApplicationBootstrap {
     public async updateOnionooRelays(
         delayJob: number = 1000 * 60 * 10,
     ): Promise<void> {
+        if (!this.state.isValidating) {
+            this.state.isValidating = true
+            await this.updateServiceState()
+        }
+
         await this.tasksQueue.add(
             'validate-onionoo-relays',
             {},
