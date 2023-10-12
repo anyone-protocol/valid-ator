@@ -32,7 +32,10 @@ export class TasksQueue extends WorkerHost {
                         TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
                     )
                 } catch (error) {
-                    this.logger.error('Exception while adding validate relays job', error)
+                    this.logger.error(
+                        'Exception while adding validate relays job',
+                        error,
+                    )
                 }
 
                 await this.tasks.updateOnionooRelays() // using default delay time in param
@@ -79,7 +82,10 @@ export class TasksQueue extends WorkerHost {
                         )
                     }
                 } catch (error) {
-                    this.logger.error('Exception while running distribution', error)
+                    this.logger.error(
+                        'Exception while running distribution',
+                        error,
+                    )
                 }
                 await this.tasks.queueDistributing() // using default delay time in param
 

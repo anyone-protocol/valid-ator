@@ -8,7 +8,10 @@ import { VerificationQueue } from './processors/verification-queue'
 import { VerificationModule } from 'src/verification/verification.module'
 import { DistributionQueue } from './processors/distribution-queue'
 import { DistributionModule } from 'src/distribution/distribution.module'
-import { TaskServiceData, TaskServiceDataSchema } from './schemas/task-service-data'
+import {
+    TaskServiceData,
+    TaskServiceDataSchema,
+} from './schemas/task-service-data'
 import { MongooseModule } from '@nestjs/mongoose'
 
 @Module({

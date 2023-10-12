@@ -1,8 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 
-export type TaskServiceDataDocument =
-    HydratedDocument<TaskServiceData>
+export type TaskServiceDataDocument = HydratedDocument<TaskServiceData>
 
 @Schema()
 export class TaskServiceData {
@@ -13,6 +12,5 @@ export class TaskServiceData {
     isDistributing: boolean
 }
 
-export const TaskServiceDataSchema = SchemaFactory.createForClass(
-    TaskServiceData,
-)
+export const TaskServiceDataSchema =
+    SchemaFactory.createForClass(TaskServiceData)

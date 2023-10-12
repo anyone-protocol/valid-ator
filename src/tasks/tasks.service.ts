@@ -132,9 +132,14 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     private async updateServiceState(): Promise<void> {
-        const updateResult = await this.taskServiceDataModel.updateOne(this.dataId, this.state)
+        const updateResult = await this.taskServiceDataModel.updateOne(
+            this.dataId,
+            this.state,
+        )
         if (!updateResult.acknowledged) {
-            this.logger.error('Failed to acknowledge update of the task service state')
+            this.logger.error(
+                'Failed to acknowledge update of the task service state',
+            )
         }
     }
 
@@ -154,7 +159,7 @@ export class TasksService implements OnApplicationBootstrap {
                 this.dataId = serviceData._id
                 this.state = {
                     isValidating: serviceData.isValidating,
-                    isDistributing: serviceData.isDistributing
+                    isDistributing: serviceData.isDistributing,
                 }
             } else {
                 this.logger.warn(
@@ -185,7 +190,9 @@ export class TasksService implements OnApplicationBootstrap {
         if (!this.state.isDistributing) {
             await this.queueDistributing(0)
         } else {
-            this.logger.log('The distribution of tokens should be already queued')
+            this.logger.log(
+                'The distribution of tokens should be already queued',
+            )
         }
     }
 
