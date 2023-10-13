@@ -5,11 +5,14 @@ export type TaskServiceDataDocument = HydratedDocument<TaskServiceData>
 
 @Schema()
 export class TaskServiceData {
-    @Prop({ type: Boolean })
+    @Prop({ type: Boolean, default: false })
     isValidating: boolean
 
-    @Prop({ type: Boolean })
+    @Prop({ type: Boolean, default: false })
     isDistributing: boolean
+
+    @Prop({ type: Boolean, default: false })
+    isCheckingBalances: boolean
 }
 
 export const TaskServiceDataSchema =

@@ -14,6 +14,7 @@ export class TasksQueue extends WorkerHost {
         'validate-onionoo-relays'
     public static readonly JOB_PUBLISH_VALIDATION = 'publish-validation'
     public static readonly JOB_RUN_DISTRIBUTION = 'run-distribution'
+    public static readonly JOB_CHECK_BALANCES = 'check-balances'
 
     constructor(
         private readonly tasks: TasksService,
@@ -90,6 +91,16 @@ export class TasksQueue extends WorkerHost {
                 await this.tasks.queueDistributing() // using default delay time in param
 
                 break
+
+                case TasksQueue.JOB_CHECK_BALANCES:
+                    
+                    this.tasks.balancesFlow.add(
+                        TasksService.CHECK_BALANCES(Date.now()),
+                    )
+
+                    this.tasks.queueCheckBalances() // using default delay time in param
+                    
+                    break
 
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)

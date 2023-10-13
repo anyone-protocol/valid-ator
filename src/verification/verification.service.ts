@@ -30,7 +30,7 @@ export class VerificationService {
 
     private isLive?: string
 
-    private owner
+    private operator
     private bundlr
 
     private relayRegistryWarp: Warp
@@ -89,13 +89,13 @@ export class VerificationService {
 
             const signer = new Wallet(relayRegistryOperatorKey)
 
-            this.owner = {
+            this.operator = {
                 address: signer.address,
                 key: relayRegistryOperatorKey,
                 signer: signer,
             }
 
-            this.logger.log(`Initialized for address: ${this.owner.address}`)
+            this.logger.log(`Initialized for address: ${this.operator.address}`)
 
             const registryTxId = this.config.get<string>(
                 'RELAY_REGISTRY_CONTRACT_TXID',
@@ -436,7 +436,7 @@ export class VerificationService {
     ): Promise<RelayVerificationResult> {
         if (
             this.relayRegistryContract !== undefined &&
-            this.owner !== undefined
+            this.operator !== undefined
         ) {
             const verified: boolean = await this.isVerified(relay.fingerprint)
             const claimable: boolean = await this.isClaimable(
@@ -463,7 +463,7 @@ export class VerificationService {
             }
 
             if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.owner.signer)
+                const evmSig = await buildEvmSignature(this.operator.signer)
                 const response = await this.relayRegistryContract
                     .connect({
                         signer: evmSig,

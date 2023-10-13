@@ -25,7 +25,7 @@ export class DistributionService {
     private readonly logger = new Logger(DistributionService.name)
 
     private isLive?: string
-    private owner
+    private operator
 
     private static readonly scoresPerBatch = 8
     public static readonly maxDistributionRetries: 6
@@ -48,24 +48,24 @@ export class DistributionService {
             `Initializing distribution service (IS_LIVE: ${this.isLive})`,
         )
 
-        const distributionDataKey = this.config.get<string>(
+        const distributionOperatorKey = this.config.get<string>(
             'DISTRIBUTION_OPERATOR_KEY',
             {
                 infer: true,
             },
         )
 
-        if (distributionDataKey !== undefined) {
-            const signer = new Wallet(distributionDataKey)
+        if (distributionOperatorKey !== undefined) {
+            const signer = new Wallet(distributionOperatorKey)
 
-            this.owner = {
+            this.operator = {
                 address: signer.address,
-                key: distributionDataKey,
+                key: distributionOperatorKey,
                 signer: signer,
             }
 
             this.logger.log(
-                `Initialized distribution service for address: ${this.owner.address}`,
+                `Initialized distribution service for address: ${this.operator.address}`,
             )
 
             const distributionContractTxId = this.config.get<string>(
@@ -104,8 +104,8 @@ export class DistributionService {
     public async getAllocation(
         address: string,
     ): Promise<RewardAllocationData | undefined> {
-        if (this.owner != undefined) {
-            const evmSig = await buildEvmSignature(this.owner.signer)
+        if (this.operator != undefined) {
+            const evmSig = await buildEvmSignature(this.operator.signer)
             try {
                 const response = await this.distributionContract
                     .connect({
@@ -178,9 +178,9 @@ export class DistributionService {
     }
 
     public async addScores(stamp: number, scores: Score[]): Promise<boolean> {
-        if (this.owner != undefined) {
+        if (this.operator != undefined) {
             if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.owner.signer)
+                const evmSig = await buildEvmSignature(this.operator.signer)
                 try {
                     const response = await this.distributionContract
                         .connect({
@@ -218,9 +218,9 @@ export class DistributionService {
     }
 
     public async distribute(stamp: number): Promise<boolean> {
-        if (this.owner != undefined) {
+        if (this.operator != undefined) {
             if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.owner.signer)
+                const evmSig = await buildEvmSignature(this.operator.signer)
                 try {
                     const response = await this.distributionContract
                         .connect({

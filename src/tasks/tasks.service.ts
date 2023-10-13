@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config'
 import { TaskServiceData } from './schemas/task-service-data'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
+import { BalancesData } from './schemas/balances-data'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -49,6 +50,32 @@ export class TasksService implements OnApplicationBootstrap {
                 ],
             },
         ],
+    }
+
+    public static CHECK_BALANCES(stamp: number): FlowJob {
+        return {
+            name: 'publish-balance-checks',
+            queueName: 'balances-queue',
+            data: stamp,
+            opts: TasksService.jobOpts,
+            children: [
+                {
+                    name: 'check-facility-operator',
+                    queueName: 'balances-queue',
+                    opts: TasksService.jobOpts,
+                },
+                {
+                    name: 'check-distribution-operator',
+                    queueName: 'balances-queue',
+                    opts: TasksService.jobOpts,
+                },
+                {
+                    name: 'check-relay-registry-operator',
+                    queueName: 'balances-queue',
+                    opts: TasksService.jobOpts,
+                },
+            ],
+        }
     }
 
     public static PUBLISH_RELAY_VALIDATIONS(
@@ -108,21 +135,21 @@ export class TasksService implements OnApplicationBootstrap {
         }>,
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
         @InjectQueue('validation-queue') public validationQueue: Queue,
+        @InjectFlowProducer('validation-flow') public validationFlow: FlowProducer,
         @InjectQueue('verification-queue') public verificationQueue: Queue,
+        @InjectFlowProducer('verification-flow') public publishingFlow: FlowProducer,
         @InjectQueue('distribution-queue') public distributionQueue: Queue,
-        @InjectFlowProducer('validation-flow')
-        public validationFlow: FlowProducer,
-        @InjectFlowProducer('verification-flow')
-        public publishingFlow: FlowProducer,
-        @InjectFlowProducer('distribution-flow')
-        public distributionFlow: FlowProducer,
-        @InjectModel(TaskServiceData.name)
-        private readonly taskServiceDataModel: Model<TaskServiceData>,
+        @InjectFlowProducer('distribution-flow') public distributionFlow: FlowProducer,
+        @InjectQueue('balances-queue') public balancesQueue: Queue,
+        @InjectFlowProducer('balances-flow') public balancesFlow: FlowProducer,
+        @InjectModel(TaskServiceData.name) private readonly taskServiceDataModel: Model<TaskServiceData>,
+        @InjectModel(BalancesData.name) private readonly balancesDataModel: Model<BalancesData>,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
         this.state = {
             isDistributing: false,
             isValidating: false,
+            isCheckingBalances: false
         }
     }
 
@@ -133,7 +160,7 @@ export class TasksService implements OnApplicationBootstrap {
 
     private async updateServiceState(): Promise<void> {
         const updateResult = await this.taskServiceDataModel.updateOne(
-            this.dataId,
+            { _id: this.dataId },
             this.state,
         )
         if (!updateResult.acknowledged) {
@@ -160,6 +187,7 @@ export class TasksService implements OnApplicationBootstrap {
                 this.state = {
                     isValidating: serviceData.isValidating,
                     isDistributing: serviceData.isDistributing,
+                    isCheckingBalances: serviceData.isCheckingBalances
                 }
             } else {
                 this.logger.warn(
@@ -184,16 +212,43 @@ export class TasksService implements OnApplicationBootstrap {
         if (!this.state.isValidating) {
             await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
         } else {
-            this.logger.log('The validation of relays should be already queued')
+            this.logger.log('The validation of relays should already be queued')
         }
 
         if (!this.state.isDistributing) {
             await this.queueDistributing(0)
         } else {
             this.logger.log(
-                'The distribution of tokens should be already queued',
+                'The distribution of tokens should already be queued',
             )
         }
+
+        if (!this.state.isCheckingBalances) {
+            await this.queueCheckBalances(0)
+        } else {
+            this.logger.log(
+                'The checking of balances should already be queued',
+            )
+        }
+    }
+
+    public async queueCheckBalances(
+        delayJob: number = 1000 * 60 * 60 * 24,
+    ): Promise<void> {
+        if (!this.state.isCheckingBalances) {
+            this.state.isCheckingBalances = true
+            await this.updateServiceState()
+        }
+
+        await this.tasksQueue.add(
+            'check-balances',
+            {},
+            {
+                delay: delayJob,
+                removeOnComplete: TasksService.removeOnComplete,
+                removeOnFail: TasksService.removeOnFail,
+            },
+        )
     }
 
     public async queueDistributing(
