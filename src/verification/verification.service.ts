@@ -392,7 +392,7 @@ export class VerificationService {
             (value, index, array) => value.result === 'Failed',
         )
         if (failed.length > 0) {
-            this.logger.log(
+            this.logger.warn(
                 `Failed verification of ${failed.length} relay(s): [${failed
                     .map((result, index, array) => result.relay.fingerprint)
                     .join(', ')}]`,
@@ -463,21 +463,26 @@ export class VerificationService {
             }
 
             if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.operator.signer)
-                const response = await this.relayRegistryContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
-                    .writeInteraction<AddClaimable>({
-                        function: 'addClaimable',
-                        fingerprint: relay.fingerprint,
-                        address: relay.ator_address,
-                    })
+                try {
+                    const evmSig = await buildEvmSignature(this.operator.signer)
+                    const response = await this.relayRegistryContract
+                        .connect({
+                            signer: evmSig,
+                            type: 'ethereum',
+                        })
+                        .writeInteraction<AddClaimable>({
+                            function: 'addClaimable',
+                            fingerprint: relay.fingerprint,
+                            address: relay.ator_address,
+                        })
 
-                this.logger.log(
-                    `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
-                )
+                    this.logger.log(
+                        `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
+                    )
+                } catch (error) {
+                    this.logger.error(`Exception when verifying relay [${relay.fingerprint}]`, error)
+                    return 'Failed'
+                }
             } else {
                 this.logger.warn(
                     `NOT LIVE - skipped contract call to add a claimable relay [${relay.fingerprint}]`,

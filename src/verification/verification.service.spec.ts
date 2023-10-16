@@ -45,7 +45,7 @@ describe('VerificationService', () => {
     it.skip('should maintain events continuity between reboots', () => {})
     it.skip('should warn about account funds depleting within a month', () => {})
 
-    it.todo('should attempt to retry failed verification jobs')
+    it.skip('should warn about failed verification jobs', () => {})
 
     // it('should check if the fingerprint was verified', async () => {
     //     expect(
