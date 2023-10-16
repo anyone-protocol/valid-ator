@@ -13,14 +13,15 @@ import {
     TaskServiceDataSchema,
 } from './schemas/task-service-data'
 import { MongooseModule } from '@nestjs/mongoose'
-import { BalancesData, BalancesDataSchema } from './schemas/balances-data'
-import { BalancesQueue } from './processors/balances-queue'
+import { BalanceChecksQueue } from './processors/balance-checks-queue'
+import { ChecksModule } from 'src/checks/checks.module'
 
 @Module({
     imports: [
         ValidationModule,
         VerificationModule,
         DistributionModule,
+        ChecksModule,
         BullModule.registerQueue({ name: 'tasks-queue' }),
         BullModule.registerQueue({ name: 'validation-queue' }),
         BullModule.registerFlowProducer({ name: 'validation-flow' }),
@@ -28,16 +29,12 @@ import { BalancesQueue } from './processors/balances-queue'
         BullModule.registerFlowProducer({ name: 'verification-flow' }),
         BullModule.registerQueue({ name: 'distribution-queue' }),
         BullModule.registerFlowProducer({ name: 'distribution-flow' }),
-        BullModule.registerQueue({ name: 'balances-queue' }),
-        BullModule.registerFlowProducer({ name: 'balances-flow' }),
+        BullModule.registerQueue({ name: 'balance-checks-queue' }),
+        BullModule.registerFlowProducer({ name: 'balance-checks-flow' }),
         MongooseModule.forFeature([
             {
                 name: TaskServiceData.name,
                 schema: TaskServiceDataSchema,
-            },
-            {
-                name: BalancesData.name,
-                schema: BalancesDataSchema,
             },
         ]),
     ],
@@ -47,7 +44,7 @@ import { BalancesQueue } from './processors/balances-queue'
         ValidationQueue,
         VerificationQueue,
         DistributionQueue,
-        BalancesQueue,
+        BalanceChecksQueue,
     ],
     exports: [TasksService],
 })

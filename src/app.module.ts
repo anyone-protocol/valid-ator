@@ -9,6 +9,7 @@ import { VerificationModule } from './verification/verification.module'
 import { EventsModule } from './events/events.module'
 import { DistributionModule } from './distribution/distribution.module'
 import { BullModule } from '@nestjs/bullmq'
+import { ChecksModule } from './checks/checks.module';
 
 @Module({
     imports: [
@@ -38,6 +39,7 @@ import { BullModule } from '@nestjs/bullmq'
         VerificationModule,
         EventsModule,
         DistributionModule,
+        ChecksModule,
     ],
     controllers: [AppController],
     providers: [AppService],

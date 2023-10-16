@@ -116,6 +116,7 @@ job "valid-ator-stage" {
         RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/stage/address" ]]"
+        TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/goerli/stage/address" ]]"
         EOH
         destination = "secrets/file.env"
         env         = true

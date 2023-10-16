@@ -29,9 +29,12 @@ describe('EventsService', () => {
         expect(service).toBeDefined()
     })
 
-    it.todo('should flag for retry failed updateAllocation transactions.')
-    it.todo('should skip retrying invalid updateAllocation transactions.')
-    it.todo('should warn about problematic updateAllocation transactions.')
-    it.todo('should provide error info with updates that are locked out')
-    it.todo('should maintain events continuity between reboots')
+    // Skipped tests are part of implemented spec, but skipped for now as expensive testing of logs/e2e
+    it.skip('should flag for retry failed updateAllocation transactions.', () => {})
+    it.skip('should skip retrying invalid updateAllocation transactions.', () => {})
+    it.skip('should warn about problematic updateAllocation transactions.', () => {})
+    it.skip('should provide error info with updates that are locked out', () => {})
+    it.skip('should maintain events continuity between reboots', () => {})
+    it.skip('should warn about operational token balance', () => {})
+    it.skip('should warn about main token balance', () => {})
 })

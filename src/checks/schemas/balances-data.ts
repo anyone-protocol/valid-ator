@@ -8,11 +8,20 @@ export class BalancesData {
     @Prop({ type: Number, required: true })
     stamp: number
 
-    @Prop({ type: Number })
-    verification: number
+    @Prop({ type: String })
+    relayRegistryOperator: string
 
-    @Prop({ type: Boolean })
-    isDistributing: boolean
+    @Prop({ type: String })
+    relayRegistryUploader: string
+
+    @Prop({ type: String })
+    distributionOperator: string
+
+    @Prop({ type: String })
+    facilityOperator: string
+
+    @Prop({ type: String })
+    facilityTokens: string
 }
 
 export const BalancesDataSchema =

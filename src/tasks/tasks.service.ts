@@ -7,7 +7,6 @@ import { ConfigService } from '@nestjs/config'
 import { TaskServiceData } from './schemas/task-service-data'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
-import { BalancesData } from './schemas/balances-data'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -55,23 +54,23 @@ export class TasksService implements OnApplicationBootstrap {
     public static CHECK_BALANCES(stamp: number): FlowJob {
         return {
             name: 'publish-balance-checks',
-            queueName: 'balances-queue',
+            queueName: 'balance-checks-queue',
             data: stamp,
             opts: TasksService.jobOpts,
             children: [
                 {
                     name: 'check-facility-operator',
-                    queueName: 'balances-queue',
+                    queueName: 'balance-checks-queue',
                     opts: TasksService.jobOpts,
                 },
                 {
                     name: 'check-distribution-operator',
-                    queueName: 'balances-queue',
+                    queueName: 'balance-checks-queue',
                     opts: TasksService.jobOpts,
                 },
                 {
                     name: 'check-relay-registry-operator',
-                    queueName: 'balances-queue',
+                    queueName: 'balance-checks-queue',
                     opts: TasksService.jobOpts,
                 },
             ],
@@ -140,10 +139,9 @@ export class TasksService implements OnApplicationBootstrap {
         @InjectFlowProducer('verification-flow') public publishingFlow: FlowProducer,
         @InjectQueue('distribution-queue') public distributionQueue: Queue,
         @InjectFlowProducer('distribution-flow') public distributionFlow: FlowProducer,
-        @InjectQueue('balances-queue') public balancesQueue: Queue,
-        @InjectFlowProducer('balances-flow') public balancesFlow: FlowProducer,
+        @InjectQueue('balance-checks-queue') public balancesQueue: Queue,
+        @InjectFlowProducer('balance-checks-flow') public balancesFlow: FlowProducer,
         @InjectModel(TaskServiceData.name) private readonly taskServiceDataModel: Model<TaskServiceData>,
-        @InjectModel(BalancesData.name) private readonly balancesDataModel: Model<BalancesData>,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
         this.state = {

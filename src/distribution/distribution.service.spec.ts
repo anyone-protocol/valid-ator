@@ -20,12 +20,13 @@ describe('DistributionService', () => {
         expect(service).toBeDefined()
     })
 
-    it.todo('should attempt to retry failed transactions for a distribution.')
-    it.todo(
-        'should not finalize the distribution until all transactions succeed.',
+    // Skipped tests are part of implemented spec, but skipped for now as expensive testing of logs/e2e
+    it.skip('should attempt to retry failed transactions for a distribution.', () => {})
+    it.skip(
+        'should not finalize the distribution until all transactions succeed.', () => {}
     )
-    it.todo('should warn about distributions that are locked')
-    it.todo('should warn about account funds depleting within a month')
-    it.todo('should maintain distribution continuity between reboots')
-    it.todo('should maintain distribution rhythm between reboots')
+    it.skip('should warn about distributions that are locked', () => {})
+    it.skip('should warn about account funds depleting within a month', () => {})
+    it.skip('should maintain distribution continuity between reboots', () => {})
+    it.skip('should maintain distribution rhythm between reboots', () => {})
 })

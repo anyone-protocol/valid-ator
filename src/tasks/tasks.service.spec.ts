@@ -4,7 +4,6 @@ import { BullModule } from '@nestjs/bullmq'
 import { ConfigModule } from '@nestjs/config'
 import { TaskServiceData, TaskServiceDataSchema } from './schemas/task-service-data'
 import { MongooseModule } from '@nestjs/mongoose'
-import { BalancesData, BalancesDataSchema } from './schemas/balances-data'
 
 describe('TasksService', () => {
     let service: TasksService
@@ -53,21 +52,17 @@ describe('TasksService', () => {
                     connection: { host: 'localhost', port: 6379 },
                 }),
                 BullModule.registerQueue({
-                    name: 'balances-queue',
+                    name: 'balance-checks-queue',
                     connection: { host: 'localhost', port: 6379 },
                 }),
                 BullModule.registerFlowProducer({
-                    name: 'balances-flow',
+                    name: 'balance-checks-flow',
                     connection: { host: 'localhost', port: 6379 },
                 }),
                 MongooseModule.forFeature([
                     {
                         name: TaskServiceData.name,
                         schema: TaskServiceDataSchema,
-                    },
-                    {
-                        name: BalancesData.name,
-                        schema: BalancesDataSchema,
                     },
                 ]),
             ],
