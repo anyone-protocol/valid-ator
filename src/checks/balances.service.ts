@@ -14,12 +14,18 @@ export class BalancesService implements OnApplicationBootstrap {
     private isLive?: string
 
     private relayRegistryOperator
+    private relayRegistryOperatorMinBalance: number
+    private relayRegistryUploaderMinBalance: number
+
     private bundlr
 
     private distributionOperator
+    private distributionOperatorMinBalance: number
 
     private facilityOperator: ethers.Wallet
     private facilityAddress: string | undefined
+    private facilityTokenMinBalance: number
+    private facilityOperatorMinBalance: number
 
     private erc20Abi = [
         'function balanceOf(address owner) view returns (uint256)',
@@ -40,6 +46,11 @@ export class BalancesService implements OnApplicationBootstrap {
             RELAY_REGISTRY_OPERATOR_KEY: string
             BUNDLR_NODE: string
             BUNDLR_NETWORK: string
+            RELAY_REGISTRY_UPLOADER_MIN_BALANCE: number
+            RELAY_REGISTRY_OPERATOR_MIN_BALANCE: number
+            DISTRIBUTION_OPERATOR_MIN_BALANCE: number
+            FACILITY_OPERATOR_MIN_BALANCE: number
+            FACILITY_TOKEN_MIN_BALANCE: number
         }>,
         @InjectModel(BalancesData.name)
         private readonly balancesDataModel: Model<BalancesData>,
@@ -48,6 +59,27 @@ export class BalancesService implements OnApplicationBootstrap {
 
         this.facilityAddress = this.config.get<string>(
             'FACILITY_CONTRACT_ADDRESS',
+            { infer: true },
+        )
+
+        this.relayRegistryOperatorMinBalance = this.config.get<number>(
+            'RELAY_REGISTRY_OPERATOR_MIN_BALANCE',
+            { infer: true },
+        )
+        this.relayRegistryUploaderMinBalance = this.config.get<number>(
+            'RELAY_REGISTRY_UPLOADER_MIN_BALANCE',
+            { infer: true },
+        )
+        this.distributionOperatorMinBalance = this.config.get<number>(
+            'DISTRIBUTION_OPERATOR_MIN_BALANCE',
+            { infer: true },
+        )
+        this.facilityOperatorMinBalance = this.config.get<number>(
+            'FACILITY_OPERATOR_MIN_BALANCE',
+            { infer: true },
+        )
+        this.facilityTokenMinBalance = this.config.get<number>(
+            'FACILITY_TOKEN_MIN_BALANCE',
             { infer: true },
         )
 
@@ -152,8 +184,15 @@ export class BalancesService implements OnApplicationBootstrap {
 
     async getRelayServiceUploadBalance(): Promise<BigNumber> {
         try {
-            const result = this.bundlr?.getLoadedBalance()
+            const result = await this.bundlr?.getLoadedBalance()
             if (result != undefined) {
+                if (
+                    result.lt(BigNumber(this.relayRegistryUploaderMinBalance))
+                ) {
+                    this.logger.error(
+                        `Balance depletion on relay service uploader: ${result} < ${this.relayRegistryUploaderMinBalance}`,
+                    )
+                }
                 return result
             } else {
                 this.logger.error(
@@ -171,11 +210,15 @@ export class BalancesService implements OnApplicationBootstrap {
     async getRelayServiceOperatorBalance(): Promise<bigint> {
         if (this.relayRegistryOperator) {
             try {
-                // Note - we don't use any gas here.
                 const result = await this.provider.getBalance(
                     this.relayRegistryOperator.address,
                 )
                 if (result != undefined) {
+                    if (result < BigInt(this.relayRegistryOperatorMinBalance)) {
+                        this.logger.error(
+                            `Balance depletion on relay service operator: ${result} < ${this.relayRegistryOperatorMinBalance}`,
+                        )
+                    }
                     return result
                 } else {
                     this.logger.error(
@@ -196,11 +239,15 @@ export class BalancesService implements OnApplicationBootstrap {
     async getDistributionOperatorBalance(): Promise<bigint> {
         if (this.distributionOperator) {
             try {
-                // Note - we don't use any gas here.
                 const result = await this.provider.getBalance(
                     this.distributionOperator.address,
                 )
                 if (result != undefined) {
+                    if (result < BigInt(this.distributionOperatorMinBalance)) {
+                        this.logger.error(
+                            `Balance depletion on distribution operator: ${result} < ${this.distributionOperatorMinBalance}`,
+                        )
+                    }
                     return result
                 } else {
                     this.logger.error(
@@ -224,6 +271,11 @@ export class BalancesService implements OnApplicationBootstrap {
                 this.facilityOperator.address,
             )
             if (result != undefined) {
+                if (result < BigInt(this.facilityOperatorMinBalance)) {
+                    this.logger.error(
+                        `Balance depletion on facility operator: ${result} < ${this.facilityOperatorMinBalance}`,
+                    )
+                }
                 return result
             } else {
                 this.logger.error(`Failed to fetch facility operator balance`)
@@ -244,8 +296,13 @@ export class BalancesService implements OnApplicationBootstrap {
                     this.erc20Abi,
                     this.provider,
                 )
-                const result = contract.balanceOf(this.facilityAddress)
+                const result = await contract.balanceOf(this.facilityAddress)
                 if (result != undefined) {
+                    if (result < BigInt(this.facilityTokenMinBalance)) {
+                        this.logger.error(
+                            `Balance depletion on facility token: ${result} < ${this.facilityTokenMinBalance}`,
+                        )
+                    }
                     return result
                 } else {
                     this.logger.error(`Failed to fetch facility token balance`)
