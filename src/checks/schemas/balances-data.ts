@@ -24,5 +24,4 @@ export class BalancesData {
     facilityTokens: string
 }
 
-export const BalancesDataSchema =
-    SchemaFactory.createForClass(BalancesData)
+export const BalancesDataSchema = SchemaFactory.createForClass(BalancesData)

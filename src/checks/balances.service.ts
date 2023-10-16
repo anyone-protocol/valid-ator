@@ -20,8 +20,10 @@ export class BalancesService implements OnApplicationBootstrap {
 
     private facilityOperator: ethers.Wallet
     private facilityAddress: string | undefined
-    
-    private erc20Abi = ["function balanceOf(address owner) view returns (uint256)"];
+
+    private erc20Abi = [
+        'function balanceOf(address owner) view returns (uint256)',
+    ]
     private tokenAddress: string | undefined
 
     private jsonRpc: string | undefined
@@ -39,7 +41,8 @@ export class BalancesService implements OnApplicationBootstrap {
             BUNDLR_NODE: string
             BUNDLR_NETWORK: string
         }>,
-        @InjectModel(BalancesData.name) private readonly balancesDataModel: Model<BalancesData>,
+        @InjectModel(BalancesData.name)
+        private readonly balancesDataModel: Model<BalancesData>,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
 
@@ -50,12 +53,10 @@ export class BalancesService implements OnApplicationBootstrap {
 
         this.jsonRpc = this.config.get<string>('JSON_RPC', { infer: true })
         if (this.jsonRpc == undefined) {
-            this.logger.error(
-                'Missing JSON_RPC. Skipping facility checks',
-            )
+            this.logger.error('Missing JSON_RPC. Skipping facility checks')
         } else {
             this.provider = new ethers.JsonRpcProvider(this.jsonRpc)
-            
+
             const facilityOperatorKey = this.config.get<string>(
                 'FACILITY_OPERATOR_KEY',
                 { infer: true },
@@ -72,7 +73,6 @@ export class BalancesService implements OnApplicationBootstrap {
                 )
             }
         }
-
 
         const relayRegistryOperatorKey = this.config.get<string>(
             'RELAY_REGISTRY_OPERATOR_KEY',
@@ -137,9 +137,7 @@ export class BalancesService implements OnApplicationBootstrap {
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        this.logger.log(
-            `Bootstrapped Balance Checks Service`,
-        )
+        this.logger.log(`Bootstrapped Balance Checks Service`)
     }
 
     async publishBalanceChecks(data: BalancesData): Promise<boolean> {
@@ -158,10 +156,14 @@ export class BalancesService implements OnApplicationBootstrap {
             if (result != undefined) {
                 return result
             } else {
-                this.logger.error(`Failed to fetch relay service uploader loaded balance`)
+                this.logger.error(
+                    `Failed to fetch relay service uploader loaded balance`,
+                )
             }
         } catch (error) {
-            this.logger.error(`Exception while fetching relay service uploader loaded balance`)
+            this.logger.error(
+                `Exception while fetching relay service uploader loaded balance`,
+            )
         }
         return BigNumber(0)
     }
@@ -170,14 +172,20 @@ export class BalancesService implements OnApplicationBootstrap {
         if (this.relayRegistryOperator) {
             try {
                 // Note - we don't use any gas here.
-                    const result = await this.provider.getBalance(this.relayRegistryOperator.address)
+                const result = await this.provider.getBalance(
+                    this.relayRegistryOperator.address,
+                )
                 if (result != undefined) {
                     return result
                 } else {
-                    this.logger.error(`Failed to fetch relay service operator balance`)
+                    this.logger.error(
+                        `Failed to fetch relay service operator balance`,
+                    )
                 }
             } catch (error) {
-                this.logger.error(`Exception while fetching relay service operator balance`)
+                this.logger.error(
+                    `Exception while fetching relay service operator balance`,
+                )
             }
         } else {
             this.logger.error('Relay registry operator undefined')
@@ -189,14 +197,20 @@ export class BalancesService implements OnApplicationBootstrap {
         if (this.distributionOperator) {
             try {
                 // Note - we don't use any gas here.
-                const result = await this.provider.getBalance(this.distributionOperator.address)
+                const result = await this.provider.getBalance(
+                    this.distributionOperator.address,
+                )
                 if (result != undefined) {
                     return result
                 } else {
-                    this.logger.error(`Failed to fetch relay service operator balance`)
+                    this.logger.error(
+                        `Failed to fetch relay service operator balance`,
+                    )
                 }
             } catch (error) {
-                this.logger.error(`Exception while fetching relay service operator balance`)
+                this.logger.error(
+                    `Exception while fetching relay service operator balance`,
+                )
             }
         } else {
             this.logger.error('Distribution operator undefined')
@@ -206,14 +220,18 @@ export class BalancesService implements OnApplicationBootstrap {
 
     async getFacilityOperatorBalance(): Promise<bigint> {
         try {
-            const result = await this.provider.getBalance(this.facilityOperator.address)
+            const result = await this.provider.getBalance(
+                this.facilityOperator.address,
+            )
             if (result != undefined) {
                 return result
             } else {
                 this.logger.error(`Failed to fetch facility operator balance`)
             }
         } catch (error) {
-            this.logger.error(`Exception while fetching facility operator balance`)
+            this.logger.error(
+                `Exception while fetching facility operator balance`,
+            )
         }
         return BigInt(0)
     }
@@ -221,7 +239,11 @@ export class BalancesService implements OnApplicationBootstrap {
     async getFacilityTokenBalance(): Promise<bigint> {
         if (this.tokenAddress) {
             try {
-                const contract = new ethers.Contract(this.tokenAddress, this.erc20Abi, this.provider);
+                const contract = new ethers.Contract(
+                    this.tokenAddress,
+                    this.erc20Abi,
+                    this.provider,
+                )
                 const result = contract.balanceOf(this.facilityAddress)
                 if (result != undefined) {
                     return result
@@ -229,10 +251,15 @@ export class BalancesService implements OnApplicationBootstrap {
                     this.logger.error(`Failed to fetch facility token balance`)
                 }
             } catch (error) {
-                this.logger.error('Exception while fetching facility token balance', error)
+                this.logger.error(
+                    'Exception while fetching facility token balance',
+                    error,
+                )
             }
         } else {
-            this.logger.error('Token address not provided. Unable to check facility token balance.')
+            this.logger.error(
+                'Token address not provided. Unable to check facility token balance.',
+            )
         }
 
         return BigInt(0)

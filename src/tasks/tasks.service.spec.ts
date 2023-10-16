@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { TasksService } from './tasks.service'
 import { BullModule } from '@nestjs/bullmq'
 import { ConfigModule } from '@nestjs/config'
-import { TaskServiceData, TaskServiceDataSchema } from './schemas/task-service-data'
+import {
+    TaskServiceData,
+    TaskServiceDataSchema,
+} from './schemas/task-service-data'
 import { MongooseModule } from '@nestjs/mongoose'
 
 describe('TasksService', () => {

@@ -22,9 +22,7 @@ describe('DistributionService', () => {
 
     // Skipped tests are part of implemented spec, but skipped for now as expensive testing of logs/e2e
     it.skip('should attempt to retry failed transactions for a distribution.', () => {})
-    it.skip(
-        'should not finalize the distribution until all transactions succeed.', () => {}
-    )
+    it.skip('should not finalize the distribution until all transactions succeed.', () => {})
     it.skip('should warn about distributions that are locked', () => {})
     it.skip('should warn about account funds depleting within a month', () => {})
     it.skip('should maintain distribution continuity between reboots', () => {})

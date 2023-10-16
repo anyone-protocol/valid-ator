@@ -92,15 +92,14 @@ export class TasksQueue extends WorkerHost {
 
                 break
 
-                case TasksQueue.JOB_CHECK_BALANCES:
-                    
-                    this.tasks.balancesFlow.add(
-                        TasksService.CHECK_BALANCES(Date.now()),
-                    )
+            case TasksQueue.JOB_CHECK_BALANCES:
+                this.tasks.balancesFlow.add(
+                    TasksService.CHECK_BALANCES(Date.now()),
+                )
 
-                    this.tasks.queueCheckBalances() // using default delay time in param
-                    
-                    break
+                this.tasks.queueCheckBalances() // using default delay time in param
+
+                break
 
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)

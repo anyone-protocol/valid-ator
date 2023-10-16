@@ -480,7 +480,10 @@ export class VerificationService {
                         `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
                     )
                 } catch (error) {
-                    this.logger.error(`Exception when verifying relay [${relay.fingerprint}]`, error)
+                    this.logger.error(
+                        `Exception when verifying relay [${relay.fingerprint}]`,
+                        error,
+                    )
                     return 'Failed'
                 }
             } else {

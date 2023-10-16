@@ -134,20 +134,25 @@ export class TasksService implements OnApplicationBootstrap {
         }>,
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
         @InjectQueue('validation-queue') public validationQueue: Queue,
-        @InjectFlowProducer('validation-flow') public validationFlow: FlowProducer,
+        @InjectFlowProducer('validation-flow')
+        public validationFlow: FlowProducer,
         @InjectQueue('verification-queue') public verificationQueue: Queue,
-        @InjectFlowProducer('verification-flow') public publishingFlow: FlowProducer,
+        @InjectFlowProducer('verification-flow')
+        public publishingFlow: FlowProducer,
         @InjectQueue('distribution-queue') public distributionQueue: Queue,
-        @InjectFlowProducer('distribution-flow') public distributionFlow: FlowProducer,
+        @InjectFlowProducer('distribution-flow')
+        public distributionFlow: FlowProducer,
         @InjectQueue('balance-checks-queue') public balancesQueue: Queue,
-        @InjectFlowProducer('balance-checks-flow') public balancesFlow: FlowProducer,
-        @InjectModel(TaskServiceData.name) private readonly taskServiceDataModel: Model<TaskServiceData>,
+        @InjectFlowProducer('balance-checks-flow')
+        public balancesFlow: FlowProducer,
+        @InjectModel(TaskServiceData.name)
+        private readonly taskServiceDataModel: Model<TaskServiceData>,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
         this.state = {
             isDistributing: false,
             isValidating: false,
-            isCheckingBalances: false
+            isCheckingBalances: false,
         }
     }
 
@@ -185,7 +190,7 @@ export class TasksService implements OnApplicationBootstrap {
                 this.state = {
                     isValidating: serviceData.isValidating,
                     isDistributing: serviceData.isDistributing,
-                    isCheckingBalances: serviceData.isCheckingBalances
+                    isCheckingBalances: serviceData.isCheckingBalances,
                 }
             } else {
                 this.logger.warn(
@@ -224,9 +229,7 @@ export class TasksService implements OnApplicationBootstrap {
         if (!this.state.isCheckingBalances) {
             await this.queueCheckBalances(0)
         } else {
-            this.logger.log(
-                'The checking of balances should already be queued',
-            )
+            this.logger.log('The checking of balances should already be queued')
         }
     }
 
