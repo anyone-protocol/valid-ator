@@ -64,7 +64,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                             this.events.recoverUpdateAllocation(rewardData[0])
                         }
 
-                        return true
+                        return hasPassedUpdate
                     } else {
                         this.logger.error('Missing address in job data')
                         return false
@@ -78,6 +78,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 try {
                     const recoverData: RecoverUpdateAllocationData =
                         job.data as RecoverUpdateAllocationData
+                    this.logger.log(`Running recovery of updateAllocation with ${recoverData.retries} retries`)
                     if (recoverData.retries > 0) {
                         const hasPassedRecovery =
                             await this.events.updateAllocation({

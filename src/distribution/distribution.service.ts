@@ -28,7 +28,7 @@ export class DistributionService {
     private operator
 
     private static readonly scoresPerBatch = 8
-    public static readonly maxDistributionRetries: 6
+    public static readonly maxDistributionRetries = 6
 
     private distributionWarp: Warp
     private distributionContract: Contract<DistributionState>

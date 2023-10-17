@@ -16,8 +16,8 @@ export class TasksService implements OnApplicationBootstrap {
     private dataId: Types.ObjectId
     private state: TaskServiceData
 
-    private static readonly removeOnComplete: true
-    private static readonly removeOnFail: 8
+    private static readonly removeOnComplete = true
+    private static readonly removeOnFail = 8
 
     public static jobOpts = {
         removeOnComplete: TasksService.removeOnComplete,

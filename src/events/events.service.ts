@@ -13,10 +13,10 @@ export class EventsService implements OnApplicationBootstrap {
 
     private isLive?: string
 
-    private static readonly maxUpdateAllocationRetries: 6
+    private static readonly maxUpdateAllocationRetries = 6
 
-    private static readonly removeOnComplete: true
-    private static readonly removeOnFail: 8
+    private static readonly removeOnComplete = true
+    private static readonly removeOnFail = 8
 
     public static jobOpts = {
         removeOnComplete: EventsService.removeOnComplete,
@@ -118,13 +118,11 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     public async recoverUpdateAllocation(rewardData: RewardAllocationData) {
-        this.logger.log(
-            `Attempting to recover updateAllocation job for ${rewardData.address}`,
-        )
         const recoverData: RecoverUpdateAllocationData = {
             ...rewardData,
             retries: EventsService.maxUpdateAllocationRetries,
         }
+        this.logger.log(`Attempting to recover updateAllocation job with ${recoverData.retries} retries for ${recoverData.address}`)
         this.facilitatorUpdatesQueue.add(
             'recover-update-allocation',
             recoverData,
@@ -135,14 +133,11 @@ export class EventsService implements OnApplicationBootstrap {
     public async retryUpdateAllocation(
         recoverData: RecoverUpdateAllocationData,
     ) {
-        this.logger.log(
-            `Retry (${recoverData.retries - 1}) updateAllocation job for ${
-                recoverData.address
-            }`,
-        )
+        const retryData: RecoverUpdateAllocationData = { ...recoverData, retries: recoverData.retries - 1 }
+        this.logger.log(`Retry updateAllocation job with ${recoverData.retries} retries for ${recoverData.address}`)
         this.facilitatorUpdatesQueue.add(
             'recover-update-allocation',
-            { ...recoverData, retries: recoverData.retries - 1 },
+            retryData,
             EventsService.jobOpts,
         )
     }
