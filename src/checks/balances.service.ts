@@ -57,6 +57,11 @@ export class BalancesService implements OnApplicationBootstrap {
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
 
+        this.tokenAddress = this.config.get<string>(
+            'TOKEN_CONTRACT_ADDRESS',
+            { infer: true },
+        )
+
         this.facilityAddress = this.config.get<string>(
             'FACILITY_CONTRACT_ADDRESS',
             { infer: true },
