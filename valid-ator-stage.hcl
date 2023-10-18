@@ -74,6 +74,7 @@ job "valid-ator-stage" {
       driver = "docker"
       config {
         image = "redis:7.2"
+        args = ["/usr/local/etc/redis/redis.conf"]
         volumes = [
           "local/redis.conf:/usr/local/etc/redis/redis.conf"
         ]
