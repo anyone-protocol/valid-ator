@@ -234,7 +234,7 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     public async queueCheckBalances(
-        delayJob: number = 1000 * 60 * 60 * 24,
+        delayJob: number = 1000 * 60 * 60,
     ): Promise<void> {
         if (!this.state.isCheckingBalances) {
             this.state.isCheckingBalances = true
