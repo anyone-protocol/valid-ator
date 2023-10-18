@@ -34,6 +34,19 @@ describe('VerificationService', () => {
         expect(service).toBeDefined()
     })
 
+    // Skipped tests are part of implemented spec, but skipped for now as expensive testing of logs/e2e
+
+    it.skip('should attempt to retry failed relay metrics upload', () => {})
+    it.skip('should attempt to retry failed stats data upload', () => {})
+
+    it.skip('should warn about relay uploads that are locked', () => {})
+    it.skip('should warn about stats uploads that are locked', () => {})
+
+    it.skip('should maintain events continuity between reboots', () => {})
+    it.skip('should warn about account funds depleting within a month', () => {})
+
+    it.skip('should warn about failed verification jobs', () => {})
+
     // it('should check if the fingerprint was verified', async () => {
     //     expect(
     //         await service.verifyRelay({

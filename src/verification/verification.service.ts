@@ -1,10 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import {
-    Contract,
-    LoggerFactory,
-    Warp,
-    WarpFactory,
-} from 'warp-contracts'
+import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
     IsClaimable,
@@ -35,7 +30,7 @@ export class VerificationService {
 
     private isLive?: string
 
-    private owner
+    private operator
     private bundlr
 
     private relayRegistryWarp: Warp
@@ -43,8 +38,8 @@ export class VerificationService {
 
     constructor(
         private readonly config: ConfigService<{
-            VALIDATOR_KEY: string
-            RELAY_REGISTRY_TXID: string
+            RELAY_REGISTRY_OPERATOR_KEY: string
+            RELAY_REGISTRY_CONTRACT_TXID: string
             IS_LIVE: string
             BUNDLR_NODE: string
             BUNDLR_NETWORK: string
@@ -61,11 +56,14 @@ export class VerificationService {
             `Initializing verification service (IS_LIVE: ${this.isLive})`,
         )
 
-        const validatorKey = this.config.get<string>('VALIDATOR_KEY', {
-            infer: true,
-        })
+        const relayRegistryOperatorKey = this.config.get<string>(
+            'RELAY_REGISTRY_OPERATOR_KEY',
+            {
+                infer: true,
+            },
+        )
 
-        if (validatorKey !== undefined) {
+        if (relayRegistryOperatorKey !== undefined) {
             this.bundlr = (() => {
                 const node = config.get<string>('BUNDLR_NODE', {
                     infer: true,
@@ -75,7 +73,7 @@ export class VerificationService {
                 })
 
                 if (node !== undefined && network !== undefined) {
-                    return new Bundlr(node, network, validatorKey)
+                    return new Bundlr(node, network, relayRegistryOperatorKey)
                 } else {
                     return undefined
                 }
@@ -89,20 +87,18 @@ export class VerificationService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new Wallet(validatorKey)
+            const signer = new Wallet(relayRegistryOperatorKey)
 
-            this.owner = {
+            this.operator = {
                 address: signer.address,
-                key: validatorKey,
+                key: relayRegistryOperatorKey,
                 signer: signer,
             }
 
-            this.logger.log(
-                `Initialized for address: ${this.owner.address}`,
-            )
+            this.logger.log(`Initialized for address: ${this.operator.address}`)
 
             const registryTxId = this.config.get<string>(
-                'RELAY_REGISTRY_TXID',
+                'RELAY_REGISTRY_CONTRACT_TXID',
                 {
                     infer: true,
                 },
@@ -119,12 +115,15 @@ export class VerificationService {
                 })
                     .use(new EthersExtension())
                     .use(new EvmSignatureVerificationServerPlugin())
-                this.relayRegistryWarp.use(new StateUpdatePlugin(registryTxId, this.relayRegistryWarp))
-                
-                this.relayRegistryContract =
-                    this.relayRegistryWarp.contract<RelayRegistryState>(registryTxId)
-            } else this.logger.error('Missing relay registry contract txid')
+                this.relayRegistryWarp.use(
+                    new StateUpdatePlugin(registryTxId, this.relayRegistryWarp),
+                )
 
+                this.relayRegistryContract =
+                    this.relayRegistryWarp.contract<RelayRegistryState>(
+                        registryTxId,
+                    )
+            } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
 
@@ -162,27 +161,34 @@ export class VerificationService {
     ): Promise<string> {
         if (this.bundlr !== undefined) {
             if (this.isLive === 'true') {
-                const response = await this.bundlr?.upload(
-                    JSON.stringify(data),
-                    {
-                        tags: [
-                            { name: 'Protocol', value: 'ator' },
-                            { name: 'Protocol-Version', value: '0.1' },
-                            {
-                                name: 'Content-Timestamp',
-                                value: stamp.toString(),
-                            },
-                            { name: 'Content-Type', value: 'application/json' },
-                            { name: 'Entity-Type', value: 'relay/metrics' },
-                        ],
-                    },
-                )
-
-                this.logger.log(
-                    `Permanently stored relay/metrics ${stamp} with ${data.length} relay(s): ${response.id} `,
-                )
-
-                return response.id
+                try {
+                    const response = await this.bundlr?.upload(
+                        JSON.stringify(data),
+                        {
+                            tags: [
+                                { name: 'Protocol', value: 'ator' },
+                                { name: 'Protocol-Version', value: '0.1' },
+                                {
+                                    name: 'Content-Timestamp',
+                                    value: stamp.toString(),
+                                },
+                                {
+                                    name: 'Content-Type',
+                                    value: 'application/json',
+                                },
+                                { name: 'Entity-Type', value: 'relay/metrics' },
+                            ],
+                        },
+                    )
+                    this.logger.log(
+                        `Permanently stored relay/metrics ${stamp} with ${data.length} relay(s): ${response.id} `,
+                    )
+                    return response.id
+                } catch (e) {
+                    this.logger.warn(
+                        `Exception when storing relay metrics: ${e}`,
+                    )
+                }
             } else {
                 this.logger.warn(
                     `NOT LIVE: Not storing relay/metrics ${stamp} with ${data.length} relay(s) `,
@@ -202,27 +208,39 @@ export class VerificationService {
     ): Promise<string> {
         if (this.bundlr !== undefined) {
             if (this.isLive === 'true') {
-                const response = await this.bundlr?.upload(
-                    JSON.stringify(data),
-                    {
-                        tags: [
-                            { name: 'Protocol', value: 'ator' },
-                            { name: 'Protocol-Version', value: '0.1' },
-                            {
-                                name: 'Content-Timestamp',
-                                value: stamp.toString(),
-                            },
-                            { name: 'Content-Type', value: 'application/json' },
-                            { name: 'Entity-Type', value: 'validation/stats' },
-                        ],
-                    },
-                )
+                try {
+                    const response = await this.bundlr?.upload(
+                        JSON.stringify(data),
+                        {
+                            tags: [
+                                { name: 'Protocol', value: 'ator' },
+                                { name: 'Protocol-Version', value: '0.1' },
+                                {
+                                    name: 'Content-Timestamp',
+                                    value: stamp.toString(),
+                                },
+                                {
+                                    name: 'Content-Type',
+                                    value: 'application/json',
+                                },
+                                {
+                                    name: 'Entity-Type',
+                                    value: 'validation/stats',
+                                },
+                            ],
+                        },
+                    )
 
-                this.logger.log(
-                    `Permanently stored validation/stats ${stamp}: ${response.id}`,
-                )
+                    this.logger.log(
+                        `Permanently stored validation/stats ${stamp}: ${response.id}`,
+                    )
 
-                return response.id
+                    return response.id
+                } catch (e) {
+                    this.logger.warn(
+                        `Exception when storing validation stats: ${e}`,
+                    )
+                }
             } else {
                 this.logger.warn(
                     `NOT LIVE: Not storing validation/stats ${stamp}`,
@@ -312,44 +330,43 @@ export class VerificationService {
             },
         )
     }
-    
+
     public async persistVerification(
         data: VerificationResults,
+        metricsTx: string,
+        statsTx: string,
     ): Promise<VerificationData> {
         const verificationStamp = Date.now()
-
         const verifiedRelays = data.filter(
-            (value, index, array) => value.result === 'AlreadyVerified',
+            (value) => value.result === 'AlreadyVerified',
         )
-        
-        let relayMetricsTx = 'missing'
-        try {
-            relayMetricsTx = await this.storeRelayMetrics(
-                verificationStamp,
-                verifiedRelays,
-            )
-        } catch(e) {
-            this.logger.warn(`Failed to store relay metrics: ${e}`)
-        }
 
-        let validationStatsTx = 'missing'
-        try {
-            const validationStats: RelayValidationStatsDto =
-                this.getValidationStats(data)
+        const relayMetricsTx =
+            metricsTx != ''
+                ? metricsTx
+                : await this.storeRelayMetrics(
+                      verificationStamp,
+                      verifiedRelays,
+                  )
 
-            validationStatsTx = await this.storeValidationStats(
-                verificationStamp,
-                validationStats,
-            )
-        } catch(e) {
-            this.logger.warn(`Failed generating / storing validation stats: ${e}`)
-        }
+        let validationStatsTx = ''
+
+        const validationStats: RelayValidationStatsDto =
+            this.getValidationStats(data)
+
+        validationStatsTx =
+            statsTx != ''
+                ? statsTx
+                : await this.storeValidationStats(
+                      verificationStamp,
+                      validationStats,
+                  )
 
         const verificationData: VerificationData = {
             verified_at: verificationStamp,
             relay_metrics_tx: relayMetricsTx,
             validation_stats_tx: validationStatsTx,
-            relays: verifiedRelays.map((result, index, array) => result.relay),
+            relays: verifiedRelays.map((result) => result.relay),
         }
 
         await this.verificationDataModel
@@ -362,7 +379,7 @@ export class VerificationService {
     public async getMostRecent(): Promise<VerificationData | null> {
         return await this.verificationDataModel
             .findOne({})
-            .sort({ verified_at: -1})
+            .sort({ verified_at: -1 })
             .exec()
             .catch((error) => {
                 this.logger.error(error)
@@ -375,7 +392,7 @@ export class VerificationService {
             (value, index, array) => value.result === 'Failed',
         )
         if (failed.length > 0) {
-            this.logger.log(
+            this.logger.warn(
                 `Failed verification of ${failed.length} relay(s): [${failed
                     .map((result, index, array) => result.relay.fingerprint)
                     .join(', ')}]`,
@@ -387,11 +404,7 @@ export class VerificationService {
         )
         if (claimable.length > 0) {
             this.logger.log(
-                `Skipped ${
-                    claimable.length
-                } already registered/claimable relay(s): [${claimable
-                    .map((result, index, array) => result.relay.fingerprint)
-                    .join(', ')}]`,
+                `Skipped ${claimable.length} already registered/claimable relay(s)`,
             )
         }
 
@@ -421,7 +434,10 @@ export class VerificationService {
     public async verifyRelay(
         relay: ValidatedRelay,
     ): Promise<RelayVerificationResult> {
-        if (this.relayRegistryContract !== undefined && this.owner !== undefined) {
+        if (
+            this.relayRegistryContract !== undefined &&
+            this.operator !== undefined
+        ) {
             const verified: boolean = await this.isVerified(relay.fingerprint)
             const claimable: boolean = await this.isClaimable(
                 relay.fingerprint,
@@ -447,21 +463,29 @@ export class VerificationService {
             }
 
             if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.owner.signer)
-                const response = await this.relayRegistryContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
-                    .writeInteraction<AddClaimable>({
-                        function: 'addClaimable',
-                        fingerprint: relay.fingerprint,
-                        address: relay.ator_address,
-                    })
+                try {
+                    const evmSig = await buildEvmSignature(this.operator.signer)
+                    const response = await this.relayRegistryContract
+                        .connect({
+                            signer: evmSig,
+                            type: 'ethereum',
+                        })
+                        .writeInteraction<AddClaimable>({
+                            function: 'addClaimable',
+                            fingerprint: relay.fingerprint,
+                            address: relay.ator_address,
+                        })
 
-                this.logger.log(
-                    `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
-                )
+                    this.logger.log(
+                        `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
+                    )
+                } catch (error) {
+                    this.logger.error(
+                        `Exception when verifying relay [${relay.fingerprint}]`,
+                        error,
+                    )
+                    return 'Failed'
+                }
             } else {
                 this.logger.warn(
                     `NOT LIVE - skipped contract call to add a claimable relay [${relay.fingerprint}]`,

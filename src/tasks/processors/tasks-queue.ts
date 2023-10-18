@@ -14,11 +14,11 @@ export class TasksQueue extends WorkerHost {
         'validate-onionoo-relays'
     public static readonly JOB_PUBLISH_VALIDATION = 'publish-validation'
     public static readonly JOB_RUN_DISTRIBUTION = 'run-distribution'
-    public static readonly JOB_REQUEST_FACILITY_UPDATE = 'request-facility-update'
+    public static readonly JOB_CHECK_BALANCES = 'check-balances'
 
     constructor(
         private readonly tasks: TasksService,
-        private readonly verification: VerificationService
+        private readonly verification: VerificationService,
     ) {
         super()
     }
@@ -28,9 +28,16 @@ export class TasksQueue extends WorkerHost {
 
         switch (job.name) {
             case TasksQueue.JOB_VALIDATE_ONIONOO_RELAYS:
-                this.tasks.validationFlow.add(
-                    TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
-                )
+                try {
+                    this.tasks.validationFlow.add(
+                        TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
+                    )
+                } catch (error) {
+                    this.logger.error(
+                        'Exception while adding validate relays job',
+                        error,
+                    )
+                }
 
                 await this.tasks.updateOnionooRelays() // using default delay time in param
                 break
@@ -53,35 +60,45 @@ export class TasksQueue extends WorkerHost {
                 break
 
             case TasksQueue.JOB_RUN_DISTRIBUTION:
+                try {
+                    const verificationData: VerificationData | null =
+                        await this.verification.getMostRecent()
 
-                const verificationData: VerificationData | null = await this.verification.getMostRecent()
-
-                if (verificationData != null) {
-                    const distribution_time = Date.now()
-                    const currentData = Object.assign(verificationData, { verified_at: distribution_time })
-                    this.logger.log(`Running distribution ${currentData.verified_at} with ${currentData.relays.length}`)
-                    this.tasks.distributionQueue.add(
-                        'start-distribution', 
-                        currentData,
-                        TasksService.jobOpts 
-                    )
-                    this.tasks.queueDistributing() // using default delay time in param
-                } else {
-                    this.logger.warn(
-                        'Nothing to distribute, this should not happen, or just wait for the first distribution to happen',
+                    if (verificationData != null) {
+                        const distribution_time = Date.now()
+                        const currentData = Object.assign(verificationData, {
+                            verified_at: distribution_time,
+                        })
+                        this.logger.log(
+                            `Running distribution ${currentData.verified_at} with ${currentData.relays.length}`,
+                        )
+                        this.tasks.distributionQueue.add(
+                            'start-distribution',
+                            currentData,
+                            TasksService.jobOpts,
+                        )
+                    } else {
+                        this.logger.warn(
+                            'Nothing to distribute, this should not happen, or just wait for the first verification to happen',
+                        )
+                    }
+                } catch (error) {
+                    this.logger.error(
+                        'Exception while running distribution',
+                        error,
                     )
                 }
-                
+                await this.tasks.queueDistributing() // using default delay time in param
+
                 break
 
-            case TasksQueue.JOB_REQUEST_FACILITY_UPDATE:
-                const address = job.data as string
-                if (address != undefined) {
-                    this.logger.log(`Starting rewards update for ${address}`)
-                    await this.tasks.requestFacilityUpdate(address)
-                } else {
-                    this.logger.error('Trying to request facility update but missing address in job data')
-                }
+            case TasksQueue.JOB_CHECK_BALANCES:
+                this.tasks.balancesFlow.add(
+                    TasksService.CHECK_BALANCES(Date.now()),
+                )
+
+                this.tasks.queueCheckBalances() // using default delay time in param
+
                 break
 
             default:

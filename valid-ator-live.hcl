@@ -48,7 +48,7 @@ job "valid-ator-live" {
 
       resources {
         cpu    = 2048
-        memory = 4096
+        memory = 8192
       }
 
       service {
@@ -76,8 +76,8 @@ job "valid-ator-live" {
       }
 
       resources {
-        cpu    = 2048
-        memory = 8192
+        cpu    = 4096
+        memory = 32768
       }
 
       service {
@@ -106,15 +106,16 @@ job "valid-ator-live" {
       template {
         data = <<EOH
         {{with secret "kv/valid-ator/live"}}
-          VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
-          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
-          DISTRIBUTION_CONTRACT_DATA_KEY="{{.Data.data.DISTRIBUTION_CONTRACT_DATA_KEY}}"
-          JSON_RPC="{{.Data.data.JSON_RPC}}"
+          RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
+          DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
+          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
+          JSON_RPC="{{.Data.data.JSON_RPC}}"
         {{end}}
-        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
+        RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/live/distribution-address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/live/address" ]]"
+        TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/goerli/live/address" ]]"
         EOH
         destination = "secrets/file.env"
         env         = true
@@ -130,6 +131,11 @@ job "valid-ator-live" {
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
         BUNDLR_NODE="http://node2.bundlr.network"
+        RELAY_REGISTRY_OPERATOR_MIN_BALANCE=1000000
+        RELAY_REGISTRY_UPLOADER_MIN_BALANCE=1000000
+        DISTRIBUTION_OPERATOR_MIN_BALANCE=1000000
+        FACILITY_OPERATOR_MIN_BALANCE=1000000
+        FACILITY_TOKEN_MIN_BALANCE=1000000
       }
 
       resources {

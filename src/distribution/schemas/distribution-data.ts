@@ -16,4 +16,5 @@ export class DistributionData {
     scores: ScoreData[]
 }
 
-export const DistributionDataSchema = SchemaFactory.createForClass(DistributionData)
+export const DistributionDataSchema =
+    SchemaFactory.createForClass(DistributionData)

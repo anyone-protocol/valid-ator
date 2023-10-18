@@ -9,16 +9,25 @@ import {
 } from 'src/verification/dto/verification-result-dto'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 import { VerificationData } from 'src/verification/schemas/verification-data'
+import { TasksService } from '../tasks.service'
+import { VerificationRecovery } from 'src/verification/dto/verification-recovery'
 
 @Processor('verification-queue')
 export class VerificationQueue extends WorkerHost {
     private readonly logger = new Logger(VerificationQueue.name)
 
+    private maxUploadRetries = 3
+
     public static readonly JOB_VERIFY_RELAY = 'verify-relay'
     public static readonly JOB_CONFIRM_VERIFICATION = 'confirm-verification'
     public static readonly JOB_PERSIST_VERIFICATION = 'persist-verification'
+    public static readonly JOB_RECOVER_PERSIST_VERIFICATION =
+        'recover-persist-verification'
 
-    constructor(private readonly verification: VerificationService) {
+    constructor(
+        private readonly tasks: TasksService,
+        private readonly verification: VerificationService,
+    ) {
         super()
     }
 
@@ -44,8 +53,11 @@ export class VerificationQueue extends WorkerHost {
                             `Incorrect fingerprint [${job.data.fingerprint}]`,
                         )
                     }
-                } catch (e) {
-                    this.logger.error(`Failed verifying validated relay ${e}`)
+                } catch (error) {
+                    this.logger.error(
+                        'Exception while verifying validated relay:',
+                        error,
+                    )
                 }
 
                 const verifiedRelay: VerificationResultDto = {
@@ -56,52 +68,124 @@ export class VerificationQueue extends WorkerHost {
                 return [verifiedRelay]
 
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
-                const verificationResults: VerificationResults = Object.values(
-                    await job.getChildrenValues(),
-                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
+                try {
+                    const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
+                        )
 
-                if (verificationResults.length > 0) {
-                    try {
+                    if (verificationResults.length > 0) {
                         this.logger.debug(`Finalizing verification ${job.data}`)
-
                         this.verification.logVerification(verificationResults)
 
                         return verificationResults
-                    } catch (e) {
-                        this.logger.error(
-                            `Failed finalizing verification of ${verificationResults.length} relay(s)`,
-                        )
-                        this.logger.error(e)
+                    } else {
+                        this.logger.debug(`${job.data}> No data was published`)
                     }
-                } else {
-                    this.logger.debug(`${job.data}> No data was published`)
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while confirming verification of relay(s)`,
+                        error,
+                    )
                 }
 
                 return []
 
             case VerificationQueue.JOB_PERSIST_VERIFICATION:
-                const verifiedRelays: VerificationResults = Object.values(
-                    await job.getChildrenValues(),
-                ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
-
-                if (verifiedRelays.length > 0) {
-                    try {
-                        this.logger.debug(
-                            `Persisting verification of ${verifiedRelays.length} relays`,
+                try {
+                    const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
                         )
 
-                        return await this.verification.persistVerification(
-                            verifiedRelays,
+                    if (verificationResults.length > 0) {
+                        this.logger.log(
+                            `Persisting verification of ${verificationResults.length} relays`,
                         )
-                    } catch (e) {
-                        this.logger.error(
-                            `Failed storing verification of ${verifiedRelays.length} relay(s)`,
-                        )
-                        this.logger.error(e)
+
+                        const verificationData =
+                            await this.verification.persistVerification(
+                                verificationResults,
+                                '',
+                                '',
+                            )
+                        if (
+                            verificationData.relay_metrics_tx.length > 0 &&
+                            verificationData.validation_stats_tx.length > 0
+                        ) {
+                            return verificationData
+                        } else {
+                            this.tasks.verificationQueue.add(
+                                VerificationQueue.JOB_RECOVER_PERSIST_VERIFICATION,
+                                {
+                                    retriesLeft: this.maxUploadRetries,
+                                    verificationResults: verificationResults,
+                                    verificationData: verificationData,
+                                },
+                            )
+                        }
+                    } else {
+                        this.logger.debug(`No verified relays found to store`)
                     }
-                } else {
-                    this.logger.debug(`No verified relays found to store`)
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while persisting verification results`,
+                        error,
+                    )
                 }
+                return undefined
+
+            case VerificationQueue.JOB_RECOVER_PERSIST_VERIFICATION:
+                try {
+                    const data = job.data as VerificationRecovery
+                    if (data.retriesLeft > 0) {
+                        if (data.verificationResults.length > 0) {
+                            this.logger.warn(
+                                `Recover persisting verification of ${data.verificationResults.length} relays (retries left: ${data.retriesLeft})`,
+                            )
+
+                            const result =
+                                await this.verification.persistVerification(
+                                    data.verificationResults,
+                                    data.verificationData.relay_metrics_tx,
+                                    data.verificationData.validation_stats_tx,
+                                )
+                            if (
+                                result.relay_metrics_tx.length > 0 &&
+                                result.validation_stats_tx.length > 0
+                            ) {
+                                return result
+                            } else {
+                                this.tasks.verificationQueue.add(
+                                    VerificationQueue.JOB_RECOVER_PERSIST_VERIFICATION,
+                                    {
+                                        retriesLeft: data.retriesLeft - 1,
+                                        verificationResults:
+                                            data.verificationResults,
+                                        verificationData: data.verificationData,
+                                    },
+                                )
+                            }
+                        } else {
+                            this.logger.debug(
+                                `No verified relays found to store`,
+                            )
+                        }
+                    } else {
+                        this.logger.error(
+                            `No more retries left on persisting verification.`,
+                            data.verificationData,
+                        )
+                    }
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while persisting verification results`,
+                        error,
+                    )
+                }
+
                 return undefined
 
             default:

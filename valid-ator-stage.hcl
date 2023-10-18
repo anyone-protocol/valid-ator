@@ -107,15 +107,16 @@ job "valid-ator-stage" {
       template {
         data = <<EOH
         {{with secret "kv/valid-ator/stage"}}
-          VALIDATOR_KEY="{{.Data.data.VALIDATOR_KEY}}"
-          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
-          DISTRIBUTION_CONTRACT_DATA_KEY="{{.Data.data.DISTRIBUTION_CONTRACT_DATA_KEY}}"
-          JSON_RPC="{{.Data.data.JSON_RPC}}"
+          RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
+          DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
+          JSON_RPC="{{.Data.data.JSON_RPC}}"
+          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
         {{end}}
-        RELAY_REGISTRY_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
+        RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/stage/address" ]]"
+        TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/goerli/stage/address" ]]"
         EOH
         destination = "secrets/file.env"
         env         = true
@@ -131,6 +132,11 @@ job "valid-ator-stage" {
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
         BUNDLR_NODE="http://node2.bundlr.network"
+        RELAY_REGISTRY_OPERATOR_MIN_BALANCE=1000000
+        RELAY_REGISTRY_UPLOADER_MIN_BALANCE=1000000
+        DISTRIBUTION_OPERATOR_MIN_BALANCE=1000000
+        FACILITY_OPERATOR_MIN_BALANCE=1000000
+        FACILITY_TOKEN_MIN_BALANCE=1000000
       }
 
       resources {
