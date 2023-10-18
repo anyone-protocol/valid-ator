@@ -88,7 +88,7 @@ job "valid-ator-live" {
       template {
         data = <<EOH
 # Based on https://raw.githubusercontent.com/redis/redis/7.2/redis.conf
-bind {{ env "NOMAD_IP_rediscache" }}
+bind 0.0.0.0
 port {{ env "NOMAD_PORT_rediscache" }}
 protected-mode yes
 tcp-backlog 511
