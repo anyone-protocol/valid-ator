@@ -88,9 +88,9 @@ job "valid-ator-live" {
       template {
         data = <<EOH
 # Based on https://raw.githubusercontent.com/redis/redis/7.2/redis.conf
-bind 127.0.0.1
+bind {{ env "NOMAD_IP_rediscache" }}
+port {{ env "NOMAD_PORT_rediscache" }}
 protected-mode yes
-port 6379
 tcp-backlog 511
 timeout 0
 tcp-keepalive 300
@@ -223,7 +223,7 @@ jemalloc-bg-thread yes
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.commit_sha]]"
         MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-live"
-        REDIS_HOSTNAME="localhost"
+        REDIS_HOSTNAME="${NOMAD_IP_rediscache}"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
