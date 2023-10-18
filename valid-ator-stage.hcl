@@ -224,7 +224,7 @@ jemalloc-bg-thread yes
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.commit_sha]]"
         MONGO_URI="mongodb://localhost:${NOMAD_PORT_mongodb}/valid-ator-stage"
-        REDIS_HOSTNAME="${NOMAD_IP_rediscache}"
+        REDIS_HOSTNAME="localhost"
         REDIS_PORT="${NOMAD_PORT_rediscache}"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
