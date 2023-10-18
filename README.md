@@ -104,7 +104,7 @@ $ docker compose up
 
 ```bash
 # redis
-$ docker run --name validator_dev_redis -p 6379:6379 redis:7
+$ docker run --name validator_dev_redis -p 6379:6379 redis:7.2
 
 # mongodb
 $ docker run --name validator_dev_mongo -p 27017:27017 mongo:5.0 
