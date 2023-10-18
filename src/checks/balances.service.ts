@@ -109,6 +109,10 @@ export class BalancesService implements OnApplicationBootstrap {
                     this.provider,
                 )
             }
+            
+            this.logger.log(
+                `Initialized balance checks for facility ${this.facilityAddress} with operator ${this.facilityOperator.address} and token: ${this.tokenAddress}`,
+            )
         }
 
         const relayRegistryOperatorKey = this.config.get<string>(
@@ -136,10 +140,10 @@ export class BalancesService implements OnApplicationBootstrap {
 
             if (this.bundlr !== undefined) {
                 this.logger.log(
-                    `Initialized balance checks relay operator with address: ${this.bundlr.address}`,
+                    `Initialized balance checks relay uploader with address: ${this.bundlr.address}`,
                 )
             } else {
-                this.logger.error('Failed to initialize Bundlr!')
+                this.logger.error('Failed to initialize relay uploader!')
             }
 
             const signer = new Wallet(relayRegistryOperatorKey)
@@ -149,6 +153,9 @@ export class BalancesService implements OnApplicationBootstrap {
                 key: relayRegistryOperatorKey,
                 signer: signer,
             }
+            this.logger.log(
+                `Initialized balance checks relay registry operator with address: ${this.relayRegistryOperator.address}`,
+            )
         }
 
         const distributionOperatorKey = this.config.get<string>(
@@ -188,26 +195,30 @@ export class BalancesService implements OnApplicationBootstrap {
     }
 
     async getRelayServiceUploadBalance(): Promise<BigNumber> {
-        try {
-            const result = await this.bundlr?.getLoadedBalance()
-            if (result != undefined) {
-                if (
-                    result.lt(BigNumber(this.relayRegistryUploaderMinBalance))
-                ) {
+        if (this.bundlr) {
+            try {
+                const result = await this.bundlr.getLoadedBalance()
+                if (result != undefined) {
+                    if (
+                        result.lt(BigNumber(this.relayRegistryUploaderMinBalance))
+                    ) {
+                        this.logger.error(
+                            `Balance depletion on relay service uploader: ${result} < ${this.relayRegistryUploaderMinBalance}`,
+                        )
+                    }
+                    return result
+                } else {
                     this.logger.error(
-                        `Balance depletion on relay service uploader: ${result} < ${this.relayRegistryUploaderMinBalance}`,
+                        `Failed to fetch relay service uploader loaded balance`,
                     )
                 }
-                return result
-            } else {
+            } catch (error) {
                 this.logger.error(
-                    `Failed to fetch relay service uploader loaded balance`,
+                    `Exception while fetching relay service uploader loaded balance`,
                 )
             }
-        } catch (error) {
-            this.logger.error(
-                `Exception while fetching relay service uploader loaded balance`,
-            )
+        } else {
+            this.logger.error('Relay registry uploader undefined. Unable to check relay service uploader balance')
         }
         return BigNumber(0)
     }
@@ -236,7 +247,7 @@ export class BalancesService implements OnApplicationBootstrap {
                 )
             }
         } else {
-            this.logger.error('Relay registry operator undefined')
+            this.logger.error('Relay registry operator undefined. Unable to check relay service operator balance')
         }
         return BigInt(0)
     }
@@ -265,30 +276,34 @@ export class BalancesService implements OnApplicationBootstrap {
                 )
             }
         } else {
-            this.logger.error('Distribution operator undefined')
+            this.logger.error('Distribution operator undefined. Unable to check distribution operator balance')
         }
         return BigInt(0)
     }
 
     async getFacilityOperatorBalance(): Promise<bigint> {
-        try {
-            const result = await this.provider.getBalance(
-                this.facilityOperator.address,
-            )
-            if (result != undefined) {
-                if (result < BigInt(this.facilityOperatorMinBalance)) {
-                    this.logger.error(
-                        `Balance depletion on facility operator: ${result} < ${this.facilityOperatorMinBalance}`,
-                    )
+        if (this.facilityOperator) {
+            try {
+                const result = await this.provider.getBalance(
+                    this.facilityOperator.address,
+                )
+                if (result != undefined) {
+                    if (result < BigInt(this.facilityOperatorMinBalance)) {
+                        this.logger.error(
+                            `Balance depletion on facility operator: ${result} < ${this.facilityOperatorMinBalance}`,
+                        )
+                    }
+                    return result
+                } else {
+                    this.logger.error(`Failed to fetch facility operator balance`)
                 }
-                return result
-            } else {
-                this.logger.error(`Failed to fetch facility operator balance`)
+            } catch (error) {
+                this.logger.error(
+                    `Exception while fetching facility operator balance`,
+                )
             }
-        } catch (error) {
-            this.logger.error(
-                `Exception while fetching facility operator balance`,
-            )
+        } else {
+            this.logger.error('Facility operator is undefined. Unable to check operator balance')
         }
         return BigInt(0)
     }
