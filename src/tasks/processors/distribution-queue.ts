@@ -131,6 +131,10 @@ export class DistributionQueue extends WorkerHost {
                 await job.getChildrenValues(),
             )
             this.logger.log(`Jobs data ${jobsData.length}`)
+            if (jobsData.length > 0) {
+                this.logger.log(`Job detail ${jobsData[0]}`)
+            }
+
             const { processedScores, failedScores } = jobsData.reduce(
                 (acc, curr) => {
                     if (curr.result) {
