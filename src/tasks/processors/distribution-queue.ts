@@ -104,7 +104,7 @@ export class DistributionQueue extends WorkerHost {
                 scores: ScoreData[]
             }
             if (data != undefined) {
-                this.logger.log(
+                this.logger.debug(
                     `Adding ${data.scores.length} scores for ${data.stamp}`,
                 )
                 const scores: Score[] = this.dataToScores(data.scores)
@@ -132,10 +132,6 @@ export class DistributionQueue extends WorkerHost {
             const jobsData: ScoresCompletionData[] = Object.values(
                 await job.getChildrenValues(),
             )
-            this.logger.log(`Jobs data ${jobsData.length}`)
-            if (jobsData.length > 0) {
-                this.logger.log(`Job detail ${jobsData[0]}`)
-            }
 
             const { processedScores, failedScores } = jobsData.reduce(
                 (acc, curr) => {
@@ -148,7 +144,7 @@ export class DistributionQueue extends WorkerHost {
                 },
                 { processedScores: [] as Score[], failedScores: [] as Score[] },
             )
-            this.logger.log(`Distribution stats | processed: ${processedScores.length}, failed: ${failedScores.length}`)
+            this.logger.debug(`Distribution stats | processed: ${processedScores.length}, failed: ${failedScores.length}`)
 
             const data: DistributionCompletionData = job.data as DistributionCompletionData
             if (data != undefined) {
