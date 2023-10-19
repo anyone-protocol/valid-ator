@@ -12,10 +12,10 @@ job "valid-ator-live" {
       source = "mongodb"
     }
 
-    volume "redis-stage" {
+    volume "redis-live" {
       type = "host"
       read_only = false
-      source = "redis-stage"
+      source = "redis-live"
     }
 
     network {
@@ -47,7 +47,7 @@ job "valid-ator-live" {
       }
 
       volume_mount {
-        volume = "redis-live"
+        volume = "mongodb"
         destination = "/data/db"
         read_only = false
       }
