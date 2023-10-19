@@ -47,7 +47,7 @@ job "valid-ator-live" {
       }
 
       volume_mount {
-        volume = "mongodb"
+        volume = "redis-live"
         destination = "/data/db"
         read_only = false
       }
