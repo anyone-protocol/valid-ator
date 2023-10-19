@@ -130,6 +130,7 @@ export class DistributionQueue extends WorkerHost {
             const jobsData: ScoresCompletionData[] = Object.values(
                 await job.getChildrenValues(),
             )
+            this.logger.log(`Jobs data ${jobsData.length}`)
             const { processedScores, failedScores } = jobsData.reduce(
                 (acc, curr) => {
                     if (curr.result) {
@@ -141,10 +142,12 @@ export class DistributionQueue extends WorkerHost {
                 },
                 { processedScores: [] as Score[], failedScores: [] as Score[] },
             )
+            this.logger.log(`Distribution stats | processed: ${processedScores.length}, failed: ${failedScores.length}`)
 
-            const data = job.data as DistributionCompletionData
+            const data: DistributionCompletionData = job.data as DistributionCompletionData
             if (data != undefined) {
                 if (processedScores.length < data.total) {
+                    this.logger.warn(`Processed less scores (${processedScores.length}) then the total value set (${data.total})`)
                     if (data.retries > 0) {
                         this.startRecoveryDistribution(
                             data,
