@@ -186,6 +186,7 @@ export class BalancesService implements OnApplicationBootstrap {
 
     async publishBalanceChecks(data: BalancesData): Promise<boolean> {
         try {
+            this.logger.log(`Current @${data.stamp} Tokens: ${data.facilityTokens} Facilitator: ${data.facilityOperator} Uploader${data.relayRegistryUploader}`)
             await this.balancesDataModel.create(data)
             return true
         } catch (error) {

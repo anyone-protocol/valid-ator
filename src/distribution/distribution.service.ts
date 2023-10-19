@@ -142,7 +142,6 @@ export class DistributionService {
 
     public groupScoreJobs(data: DistributionData): ScoreData[][] {
         const result = data.scores
-            .filter((score, index, array) => score.score > 0)
             .reduce<ScoreData[][]>(
                 (curr, score, index, array): ScoreData[][] => {
                     if (curr.length == 0) {

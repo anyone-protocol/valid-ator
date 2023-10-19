@@ -59,23 +59,25 @@ export class DistributionQueue extends WorkerHost {
         try {
             const data: VerificationData = job.data as VerificationData
             if (data != undefined) {
+                const scores = data.relays.map((relay, index, array) => ({
+                    ator_address: relay.ator_address,
+                    fingerprint: relay.fingerprint,
+                    score: relay.consensus_weight,
+                })).filter((score, index, array) => score.score > 0)
+
                 this.logger.log(
-                    `Starting distribution ${data.verified_at} with ${data.relays.length} relays`,
+                    `Starting distribution ${data.verified_at} with ${scores.length} non-zero scores of verified relays`,
                 )
                 const scoreJobs = this.distribution.groupScoreJobs({
                     complete: false,
                     stamp: data.verified_at,
-                    scores: data.relays.map((relay, index, array) => ({
-                        ator_address: relay.ator_address,
-                        fingerprint: relay.fingerprint,
-                        score: relay.consensus_weight,
-                    })),
+                    scores: scores,
                 })
 
                 this.tasks.distributionFlow.add(
                     TasksService.DISTRIBUTE_RELAY_SCORES(
                         data.verified_at,
-                        data.relays.length,
+                        scores.length,
                         DistributionService.maxDistributionRetries,
                         scoreJobs,
                     ),
