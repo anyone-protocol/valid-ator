@@ -27,13 +27,6 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
 
       - name: Push image
-        env:
-          TOKEN_VALID_ATOR_LIVE: ${{ secrets.VALID_ATOR_LIVE }}
-          TOKEN_VALID_ATOR_LIVE_MONGO: ${{ secrets.VALID_ATOR_LIVE_MONGO }}
-          TOKEN_VALID_ATOR_LIVE_REDIS: ${{ secrets.VALID_ATOR_LIVE_REDIS }}
-          TOKEN_VALID_ATOR_STAGE: ${{ secrets.VALID_ATOR_STAGE }}
-          TOKEN_VALID_ATOR_STAGE_MONGO: ${{ secrets.VALID_ATOR_STAGE_MONGO }}
-          TOKEN_VALID_ATOR_STAGE_REDIS: ${{ secrets.VALID_ATOR_STAGE_REDIS }}
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
 
