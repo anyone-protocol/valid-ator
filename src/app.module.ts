@@ -10,6 +10,7 @@ import { EventsModule } from './events/events.module'
 import { DistributionModule } from './distribution/distribution.module'
 import { BullModule } from '@nestjs/bullmq'
 import { ChecksModule } from './checks/checks.module'
+import { ClusterModule } from './cluster/cluster.module';
 
 @Module({
     imports: [
@@ -40,6 +41,7 @@ import { ChecksModule } from './checks/checks.module'
         EventsModule,
         DistributionModule,
         ChecksModule,
+        ClusterModule,
     ],
     controllers: [AppController],
     providers: [AppService],
