@@ -38,13 +38,13 @@ job "valid-ator-stage" {
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/stage/address" ]]"
         TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/goerli/stage/address" ]]"
-        {{- range nomadService "validator-stage-mongo" }}
+        {{- range service "validator-stage-mongo" }}
           MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-stage"
-        {{ end -}}
-        {{- range nomadService "validator-stage-redis" }}
+        {{- end }}
+        {{- range service "validator-stage-redis" }}
           REDIS_HOSTNAME="{{ .Address }}"
           REDIS_PORT="{{ .Port }}"
-        {{ end -}}
+        {{- end }}
         EOH
         destination = "secrets/file.env"
         env         = true
