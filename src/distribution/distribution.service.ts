@@ -141,33 +141,32 @@ export class DistributionService {
     }
 
     public groupScoreJobs(data: DistributionData): ScoreData[][] {
-        const result = data.scores
-            .reduce<ScoreData[][]>(
-                (curr, score, index, array): ScoreData[][] => {
-                    if (curr.length == 0) {
-                        curr.push([score])
-                    } else {
-                        if (
-                            curr[curr.length - 1].length <
-                            DistributionService.scoresPerBatch
-                        ) {
-                            const last = curr.pop()
-                            if (last != undefined) {
-                                last.push(score)
-                                curr.push(last)
-                            } else {
-                                this.logger.error(
-                                    'Last element not found, this should not happen',
-                                )
-                            }
+        const result = data.scores.reduce<ScoreData[][]>(
+            (curr, score, index, array): ScoreData[][] => {
+                if (curr.length == 0) {
+                    curr.push([score])
+                } else {
+                    if (
+                        curr[curr.length - 1].length <
+                        DistributionService.scoresPerBatch
+                    ) {
+                        const last = curr.pop()
+                        if (last != undefined) {
+                            last.push(score)
+                            curr.push(last)
                         } else {
-                            curr.push([score])
+                            this.logger.error(
+                                'Last element not found, this should not happen',
+                            )
                         }
+                    } else {
+                        curr.push([score])
                     }
-                    return curr
-                },
-                [],
-            )
+                }
+                return curr
+            },
+            [],
+        )
 
         this.logger.debug(
             `Created ${result.length} groups out of ${data.scores.length}`,

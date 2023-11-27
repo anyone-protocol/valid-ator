@@ -59,11 +59,13 @@ export class DistributionQueue extends WorkerHost {
         try {
             const data: VerificationData = job.data as VerificationData
             if (data != undefined) {
-                const scores = data.relays.map((relay, index, array) => ({
-                    ator_address: relay.ator_address,
-                    fingerprint: relay.fingerprint,
-                    score: relay.consensus_weight,
-                })).filter((score, index, array) => score.score > 0)
+                const scores = data.relays
+                    .map((relay, index, array) => ({
+                        ator_address: relay.ator_address,
+                        fingerprint: relay.fingerprint,
+                        score: relay.consensus_weight,
+                    }))
+                    .filter((score, index, array) => score.score > 0)
 
                 this.logger.log(
                     `Starting distribution ${data.verified_at} with ${scores.length} non-zero scores of verified relays`,
@@ -144,12 +146,17 @@ export class DistributionQueue extends WorkerHost {
                 },
                 { processedScores: [] as Score[], failedScores: [] as Score[] },
             )
-            this.logger.debug(`Distribution stats | processed: ${processedScores.length}, failed: ${failedScores.length}`)
+            this.logger.debug(
+                `Distribution stats | processed: ${processedScores.length}, failed: ${failedScores.length}`,
+            )
 
-            const data: DistributionCompletionData = job.data as DistributionCompletionData
+            const data: DistributionCompletionData =
+                job.data as DistributionCompletionData
             if (data != undefined) {
                 if (processedScores.length < data.total) {
-                    this.logger.warn(`Processed less scores (${processedScores.length}) then the total value set (${data.total})`)
+                    this.logger.warn(
+                        `Processed less scores (${processedScores.length}) then the total value set (${data.total})`,
+                    )
                     if (data.retries > 0) {
                         this.startRecoveryDistribution(
                             data,

@@ -10,7 +10,8 @@ import { EventsModule } from './events/events.module'
 import { DistributionModule } from './distribution/distribution.module'
 import { BullModule } from '@nestjs/bullmq'
 import { ChecksModule } from './checks/checks.module'
-import { ClusterModule } from './cluster/cluster.module';
+import { ClusterModule } from './cluster/cluster.module'
+import { AppThreadsService } from './app-threads.service'
 
 @Module({
     imports: [

@@ -57,10 +57,9 @@ export class BalancesService implements OnApplicationBootstrap {
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
 
-        this.tokenAddress = this.config.get<string>(
-            'TOKEN_CONTRACT_ADDRESS',
-            { infer: true },
-        )
+        this.tokenAddress = this.config.get<string>('TOKEN_CONTRACT_ADDRESS', {
+            infer: true,
+        })
 
         this.facilityAddress = this.config.get<string>(
             'FACILITY_CONTRACT_ADDRESS',
@@ -109,7 +108,7 @@ export class BalancesService implements OnApplicationBootstrap {
                     this.provider,
                 )
             }
-            
+
             this.logger.log(
                 `Initialized balance checks for facility ${this.facilityAddress} with operator ${this.facilityOperator.address} and token: ${this.tokenAddress}`,
             )
@@ -186,7 +185,9 @@ export class BalancesService implements OnApplicationBootstrap {
 
     async publishBalanceChecks(data: BalancesData): Promise<boolean> {
         try {
-            this.logger.log(`Current @${data.stamp} Tokens: ${data.facilityTokens} Facilitator: ${data.facilityOperator} Uploader: ${data.relayRegistryUploader}`)
+            this.logger.log(
+                `Current @${data.stamp} Tokens: ${data.facilityTokens} Facilitator: ${data.facilityOperator} Uploader: ${data.relayRegistryUploader}`,
+            )
             await this.balancesDataModel.create(data)
             return true
         } catch (error) {
@@ -201,7 +202,9 @@ export class BalancesService implements OnApplicationBootstrap {
                 const result = await this.bundlr.getLoadedBalance()
                 if (result != undefined) {
                     if (
-                        result.lt(BigNumber(this.relayRegistryUploaderMinBalance))
+                        result.lt(
+                            BigNumber(this.relayRegistryUploaderMinBalance),
+                        )
                     ) {
                         this.logger.error(
                             `Balance depletion on relay service uploader: ${result} < ${this.relayRegistryUploaderMinBalance}`,
@@ -219,7 +222,9 @@ export class BalancesService implements OnApplicationBootstrap {
                 )
             }
         } else {
-            this.logger.error('Relay registry uploader undefined. Unable to check relay service uploader balance')
+            this.logger.error(
+                'Relay registry uploader undefined. Unable to check relay service uploader balance',
+            )
         }
         return BigNumber(0)
     }
@@ -248,7 +253,9 @@ export class BalancesService implements OnApplicationBootstrap {
                 )
             }
         } else {
-            this.logger.error('Relay registry operator undefined. Unable to check relay service operator balance')
+            this.logger.error(
+                'Relay registry operator undefined. Unable to check relay service operator balance',
+            )
         }
         return BigInt(0)
     }
@@ -277,7 +284,9 @@ export class BalancesService implements OnApplicationBootstrap {
                 )
             }
         } else {
-            this.logger.error('Distribution operator undefined. Unable to check distribution operator balance')
+            this.logger.error(
+                'Distribution operator undefined. Unable to check distribution operator balance',
+            )
         }
         return BigInt(0)
     }
@@ -296,7 +305,9 @@ export class BalancesService implements OnApplicationBootstrap {
                     }
                     return result
                 } else {
-                    this.logger.error(`Failed to fetch facility operator balance`)
+                    this.logger.error(
+                        `Failed to fetch facility operator balance`,
+                    )
                 }
             } catch (error) {
                 this.logger.error(
@@ -304,7 +315,9 @@ export class BalancesService implements OnApplicationBootstrap {
                 )
             }
         } else {
-            this.logger.error('Facility operator is undefined. Unable to check operator balance')
+            this.logger.error(
+                'Facility operator is undefined. Unable to check operator balance',
+            )
         }
         return BigInt(0)
     }

@@ -122,7 +122,9 @@ export class EventsService implements OnApplicationBootstrap {
             ...rewardData,
             retries: EventsService.maxUpdateAllocationRetries,
         }
-        this.logger.log(`Attempting to recover updateAllocation job with ${recoverData.retries} retries for ${recoverData.address}`)
+        this.logger.log(
+            `Attempting to recover updateAllocation job with ${recoverData.retries} retries for ${recoverData.address}`,
+        )
         this.facilitatorUpdatesQueue.add(
             'recover-update-allocation',
             recoverData,
@@ -133,8 +135,13 @@ export class EventsService implements OnApplicationBootstrap {
     public async retryUpdateAllocation(
         recoverData: RecoverUpdateAllocationData,
     ) {
-        const retryData: RecoverUpdateAllocationData = { ...recoverData, retries: recoverData.retries - 1 }
-        this.logger.log(`Retry updateAllocation job with ${recoverData.retries} retries for ${recoverData.address}`)
+        const retryData: RecoverUpdateAllocationData = {
+            ...recoverData,
+            retries: recoverData.retries - 1,
+        }
+        this.logger.log(
+            `Retry updateAllocation job with ${recoverData.retries} retries for ${recoverData.address}`,
+        )
         this.facilitatorUpdatesQueue.add(
             'recover-update-allocation',
             retryData,

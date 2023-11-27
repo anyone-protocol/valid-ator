@@ -78,7 +78,9 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 try {
                     const recoverData: RecoverUpdateAllocationData =
                         job.data as RecoverUpdateAllocationData
-                    this.logger.log(`Running recovery of updateAllocation with ${recoverData.retries} retries`)
+                    this.logger.log(
+                        `Running recovery of updateAllocation with ${recoverData.retries} retries`,
+                    )
                     if (recoverData.retries > 0) {
                         const hasPassedRecovery =
                             await this.events.updateAllocation({
