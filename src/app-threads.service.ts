@@ -6,16 +6,27 @@ const maxCPUs = os.cpus().length
 
 @Injectable()
 export class AppThreadsService {
-    static localLeaderIndex: number = -1 // no local leader elected by default
+    static localLeaderPid: number = -1 // no local leader elected by default
 
-    static electLocalLeader(isSteppingDown: boolean): void {
-        let availableIndexes = [...Array(cluster.workers?.length || 0).keys()]
-        if (isSteppingDown && this.localLeaderIndex > -1) {
-            availableIndexes.filter(
-                (_value, index) => index === this.localLeaderIndex,
-            )
+    static electLocalLeader(): void {
+        if (cluster.workers !== undefined) {
+            let workers = Object.values(cluster.workers)
+            let availablePids = workers
+                .map(worker => worker?.process.pid)
+                .filter((pid, index) => (pid !== undefined) && (index !== this.localLeaderPid))
+            
+            if (availablePids.length > 0) {
+                const leaderIndex = 0 // First one among excluded
+                const leader = workers.find(w => w?.process.pid == availablePids[leaderIndex])
+                AppThreadsService.localLeaderPid = leader?.process.pid || -1
+            } else {
+                console.error('No local candidates available to be elected as leaders.')
+                AppThreadsService.localLeaderPid = -1
+            }
+        } else {
+            console.error('No worker threads registered!')
+            AppThreadsService.localLeaderPid = -1
         }
-        this.localLeaderIndex = availableIndexes.length - 1
     }
 
     static parallelize(callback: Function): void {
@@ -30,14 +41,18 @@ export class AppThreadsService {
                 for (let i = 0; i < numThreads; i++) {
                     cluster.fork()
                 }
-                this.electLocalLeader(false)
 
                 cluster.on('exit', (worker, code, signal) => {
+                    if (worker.process.pid === AppThreadsService.localLeaderPid) {
+                        AppThreadsService.electLocalLeader()
+                    }
                     console.log(
                         `Worker ${worker.process.pid} died. Restarting...`,
                     )
                     cluster.fork()
                 })
+
+                AppThreadsService.electLocalLeader()
             } else {
                 console.log(
                     `Skipping parallelization... Process pid ${process.pid}`,

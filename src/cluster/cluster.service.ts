@@ -16,6 +16,7 @@ import {
     VoteResult,
 } from './interfaces/raft-types'
 import cluster from 'node:cluster'
+import { AppThreadsService } from 'src/app-threads.service'
 
 @Injectable()
 export class ClusterService
@@ -30,10 +31,10 @@ export class ClusterService
     // undefined - wait for leader resolution to finish
     public isLeader?: boolean
 
-    // true - should receive external events, orchestrate the cluster
-    // false - should receive internal jobs
-    // undefined - please wait for leader resolution
-    public isLocalLeader?: boolean
+    public isLocalLeader(): boolean {
+        return AppThreadsService.localLeaderPid > -1
+            && AppThreadsService.localLeaderPid == process.pid
+    }
 
     private isLive?: string
 
