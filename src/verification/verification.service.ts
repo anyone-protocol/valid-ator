@@ -193,6 +193,7 @@ export class VerificationService {
                 this.logger.warn(
                     `NOT LIVE: Not storing relay/metrics ${stamp} with ${data.length} relay(s) `,
                 )
+                return 'not-live-skipped-store-relay-metrics'
             }
         } else {
             this.logger.error(
@@ -245,6 +246,7 @@ export class VerificationService {
                 this.logger.warn(
                     `NOT LIVE: Not storing validation/stats ${stamp}`,
                 )
+                return 'not-live-skipped-store-validation-stats'
             }
         } else {
             this.logger.error(

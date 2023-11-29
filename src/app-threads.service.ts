@@ -37,7 +37,7 @@ export class AppThreadsService {
                 `Primary process pid: ${process.pid}, forking ${numThreads} threads`,
             )
 
-            if (numThreads > 0) {
+            if (numThreads > 1) {
                 for (let i = 0; i < numThreads; i++) {
                     cluster.fork()
                 }
@@ -57,6 +57,7 @@ export class AppThreadsService {
                 console.log(
                     `Skipping parallelization... Process pid ${process.pid}`,
                 )
+                AppThreadsService.localLeaderPid = process.pid
                 callback()
             }
         } else if (cluster.isWorker) {

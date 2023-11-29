@@ -15,6 +15,7 @@ import {
 import { MongooseModule } from '@nestjs/mongoose'
 import { BalanceChecksQueue } from './processors/balance-checks-queue'
 import { ChecksModule } from 'src/checks/checks.module'
+import { ClusterModule } from 'src/cluster/cluster.module'
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { ChecksModule } from 'src/checks/checks.module'
         VerificationModule,
         DistributionModule,
         ChecksModule,
+        ClusterModule,
         BullModule.registerQueue({ name: 'tasks-queue' }),
         BullModule.registerQueue({ name: 'validation-queue' }),
         BullModule.registerFlowProducer({ name: 'validation-flow' }),

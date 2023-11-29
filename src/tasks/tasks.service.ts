@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config'
 import { TaskServiceData } from './schemas/task-service-data'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
+import { ClusterService } from 'src/cluster/cluster.service'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -132,6 +133,7 @@ export class TasksService implements OnApplicationBootstrap {
         private readonly config: ConfigService<{
             IS_LIVE: string
         }>,
+        private readonly cluster: ClusterService,
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
         @InjectQueue('validation-queue') public validationQueue: Queue,
         @InjectFlowProducer('validation-flow')
@@ -204,7 +206,7 @@ export class TasksService implements OnApplicationBootstrap {
             `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}, isDistributing: ${this.state.isDistributing}]`,
         )
 
-        if (this.isLive != 'true') {
+        if (this.isLive != 'true' && this.cluster.isLocalLeader() && this.cluster.isLeader) {
             await this.tasksQueue.obliterate({ force: true })
 
             await this.validationQueue.obliterate({ force: true })

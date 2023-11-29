@@ -6,6 +6,7 @@ import BigNumber from 'bignumber.js'
 import { ethers, AddressLike } from 'ethers'
 import { RecoverUpdateAllocationData } from './dto/recover-update-allocation-data'
 import { RewardAllocationData } from 'src/distribution/dto/reward-allocation-data'
+import { ClusterService } from 'src/cluster/cluster.service'
 
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
@@ -77,6 +78,7 @@ export class EventsService implements OnApplicationBootstrap {
             JSON_RPC: string
             IS_LIVE: string
         }>,
+        private readonly cluster: ClusterService,
         @InjectQueue('facilitator-updates-queue')
         public facilitatorUpdatesQueue: Queue,
         @InjectFlowProducer('facilitator-updates-flow')
@@ -100,7 +102,7 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        if (this.isLive != 'true') {
+        if (this.isLive != 'true' && this.cluster.isLocalLeader() && this.cluster.isLeader) {
             await this.facilitatorUpdatesQueue.obliterate({ force: true })
         }
         if (this.facilitatorAddress != undefined) {
