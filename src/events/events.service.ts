@@ -102,7 +102,7 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        if (this.isLive != 'true' && this.cluster.isLocalLeader() && this.cluster.isLeader) {
+        if (this.isLive != 'true' && this.cluster.isTheOne()) {
             await this.facilitatorUpdatesQueue.obliterate({ force: true })
         }
         if (this.facilitatorAddress != undefined) {
@@ -276,37 +276,41 @@ export class EventsService implements OnApplicationBootstrap {
                     this.contract.on(
                         'RequestingUpdate',
                         async (_account: AddressLike) => {
-                            let accountString: string
-                            if (_account instanceof Promise) {
-                                accountString = await _account
-                            } else if (ethers.isAddressable(_account)) {
-                                accountString = await _account.getAddress()
-                            } else {
-                                accountString = _account
-                            }
+                            if (this.cluster.isTheOne()) {
+                                let accountString: string
+                                if (_account instanceof Promise) {
+                                    accountString = await _account
+                                } else if (ethers.isAddressable(_account)) {
+                                    accountString = await _account.getAddress()
+                                } else {
+                                    accountString = _account
+                                }
 
-                            if (accountString != undefined) {
-                                this.logger.log(
-                                    `Starting rewards update for ${accountString}`,
-                                )
-                                await this.facilitatorUpdatesFlow.add({
-                                    name: 'update-allocation',
-                                    queueName: 'facilitator-updates-queue',
-                                    opts: EventsService.jobOpts,
-                                    children: [
-                                        {
-                                            name: 'get-current-rewards',
-                                            queueName:
-                                                'facilitator-updates-queue',
-                                            opts: EventsService.jobOpts,
-                                            data: accountString,
-                                        },
-                                    ],
-                                })
+                                if (accountString != undefined) {
+                                    this.logger.log(
+                                        `Starting rewards update for ${accountString}`,
+                                    )
+                                    await this.facilitatorUpdatesFlow.add({
+                                        name: 'update-allocation',
+                                        queueName: 'facilitator-updates-queue',
+                                        opts: EventsService.jobOpts,
+                                        children: [
+                                            {
+                                                name: 'get-current-rewards',
+                                                queueName:
+                                                    'facilitator-updates-queue',
+                                                opts: EventsService.jobOpts,
+                                                data: accountString,
+                                            },
+                                        ],
+                                    })
+                                } else {
+                                    this.logger.error(
+                                        'Trying to request facility update but missing address in data',
+                                    )
+                                }
                             } else {
-                                this.logger.error(
-                                    'Trying to request facility update but missing address in data',
-                                )
+                                this.logger.debug('Not the one, skipping starting rewards update... should be started somewhere else')
                             }
                         },
                     )

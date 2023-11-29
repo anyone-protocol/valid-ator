@@ -206,7 +206,7 @@ export class TasksService implements OnApplicationBootstrap {
             `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}, isDistributing: ${this.state.isDistributing}]`,
         )
 
-        if (this.isLive != 'true' && this.cluster.isLocalLeader() && this.cluster.isLeader) {
+        if (this.isLive != 'true' && this.cluster.isTheOne()) {
             await this.tasksQueue.obliterate({ force: true })
 
             await this.validationQueue.obliterate({ force: true })
@@ -215,13 +215,21 @@ export class TasksService implements OnApplicationBootstrap {
         }
 
         if (!this.state.isValidating) {
-            await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
+            if (this.cluster.isTheOne()) {
+                await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
+            } else {
+                this.logger.debug('Not the one, skipping start of onionoo updates... Should start in another process')
+            }
         } else {
             this.logger.log('The validation of relays should already be queued')
         }
 
         if (!this.state.isDistributing) {
-            await this.queueDistributing(0)
+            if (this.cluster.isTheOne()) {
+                await this.queueDistributing(0)
+            } else {
+                this.logger.debug('Not the one, skipping start of distribution... Should start in another process')
+            }
         } else {
             this.logger.log(
                 'The distribution of tokens should already be queued',
@@ -229,7 +237,11 @@ export class TasksService implements OnApplicationBootstrap {
         }
 
         if (!this.state.isCheckingBalances) {
-            await this.queueCheckBalances(0)
+            if (this.cluster.isTheOne()) {
+                await this.queueCheckBalances(0)
+            } else {
+                this.logger.debug('Not the one, skipping start of balance checks... Should start in another process')
+            }
         } else {
             this.logger.log('The checking of balances should already be queued')
         }

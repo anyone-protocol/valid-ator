@@ -36,6 +36,10 @@ export class ClusterService
             && AppThreadsService.localLeaderPid == process.pid
     }
 
+    public isTheOne(): boolean {
+        return (this.isLeader != undefined && this.isLeader == true && this.isLocalLeader())
+    }
+
     private isLive?: string
 
     private consulToken?: string
