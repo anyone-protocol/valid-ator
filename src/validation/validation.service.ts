@@ -83,48 +83,52 @@ export class ValidationService {
         })
         if (detailsUri !== undefined) {
             const requestStamp = Date.now()
-            const { headers, status, data } = await firstValueFrom(
-                this.httpService
-                    .get<DetailsResponse>(detailsUri, {
-                        headers: {
-                            'content-encoding': 'gzip',
-                            'if-modified-since': `${this.lastSeen}`,
-                        },
-                        validateStatus: (status) =>
-                            status === 304 || status === 200,
-                    })
-                    .pipe(
-                        catchError((error: AxiosError) => {
-                            this.logger.error(
-                                `Fetching relays from ${detailsUri} failed with ${error.response?.status}`,
-                            )
-                            throw 'Failed to fetch details from Onionoo'
-                        }),
-                    ),
-            )
-
-            this.logger.debug(
-                `Fetch details from ${detailsUri} response ${status}`,
-            )
-            if (status === 200) {
-                relays = data.relays
-                const lastMod = headers['last-modified']
-                if (
-                    lastMod !== undefined &&
-                    typeof lastMod === 'string' &&
-                    requestStamp > Date.parse(lastMod)
-                ) {
-                    this.lastSeen = new Date(lastMod).toUTCString()
-                    await this.validationServiceDataModel.findByIdAndUpdate(
-                        this.dataId,
-                        { apiVersion: data.version, last_seen: this.lastSeen },
-                    )
-                } else this.lastSeen = ''
-
-                this.logger.log(
-                    `Received ${relays.length} relays from Onionoo [seen: ${this.lastSeen}]`,
+            try {
+                const { headers, status, data } = await firstValueFrom(
+                    this.httpService
+                        .get<DetailsResponse>(detailsUri, {
+                            headers: {
+                                'content-encoding': 'gzip',
+                                'if-modified-since': `${this.lastSeen}`,
+                            },
+                            validateStatus: (status) =>
+                                status === 304 || status === 200,
+                        })
+                        .pipe(
+                            catchError((error: AxiosError) => {
+                                this.logger.error(
+                                    `Fetching relays from ${detailsUri} failed with ${error.response?.status}`,
+                                )
+                                throw 'Failed to fetch details from Onionoo'
+                            }),
+                        ),
                 )
-            } else this.logger.debug('No new updates from Onionoo') // 304 - Not modified
+
+                this.logger.debug(
+                    `Fetch details from ${detailsUri} response ${status}`,
+                )
+                if (status === 200) {
+                    relays = data.relays
+                    const lastMod = headers['last-modified']
+                    if (
+                        lastMod !== undefined &&
+                        typeof lastMod === 'string' &&
+                        requestStamp > Date.parse(lastMod)
+                    ) {
+                        this.lastSeen = new Date(lastMod).toUTCString()
+                        await this.validationServiceDataModel.findByIdAndUpdate(
+                            this.dataId,
+                            { apiVersion: data.version, last_seen: this.lastSeen },
+                        )
+                    } else this.lastSeen = ''
+
+                    this.logger.log(
+                        `Received ${relays.length} relays from Onionoo [seen: ${this.lastSeen}]`,
+                    )
+                } else this.logger.debug('No new updates from Onionoo') // 304 - Not modified
+            } catch (e) {
+                this.logger.error(e)
+            }
         } else
             this.logger.warn(
                 'Set the ONIONOO_DETAILS_URI in ENV vars or configuration',
