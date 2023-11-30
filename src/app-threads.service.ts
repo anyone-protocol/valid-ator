@@ -12,15 +12,22 @@ export class AppThreadsService {
         if (cluster.workers !== undefined) {
             let workers = Object.values(cluster.workers)
             let availablePids = workers
-                .map(worker => worker?.process.pid)
-                .filter((pid, index) => (pid !== undefined) && (index !== this.localLeaderPid))
-            
+                .map((worker) => worker?.process.pid)
+                .filter(
+                    (pid, index) =>
+                        pid !== undefined && index !== this.localLeaderPid,
+                )
+
             if (availablePids.length > 0) {
                 const leaderIndex = 0 // First one among excluded
-                const leader = workers.find(w => w?.process.pid == availablePids[leaderIndex])
+                const leader = workers.find(
+                    (w) => w?.process.pid == availablePids[leaderIndex],
+                )
                 AppThreadsService.localLeaderPid = leader?.process.pid || -1
             } else {
-                console.error('No local candidates available to be elected as leaders.')
+                console.error(
+                    'No local candidates available to be elected as leaders.',
+                )
                 AppThreadsService.localLeaderPid = -1
             }
         } else {
@@ -43,7 +50,9 @@ export class AppThreadsService {
                 }
 
                 cluster.on('exit', (worker, code, signal) => {
-                    if (worker.process.pid === AppThreadsService.localLeaderPid) {
+                    if (
+                        worker.process.pid === AppThreadsService.localLeaderPid
+                    ) {
                         AppThreadsService.electLocalLeader()
                     }
                     console.log(

@@ -32,12 +32,18 @@ export class ClusterService
     public isLeader?: boolean
 
     public isLocalLeader(): boolean {
-        return AppThreadsService.localLeaderPid > -1
-            && AppThreadsService.localLeaderPid == process.pid
+        return (
+            AppThreadsService.localLeaderPid > -1 &&
+            AppThreadsService.localLeaderPid == process.pid
+        )
     }
 
     public isTheOne(): boolean {
-        return (this.isLeader != undefined && this.isLeader == true && this.isLocalLeader())
+        return (
+            this.isLeader != undefined &&
+            this.isLeader == true &&
+            this.isLocalLeader()
+        )
     }
 
     private isLive?: string

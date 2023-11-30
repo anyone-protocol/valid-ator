@@ -310,7 +310,9 @@ export class EventsService implements OnApplicationBootstrap {
                                     )
                                 }
                             } else {
-                                this.logger.debug('Not the one, skipping starting rewards update... should be started somewhere else')
+                                this.logger.debug(
+                                    'Not the one, skipping starting rewards update... should be started somewhere else',
+                                )
                             }
                         },
                     )

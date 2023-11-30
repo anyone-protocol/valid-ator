@@ -218,7 +218,9 @@ export class TasksService implements OnApplicationBootstrap {
             if (this.cluster.isTheOne()) {
                 await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
             } else {
-                this.logger.debug('Not the one, skipping start of onionoo updates... Should start in another process')
+                this.logger.debug(
+                    'Not the one, skipping start of onionoo updates... Should start in another process',
+                )
             }
         } else {
             this.logger.log('The validation of relays should already be queued')
@@ -228,7 +230,9 @@ export class TasksService implements OnApplicationBootstrap {
             if (this.cluster.isTheOne()) {
                 await this.queueDistributing(0)
             } else {
-                this.logger.debug('Not the one, skipping start of distribution... Should start in another process')
+                this.logger.debug(
+                    'Not the one, skipping start of distribution... Should start in another process',
+                )
             }
         } else {
             this.logger.log(
@@ -240,7 +244,9 @@ export class TasksService implements OnApplicationBootstrap {
             if (this.cluster.isTheOne()) {
                 await this.queueCheckBalances(0)
             } else {
-                this.logger.debug('Not the one, skipping start of balance checks... Should start in another process')
+                this.logger.debug(
+                    'Not the one, skipping start of balance checks... Should start in another process',
+                )
             }
         } else {
             this.logger.log('The checking of balances should already be queued')
