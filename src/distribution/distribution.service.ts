@@ -38,6 +38,7 @@ export class DistributionService {
             IS_LIVE: string
             DISTRIBUTION_CONTRACT_TXID: string
             DISTRIBUTION_OPERATOR_KEY: string
+            DRE_HOSTNAME: string
         }>,
     ) {
         LoggerFactory.INST.logLevel('error')
@@ -93,10 +94,16 @@ export class DistributionService {
                     ),
                 )
 
-                this.distributionContract =
-                    this.distributionWarp.contract<DistributionState>(
-                        distributionContractTxId,
-                    )
+                const dreHostname = this.config.get<string>('DRE_HOSTNAME', {
+                    infer: true,
+                })
+
+                this.distributionContract = this.distributionWarp
+                    .contract<DistributionState>(distributionContractTxId)
+                    .setEvaluationOptions({
+                        remoteStateSyncEnabled: true,
+                        remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
+                    })
             } else this.logger.error('Missing distribution contract txid')
         } else this.logger.error('Missing contract owner key...')
     }

@@ -118,7 +118,10 @@ export class ValidationService {
                         this.lastSeen = new Date(lastMod).toUTCString()
                         await this.validationServiceDataModel.findByIdAndUpdate(
                             this.dataId,
-                            { apiVersion: data.version, last_seen: this.lastSeen },
+                            {
+                                apiVersion: data.version,
+                                last_seen: this.lastSeen,
+                            },
                         )
                     } else this.lastSeen = ''
 

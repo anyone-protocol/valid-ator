@@ -44,6 +44,7 @@ export class VerificationService {
             BUNDLR_NODE: string
             BUNDLR_NETWORK: string
             DISTRIBUTION_CONTRACT_TXID: string
+            DRE_HOSTNAME: string
         }>,
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
@@ -119,10 +120,16 @@ export class VerificationService {
                     new StateUpdatePlugin(registryTxId, this.relayRegistryWarp),
                 )
 
-                this.relayRegistryContract =
-                    this.relayRegistryWarp.contract<RelayRegistryState>(
-                        registryTxId,
-                    )
+                const dreHostname = this.config.get<string>('DRE_HOSTNAME', {
+                    infer: true,
+                })
+
+                this.relayRegistryContract = this.relayRegistryWarp
+                    .contract<RelayRegistryState>(registryTxId)
+                    .setEvaluationOptions({
+                        remoteStateSyncEnabled: true,
+                        remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
+                    })
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
