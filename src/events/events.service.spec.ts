@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { EventsService } from './events.service'
 import { BullModule } from '@nestjs/bullmq'
 import { ConfigModule } from '@nestjs/config'
+import { ClusterModule } from 'src/cluster/cluster.module'
 
 describe('EventsService', () => {
     let service: EventsService
@@ -9,6 +10,7 @@ describe('EventsService', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
+                ClusterModule,
                 ConfigModule.forRoot(),
                 BullModule.registerQueue({
                     name: 'facilitator-updates-queue',
@@ -16,6 +18,14 @@ describe('EventsService', () => {
                 }),
                 BullModule.registerFlowProducer({
                     name: 'facilitator-updates-flow',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
+                BullModule.registerQueue({
+                    name: 'registrator-updates-queue',
+                    connection: { host: 'localhost', port: 6379 },
+                }),
+                BullModule.registerFlowProducer({
+                    name: 'registrator-updates-flow',
                     connection: { host: 'localhost', port: 6379 },
                 }),
             ],
@@ -30,6 +40,8 @@ describe('EventsService', () => {
     })
 
     // Skipped tests are part of implemented spec, but skipped for now as expensive testing of logs/e2e
+    it.skip('should store registration locks in relay-registry.', () => {})
+
     it.skip('should flag for retry failed updateAllocation transactions.', () => {})
     it.skip('should skip retrying invalid updateAllocation transactions.', () => {})
     it.skip('should warn about problematic updateAllocation transactions.', () => {})

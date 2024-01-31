@@ -57,3 +57,24 @@ export interface IsVerified extends ContractFunctionInput {
     function: 'isVerified'
     fingerprint: Fingerprint
 }
+
+export interface AddRegistrationCredit extends ContractFunctionInput {
+    function: 'addRegistrationCredit'
+    address: EvmAddress
+  }
+  
+  export interface BlockAddress extends ContractFunctionInput {
+    function: 'blockAddress',
+    address: EvmAddress
+  }
+  
+  export interface UnblockAddress extends ContractFunctionInput {
+    function: 'unblockAddress',
+    address: EvmAddress
+  }
+  
+  export interface SetFamily extends ContractFunctionInput {
+    function: 'setFamily',
+    fingerprint: Fingerprint,
+    family: Fingerprint[]
+  }

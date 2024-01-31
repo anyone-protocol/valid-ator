@@ -45,6 +45,6 @@ import { AppThreadsService } from './app-threads.service'
         ClusterModule,
     ],
     controllers: [AppController],
-    providers: [AppService],
+    providers: [AppService, AppThreadsService],
 })
 export class AppModule {}

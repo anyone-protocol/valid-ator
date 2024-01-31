@@ -2,12 +2,13 @@ import { Injectable, Logger } from '@nestjs/common'
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
+    AddRegistrationCredit,
     IsClaimable,
     IsVerified,
     RelayRegistryState,
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
-import { Wallet } from 'ethers'
+import { AddressLike, Wallet } from 'ethers'
 import {
     buildEvmSignature,
     EvmSignatureVerificationServerPlugin,
@@ -132,6 +133,51 @@ export class VerificationService {
                     })
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
+    }
+
+    public async addRegistrationCredit(address: string, tx: string): Promise<boolean> {
+        if (
+            this.relayRegistryContract !== undefined &&
+            this.operator !== undefined
+        ) {
+            if (this.isLive === 'true') {
+                try {
+                    const evmSig = await buildEvmSignature(this.operator.signer)
+                    const response = await this.relayRegistryContract
+                        .connect({
+                            signer: evmSig,
+                            type: 'ethereum',
+                        })
+                        .writeInteraction<AddRegistrationCredit>({
+                            function: 'addRegistrationCredit',
+                            address: address,
+                        }, {
+                            tags: [{name: 'EVM-TX', value: tx}]
+                        })
+
+                    this.logger.log(
+                        `Added registration credit to [${address}]: ${response?.originalTxId}`,
+                    )
+                } catch (error) {
+                    this.logger.error(
+                        `Exception when adding registration credit [${address}]`,
+                        error,
+                    )
+                    return false
+                }
+            } else {
+                this.logger.warn(
+                    `NOT LIVE - skipped contract call to add registration credit to ${address}`,
+                )
+            }
+
+            return true
+        } else {
+            this.logger.error(
+                'Contract not initialized or validator key not defined',
+            )
+            return false
+        }
     }
 
     private async isVerified(fingerprint: string): Promise<boolean> {

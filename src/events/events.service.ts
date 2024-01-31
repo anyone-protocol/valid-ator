@@ -3,10 +3,13 @@ import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer } from 'bullmq'
 import { ConfigService } from '@nestjs/config'
 import BigNumber from 'bignumber.js'
-import { ethers, AddressLike } from 'ethers'
+import { ethers, AddressLike, EventPayload, EventLog } from 'ethers'
 import { RecoverUpdateAllocationData } from './dto/recover-update-allocation-data'
 import { RewardAllocationData } from 'src/distribution/dto/reward-allocation-data'
 import { ClusterService } from 'src/cluster/cluster.service'
+
+import { facilitatorABI } from './abi/facilitator'
+import { registratorABI } from './abi/registrator'
 
 @Injectable()
 export class EventsService implements OnApplicationBootstrap {
@@ -24,57 +27,28 @@ export class EventsService implements OnApplicationBootstrap {
         removeOnFail: EventsService.removeOnFail,
     }
 
-    private facilitatorABI = [
-        {
-            anonymous: false,
-            inputs: [
-                {
-                    indexed: true,
-                    internalType: 'address',
-                    name: '_account',
-                    type: 'address',
-                },
-            ],
-            name: 'RequestingUpdate',
-            type: 'event',
-        },
-        {
-            inputs: [
-                {
-                    internalType: 'address',
-                    name: 'addr',
-                    type: 'address',
-                },
-                {
-                    internalType: 'uint256',
-                    name: 'allocated',
-                    type: 'uint256',
-                },
-                {
-                    internalType: 'bool',
-                    name: 'doClaim',
-                    type: 'bool',
-                },
-            ],
-            name: 'updateAllocation',
-            outputs: [],
-            stateMutability: 'nonpayable',
-            type: 'function',
-        },
-    ]
+    private jsonRpc: string | undefined
 
     private facilitatorAddress: string | undefined
     private facilityOperatorKey: string | undefined
-    private jsonRpc: string | undefined
-    private operator: ethers.Wallet
-    private contract: ethers.Contract
-    private signerContract: any
+    private facilitatorOperator: ethers.Wallet
+    private facilitatorContract: ethers.Contract
+    private facilitySignerContract: any
+
+    private registratorAddress: string | undefined
+    private registratorOperatorKey: string | undefined
+    private registratorOperator: ethers.Wallet
+    private registratorContract: ethers.Contract
+    private registratorSignerContract: any
+
     private provider: ethers.JsonRpcProvider
 
     constructor(
         private readonly config: ConfigService<{
             FACILITY_CONTRACT_ADDRESS: string
             FACILITY_OPERATOR_KEY: string
+            REGISTRATOR_CONTRACT_ADDRESS: string
+            REGISTRATOR_OPERATOR_KEY: string
             JSON_RPC: string
             IS_LIVE: string
         }>,
@@ -83,16 +57,29 @@ export class EventsService implements OnApplicationBootstrap {
         public facilitatorUpdatesQueue: Queue,
         @InjectFlowProducer('facilitator-updates-flow')
         public facilitatorUpdatesFlow: FlowProducer,
+        @InjectQueue('registrator-updates-queue')
+        public registratorUpdatesQueue: Queue,
+        @InjectFlowProducer('registrator-updates-flow')
+        public registratorUpdatesFlow: FlowProducer,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
+        this.jsonRpc = this.config.get<string>('JSON_RPC', { infer: true })
 
         this.facilitatorAddress = this.config.get<string>(
             'FACILITY_CONTRACT_ADDRESS',
             { infer: true },
         )
-        this.jsonRpc = this.config.get<string>('JSON_RPC', { infer: true })
         this.facilityOperatorKey = this.config.get<string>(
             'FACILITY_OPERATOR_KEY',
+            { infer: true },
+        )
+
+        this.registratorAddress = this.config.get<string>(
+            'REGISTRATOR_CONTRACT_ADDRESS',
+            { infer: true },
+        )
+        this.registratorOperatorKey = this.config.get<string>(
+            'REGISTRATOR_OPERATOR_KEY',
             { infer: true },
         )
 
@@ -104,7 +91,9 @@ export class EventsService implements OnApplicationBootstrap {
     async onApplicationBootstrap(): Promise<void> {
         if (this.isLive != 'true' && this.cluster.isTheOne()) {
             await this.facilitatorUpdatesQueue.obliterate({ force: true })
+            await this.registratorUpdatesQueue.obliterate({ force: true })
         }
+        
         if (this.facilitatorAddress != undefined) {
             this.subscribeToFacilitator().catch((error) =>
                 this.logger.error(
@@ -114,7 +103,20 @@ export class EventsService implements OnApplicationBootstrap {
             )
         } else {
             this.logger.warn(
-                'Missing FACILITY_CONTRACT_ADDRESS, not subscribing to Facilitator evm events',
+                'Missing FACILITY_CONTRACT_ADDRESS, not subscribing to Facilitator EVM events',
+            )
+        }
+
+        if (this.registratorAddress != undefined) {
+            this.subscribeToRegistrator().catch((error) =>
+                this.logger.error(
+                    'Failed subscribing to registrator events:',
+                    error,
+                ),
+            )
+        } else {
+            this.logger.warn(
+                'Missing REGISTRATOR_CONTRACT_ADDRESS, not subscribing to Registrator EVM events',
             )
         }
     }
@@ -185,13 +187,13 @@ export class EventsService implements OnApplicationBootstrap {
         data: RewardAllocationData,
     ): Promise<boolean> {
         if (this.isLive === 'true') {
-            if (this.signerContract == undefined) {
+            if (this.facilitySignerContract == undefined) {
                 this.logger.error(
                     'Facility signer contract not initialized, skipping allocation update',
                 )
             } else {
                 try {
-                    await this.signerContract.updateAllocation(
+                    await this.facilitySignerContract.updateAllocation(
                         data.address,
                         BigNumber(data.amount).toFixed(0),
                         true,
@@ -254,7 +256,7 @@ export class EventsService implements OnApplicationBootstrap {
                     'Missing FACILITY_OPERATOR_KEY. Skipping facilitator subscription',
                 )
             } else {
-                this.operator = new ethers.Wallet(
+                this.facilitatorOperator = new ethers.Wallet(
                     this.facilityOperatorKey,
                     this.provider,
                 )
@@ -264,16 +266,16 @@ export class EventsService implements OnApplicationBootstrap {
                     )
                 } else {
                     this.logger.log(
-                        `Subscribing to the Facilitator contract ${this.facilitatorAddress} with ${this.operator.address}...`,
+                        `Subscribing to the Facilitator contract ${this.facilitatorAddress} with ${this.facilitatorOperator.address}...`,
                     )
 
-                    this.contract = new ethers.Contract(
+                    this.facilitatorContract = new ethers.Contract(
                         this.facilitatorAddress,
-                        this.facilitatorABI,
+                        facilitatorABI,
                         this.provider,
                     )
-                    this.signerContract = this.contract.connect(this.operator)
-                    this.contract.on(
+                    this.facilitySignerContract = this.facilitatorContract.connect(this.facilitatorOperator)
+                    this.facilitatorContract.on(
                         'RequestingUpdate',
                         async (_account: AddressLike) => {
                             if (this.cluster.isTheOne()) {
@@ -302,6 +304,83 @@ export class EventsService implements OnApplicationBootstrap {
                                                 opts: EventsService.jobOpts,
                                                 data: accountString,
                                             },
+                                        ],
+                                    })
+                                } else {
+                                    this.logger.error(
+                                        'Trying to request facility update but missing address in data',
+                                    )
+                                }
+                            } else {
+                                this.logger.debug(
+                                    'Not the one, skipping starting rewards update... should be started somewhere else',
+                                )
+                            }
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    private async subscribeToRegistrator() {
+        if (this.jsonRpc == undefined) {
+            this.logger.error(
+                'Missing JSON_RPC. Skipping registrator subscription',
+            )
+        } else {
+            this.provider = new ethers.JsonRpcProvider(this.jsonRpc)
+            if (this.registratorOperatorKey == undefined) {
+                this.logger.error(
+                    'Missing REGISTRATOR_OPERATOR_KEY. Skipping registrator subscription',
+                )
+            } else {
+                this.registratorOperator = new ethers.Wallet(
+                    this.registratorOperatorKey,
+                    this.provider,
+                )
+                if (this.registratorAddress == undefined) {
+                    this.logger.error(
+                        'Missing REGISTRATOR_CONTRACT_ADDRESS. Skipping registrator subscription',
+                    )
+                } else {
+                    this.logger.log(
+                        `Subscribing to the Registrator contract ${this.registratorAddress} with ${this.registratorOperator.address}...`,
+                    )
+
+                    this.registratorContract = new ethers.Contract(
+                        this.registratorAddress,
+                        registratorABI,
+                        this.provider,
+                    )
+                    this.registratorSignerContract = this.registratorContract.connect(this.registratorOperator)
+                    this.registratorContract.on(
+                        'LockRegistered',
+                        async (_account: AddressLike, event: EventLog) => {
+                            if (this.cluster.isTheOne()) {
+                                let accountString: string
+                                if (_account instanceof Promise) {
+                                    accountString = await _account
+                                } else if (ethers.isAddressable(_account)) {
+                                    accountString = await _account.getAddress()
+                                } else {
+                                    accountString = _account
+                                }
+
+                                if (accountString != undefined) {
+                                    this.logger.log(
+                                        `Noticed registeration lock for ${accountString}`,
+                                    )
+                                    await this.registratorUpdatesFlow.add({
+                                        name: 'add-registration-credit',
+                                        queueName: 'registrator-updates-queue',
+                                        data: {
+                                            account: accountString,
+                                            tx: event.transactionHash
+                                        },
+                                        opts: EventsService.jobOpts,
+                                        children: [
+                                            // add checks to do before passing registration...
                                         ],
                                     })
                                 } else {
