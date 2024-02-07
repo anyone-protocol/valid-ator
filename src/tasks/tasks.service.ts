@@ -1,13 +1,13 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { InjectQueue, InjectFlowProducer } from '@nestjs/bullmq'
 import { Queue, FlowProducer, FlowJob } from 'bullmq'
-import { ValidationData } from 'src/validation/schemas/validation-data'
-import { ScoreData } from 'src/distribution/schemas/score-data'
+import { ValidationData } from '../validation/schemas/validation-data'
+import { ScoreData } from '../distribution/schemas/score-data'
 import { ConfigService } from '@nestjs/config'
 import { TaskServiceData } from './schemas/task-service-data'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
-import { ClusterService } from 'src/cluster/cluster.service'
+import { ClusterService } from '../cluster/cluster.service'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {

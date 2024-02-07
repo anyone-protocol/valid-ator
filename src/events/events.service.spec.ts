@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { EventsService } from './events.service'
 import { BullModule } from '@nestjs/bullmq'
 import { ConfigModule } from '@nestjs/config'
-import { ClusterModule } from 'src/cluster/cluster.module'
+import { ClusterModule } from '../cluster/cluster.module'
 
 describe('EventsService', () => {
     let service: EventsService
@@ -10,8 +10,8 @@ describe('EventsService', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
+                ConfigModule.forRoot({ isGlobal: true }),
                 ClusterModule,
-                ConfigModule.forRoot(),
                 BullModule.registerQueue({
                     name: 'facilitator-updates-queue',
                     connection: { host: 'localhost', port: 6379 },

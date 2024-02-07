@@ -7,6 +7,7 @@ import {
     TaskServiceDataSchema,
 } from './schemas/task-service-data'
 import { MongooseModule } from '@nestjs/mongoose'
+import { ClusterModule } from '../cluster/cluster.module'
 
 describe('TasksService', () => {
     let service: TasksService
@@ -14,7 +15,8 @@ describe('TasksService', () => {
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             imports: [
-                ConfigModule.forRoot(),
+                ConfigModule.forRoot({ isGlobal: true }),
+                ClusterModule,
                 MongooseModule.forRoot(
                     'mongodb://localhost/validATOR-tasks-service-tests',
                 ),

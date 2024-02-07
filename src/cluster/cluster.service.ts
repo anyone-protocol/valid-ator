@@ -3,7 +3,6 @@ import {
     Injectable,
     Logger,
     OnApplicationBootstrap,
-    OnApplicationShutdown,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import Consul from 'consul'
@@ -15,8 +14,7 @@ import {
     Vote,
     VoteResult,
 } from './interfaces/raft-types'
-import cluster from 'node:cluster'
-import { AppThreadsService } from 'src/app-threads.service'
+import { AppThreadsService } from './app-threads.service'
 
 @Injectable()
 export class ClusterService
