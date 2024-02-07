@@ -31,12 +31,14 @@ job "valid-ator-stage" {
           RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
           DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
+          REGISTRATOR_OPERATOR_KEY="{{.Data.data.REGISTRATOR_OPERATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
           JSON_RPC="{{.Data.data.JSON_RPC}}"
           DRE_HOSTNAME="{{.Data.data.DRE_HOSTNAME}}"
         {{end}}
         RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
+        REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/goerli/stage/address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/stage/address" ]]"
         TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/goerli/stage/address" ]]"
         {{- range service "validator-stage-mongo" }}

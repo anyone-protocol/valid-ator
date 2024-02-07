@@ -14,6 +14,7 @@ export class BalanceChecksQueue extends WorkerHost {
         'check-distribution-operator'
     public static readonly JOB_CHECK_FACILITY_OPERATOR =
         'check-facility-operator'
+    public static readonly JOB_CHECK_REGISTRATOR = 'check-registrator'
     public static readonly JOB_PUBLISH_BALANCE_CHECKS = 'publish-balance-checks'
 
     constructor(private readonly balanceChecks: BalancesService) {
@@ -58,6 +59,15 @@ export class BalanceChecksQueue extends WorkerHost {
                 return {
                     facilityOperator: facilityOperatorBalance.toString(),
                     facilityTokens: facilityTokenBalance.toString(),
+                }
+
+            // registrator service - token
+            case BalanceChecksQueue.JOB_CHECK_REGISTRATOR:
+                const registratorBalance =
+                    await this.balanceChecks.getRegistratorTokenBalance()
+
+                return {
+                    registratorTokens: registratorBalance.toString(),
                 }
 
             case BalanceChecksQueue.JOB_PUBLISH_BALANCE_CHECKS:

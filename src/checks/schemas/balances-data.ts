@@ -22,6 +22,9 @@ export class BalancesData {
 
     @Prop({ type: String })
     facilityTokens: string
+
+    @Prop({ type: String })
+    registratorTokens: string
 }
 
 export const BalancesDataSchema = SchemaFactory.createForClass(BalancesData)

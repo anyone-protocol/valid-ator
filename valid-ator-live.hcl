@@ -30,6 +30,7 @@ job "valid-ator-live" {
           RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
           DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
+          REGISTRATOR_OPERATOR_KEY="{{.Data.data.REGISTRATOR_OPERATOR_KEY}}"
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
           JSON_RPC="{{.Data.data.JSON_RPC}}"
           DRE_HOSTNAME="{{.Data.data.DRE_HOSTNAME}}"
@@ -37,6 +38,7 @@ job "valid-ator-live" {
         RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/live/distribution-address" ]]"
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/goerli/live/address" ]]"
+        REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/goerli/live/address" ]]"
         TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/goerli/live/address" ]]"
         {{- range service "validator-live-mongo" }}
           MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-live"
