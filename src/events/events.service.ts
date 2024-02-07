@@ -355,7 +355,7 @@ export class EventsService implements OnApplicationBootstrap {
                     )
                     this.registratorSignerContract = this.registratorContract.connect(this.registratorOperator)
                     this.registratorContract.on(
-                        'LockRegistered',
+                        'Registered',
                         async (_account: AddressLike, event: EventLog) => {
                             if (this.cluster.isTheOne()) {
                                 let accountString: string
