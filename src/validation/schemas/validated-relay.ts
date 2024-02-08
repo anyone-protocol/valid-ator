@@ -22,6 +22,9 @@ export class ValidatedRelay {
 
     @Prop({ type: Boolean, required: false, default: false })
     running: boolean
+
+    @Prop({ type: [String], required: false, default: [] })
+    family: string[]
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

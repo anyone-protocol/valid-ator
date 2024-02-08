@@ -12,4 +12,5 @@ export class RelayDataDto {
     readonly bandwidth_burst: number
     readonly observed_bandwidth: number
     readonly advertised_bandwidth: number
+    readonly effective_family: string[]
 }

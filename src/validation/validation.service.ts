@@ -214,6 +214,7 @@ export class ValidationService {
                 bandwidth_burst: info.bandwidth_burst ?? 0,
                 observed_bandwidth: info.observed_bandwidth ?? 0,
                 advertised_bandwidth: info.advertised_bandwidth ?? 0,
+                effective_family: info.effective_family ?? []
             }),
         )
 
@@ -239,6 +240,7 @@ export class ValidationService {
                     consensus_weight_fraction: relay.consensus_weight_fraction,
                     observed_bandwidth: relay.observed_bandwidth,
                     running: relay.running,
+                    family: relay.effective_family
                 }))
                 .filter((relay, index, array) => relay.ator_address.length > 0)
 
@@ -285,6 +287,7 @@ export class ValidationService {
                             observed_bandwidth: relayData.observed_bandwidth,
                             advertised_bandwidth:
                                 relayData.advertised_bandwidth,
+                            family: relayData.effective_family
                         })
                         .catch((error) => this.logger.error(error))
                 }

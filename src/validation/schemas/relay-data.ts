@@ -43,6 +43,9 @@ export class RelayData {
 
     @Prop({ type: Number, required: false, default: 0 })
     advertised_bandwidth: number
+
+    @Prop({ type: [String], required: false, default: [] })
+    family: string[]
 }
 
 export const RelayDataSchema = SchemaFactory.createForClass(RelayData)

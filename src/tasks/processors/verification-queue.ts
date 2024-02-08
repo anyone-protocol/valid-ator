@@ -23,6 +23,7 @@ export class VerificationQueue extends WorkerHost {
     public static readonly JOB_PERSIST_VERIFICATION = 'persist-verification'
     public static readonly JOB_RECOVER_PERSIST_VERIFICATION =
         'recover-persist-verification'
+    public static readonly JOB_SET_RELAY_FAMILY = 'set-relay-family'
 
     constructor(
         private readonly tasks: TasksService,
@@ -66,6 +67,10 @@ export class VerificationQueue extends WorkerHost {
                 }
 
                 return [verifiedRelay]
+
+            case VerificationQueue.JOB_SET_RELAY_FAMILY:
+                // TODO
+                return []
 
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
                 try {

@@ -9,6 +9,9 @@ export type RelayRegistryState = OwnableState &
     EvolvableState & {
         claimable: { [address in Fingerprint as string]: EvmAddress }
         verified: { [address in Fingerprint as string]: EvmAddress }
+        registrationCredits: { [address in EvmAddress as string]: number }
+        blockedAddresses: EvmAddress[]
+        families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
     }
 
 export interface AddClaimable extends ContractFunctionInput {
@@ -61,20 +64,20 @@ export interface IsVerified extends ContractFunctionInput {
 export interface AddRegistrationCredit extends ContractFunctionInput {
     function: 'addRegistrationCredit'
     address: EvmAddress
-  }
-  
-  export interface BlockAddress extends ContractFunctionInput {
+}
+
+export interface BlockAddress extends ContractFunctionInput {
     function: 'blockAddress',
     address: EvmAddress
-  }
-  
-  export interface UnblockAddress extends ContractFunctionInput {
+}
+
+export interface UnblockAddress extends ContractFunctionInput {
     function: 'unblockAddress',
     address: EvmAddress
-  }
-  
-  export interface SetFamily extends ContractFunctionInput {
+}
+
+export interface SetFamily extends ContractFunctionInput {
     function: 'setFamily',
     fingerprint: Fingerprint,
     family: Fingerprint[]
-  }
+}
