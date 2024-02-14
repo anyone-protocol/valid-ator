@@ -8,7 +8,6 @@ import { TaskServiceData } from './schemas/task-service-data'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { ClusterService } from '../cluster/cluster.service'
-import { VerificationQueue } from './processors/verification-queue'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -103,7 +102,7 @@ export class TasksService implements OnApplicationBootstrap {
                         opts: TasksService.jobOpts,
                         data: relay,
                         children: [{
-                            name: VerificationQueue.JOB_SET_RELAY_FAMILY,
+                            name: 'set-relay-family',
                             queueName: 'verification-queue',
                             opts: TasksService.jobOpts,
                             data: relay
