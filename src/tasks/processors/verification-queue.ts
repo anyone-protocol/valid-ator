@@ -69,7 +69,26 @@ export class VerificationQueue extends WorkerHost {
                 return [verifiedRelay]
 
             case VerificationQueue.JOB_SET_RELAY_FAMILY:
-                // TODO
+                let result: RelayVerificationResult = 'Failed'
+                const relay = job.data as ValidatedRelay
+                try {
+                    if (!relay || !relay.fingerprint || !relay.family) {
+                        this.logger.log(
+                            `Incorrect family [${relay.fingerprint}]`
+                        )
+                        return []
+                    }
+
+                    result = await this.verification.setRelayFamily(relay)
+
+                    return [{ relay, result }]
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while setting relay family for [${relay.fingerprint}]`,
+                        error
+                    )
+                }
+
                 return []
 
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
