@@ -214,7 +214,7 @@ export class VerificationService {
             cachedValue: { state }
         } = await this.relayRegistryContract.readState()
 
-        return state.families[fingerprint]
+        return (state.families || {})[fingerprint] || []
     }
 
     private async storeRelayMetrics(
