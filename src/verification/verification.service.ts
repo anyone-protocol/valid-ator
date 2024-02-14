@@ -519,7 +519,7 @@ export class VerificationService {
                 `Already set family for relay [${relay.fingerprint}]`
             )
 
-            return 'AlreadySetFamily'
+            return 'OK'
         }
 
         if (this.isLive === 'true') {
