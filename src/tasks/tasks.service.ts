@@ -101,6 +101,12 @@ export class TasksService implements OnApplicationBootstrap {
                         queueName: 'verification-queue',
                         opts: TasksService.jobOpts,
                         data: relay,
+                        children: [{
+                            name: 'set-relay-family',
+                            queueName: 'verification-queue',
+                            opts: TasksService.jobOpts,
+                            data: relay
+                        }]
                     })),
                 },
             ],

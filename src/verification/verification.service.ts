@@ -6,6 +6,7 @@ import {
     IsClaimable,
     IsVerified,
     RelayRegistryState,
+    SetFamily,
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
 import { AddressLike, Wallet } from 'ethers'
@@ -206,6 +207,14 @@ export class VerificationService {
         })
 
         return interactionResult.result
+    }
+
+    public async getFamily(fingerprint: string): Promise<string[]> {
+        const {
+            cachedValue: { state }
+        } = await this.relayRegistryContract.readState()
+
+        return (state.families || {})[fingerprint] || []
     }
 
     private async storeRelayMetrics(
@@ -484,6 +493,67 @@ export class VerificationService {
         )
 
         this.logger.log(`Total verified relays: ${verifiedRelays.length}`)
+    }
+
+    public async setRelayFamily(
+        relay: ValidatedRelay
+    ): Promise<RelayVerificationResult> {
+        if (!this.relayRegistryContract) {
+            this.logger.error('Contract not initialized')
+
+            return 'Failed'
+        }
+
+        if (!this.operator) {
+            this.logger.error('Validator key not defined')
+
+            return 'Failed'
+        }
+
+        // NB: check if family needs to be updated
+        const family: string[] = await this.getFamily(relay.fingerprint)
+        if (
+            relay.family.slice().sort().join() === family.slice().sort().join()
+        ) {
+            this.logger.debug(
+                `Already set family for relay [${relay.fingerprint}]`
+            )
+
+            return 'OK'
+        }
+
+        if (this.isLive === 'true') {
+            try {
+                const evmSig = await buildEvmSignature(this.operator.signer)
+                const response = await this.relayRegistryContract
+                    .connect({
+                        signer: evmSig,
+                        type: 'ethereum',
+                    })
+                    .writeInteraction<SetFamily>({
+                        function: 'setFamily',
+                        fingerprint: relay.fingerprint,
+                        family: relay.family
+                    })
+
+                this.logger.log(
+                    `Set relay family [${relay.fingerprint}]: ${response?.originalTxId}`,
+                )
+            } catch (error) {
+                this.logger.error(
+                    `Exception setting relay family [${relay.fingerprint}]`,
+                    error,
+                )
+
+                return 'Failed'
+            }
+        } else {
+            this.logger.warn(
+                `NOT LIVE - skipped setting relay family [${relay.fingerprint}]`
+            )
+        }
+
+        return 'OK'
     }
 
     public async verifyRelay(

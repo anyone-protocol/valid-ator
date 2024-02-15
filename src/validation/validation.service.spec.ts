@@ -198,6 +198,7 @@ describe('ValidationService', () => {
             bandwidth_burst: 0,
             observed_bandwidth: 0,
             advertised_bandwidth: 0,
+            effective_family: []
         }
 
         service.validateRelays([relayDto1])
@@ -225,6 +226,7 @@ describe('ValidationService', () => {
             bandwidth_burst: 0,
             observed_bandwidth: 0,
             advertised_bandwidth: 0,
+            effective_family: []
         }
 
         service.validateRelays([relayDto2])
@@ -249,6 +251,7 @@ describe('ValidationService', () => {
             bandwidth_burst: 0,
             observed_bandwidth: 0,
             advertised_bandwidth: 0,
+            effective_family: []
         }
 
         service.validateRelays([relayDto1])
