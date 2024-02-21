@@ -48,6 +48,9 @@ job "valid-ator-stage" {
           REDIS_HOSTNAME="{{ .Address }}"
           REDIS_PORT="{{ .Port }}"
         {{- end }}
+        {{- range service "onionoo-jar-stage" }}
+          ONIONOO_DETAILS_URI="http://{{ .Address }}:{{ .Port }}/details"
+        {{- end }}
         EOH
         destination = "secrets/file.env"
         env         = true
@@ -58,7 +61,6 @@ job "valid-ator-stage" {
         VALIDATOR_VERSION="[[.commit_sha]]"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
-        ONIONOO_DETAILS_URI="https://onionoo.torproject.org/details"
         BUNDLR_NODE="http://node2.bundlr.network"
         RELAY_REGISTRY_OPERATOR_MIN_BALANCE=1000000
         RELAY_REGISTRY_UPLOADER_MIN_BALANCE=1000000
