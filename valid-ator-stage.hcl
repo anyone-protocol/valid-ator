@@ -48,7 +48,7 @@ job "valid-ator-stage" {
           REDIS_HOSTNAME="{{ .Address }}"
           REDIS_PORT="{{ .Port }}"
         {{- end }}
-        {{- range service "onionoo-jar-stage" }}
+        {{- range service "onionoo-war-stage" }}
           ONIONOO_DETAILS_URI="http://{{ .Address }}:{{ .Port }}/details"
         {{- end }}
         EOH
