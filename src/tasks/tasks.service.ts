@@ -120,23 +120,22 @@ export class TasksService implements OnApplicationBootstrap {
         scoreJobs: ScoreData[][],
     ): FlowJob {
         return {
-            name: 'complete-distribution',
+            name: 'persist-distribution',
             queueName: 'distribution-queue',
             opts: TasksService.jobOpts,
-            data: {
-                stamp: stamp,
-                total: total,
-                retries: retries,
-            },
-            children: scoreJobs.map((scores, index, array) => ({
-                name: 'add-scores',
+            data: { stamp, retries },
+            children: [{
+                name: 'complete-distribution',
                 queueName: 'distribution-queue',
                 opts: TasksService.jobOpts,
-                data: {
-                    stamp: stamp,
-                    scores: scores,
-                },
-            })),
+                data: { stamp, total, retries },
+                children: scoreJobs.map((scores, index, array) => ({
+                    name: 'add-scores',
+                    queueName: 'distribution-queue',
+                    opts: TasksService.jobOpts,
+                    data: { stamp, scores }
+                }))
+            }]
         }
     }
 

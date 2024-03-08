@@ -16,9 +16,11 @@ import {
     // @ts-ignore
 } from 'warp-contracts-plugin-signature/server'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
+import Bundlr from '@bundlr-network/client'
 import { Distribute } from './interfaces/distribution'
 import { RewardAllocationData } from './dto/reward-allocation-data'
 import { Claimable } from 'src/verification/interfaces/relay-registry'
+import { DistributionCompletedResults } from './dto/distribution-completed-result'
 
 @Injectable()
 export class DistributionService {
@@ -33,12 +35,16 @@ export class DistributionService {
     private distributionWarp: Warp
     private distributionContract: Contract<DistributionState>
 
+    private bundlr
+
     constructor(
         private readonly config: ConfigService<{
             IS_LIVE: string
             DISTRIBUTION_CONTRACT_TXID: string
             DISTRIBUTION_OPERATOR_KEY: string
             DRE_HOSTNAME: string
+            BUNDLR_NODE: string
+            BUNDLR_NETWORK: string
         }>,
     ) {
         LoggerFactory.INST.logLevel('error')
@@ -57,6 +63,29 @@ export class DistributionService {
         )
 
         if (distributionOperatorKey !== undefined) {
+            this.bundlr = (() => {
+                const node = config.get<string>('BUNDLR_NODE', {
+                    infer: true,
+                })
+                const network = config.get<string>('BUNDLR_NETWORK', {
+                    infer: true,
+                })
+
+                if (node !== undefined && network !== undefined) {
+                    return new Bundlr(node, network, distributionOperatorKey)
+                } else {
+                    return undefined
+                }
+            })()
+
+            if (this.bundlr !== undefined) {
+                this.logger.log(
+                    `Initialized Bundlr for address: ${this.bundlr.address}`,
+                )
+            } else {
+                this.logger.error('Failed to initialize Bundlr!')
+            }
+
             const signer = new Wallet(distributionOperatorKey)
 
             this.operator = {
@@ -223,40 +252,104 @@ export class DistributionService {
     }
 
     public async distribute(stamp: number): Promise<boolean> {
-        if (this.operator != undefined) {
-            if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.operator.signer)
-                try {
-                    const response = await this.distributionContract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
-                        .writeInteraction<Distribute>({
-                            function: 'distribute',
-                            timestamp: stamp.toString(),
-                        })
-
-                    if (response?.originalTxId != undefined) {
-                        this.logger.log(`Completed distribution for ${stamp}`)
-                        return true
-                    } else {
-                        this.logger.error(`Failed distribution for ${stamp}`)
-                        return false
-                    }
-                } catch (error) {
-                    this.logger.error('Exception in distribute', error)
-                    return false
-                }
-            } else {
-                this.logger.warn(`NOT LIVE: Not publishing distribution scores`)
-                return false
-            }
-        } else {
+        if (!this.operator) {
             this.logger.error(
                 `Owner is undefined. Failed to complete distribution of ${stamp}`,
             )
+
             return false
         }
+
+        if (this.isLive !== 'true') {
+            this.logger.warn(`NOT LIVE: Not publishing distribution scores`)
+
+            return false
+        }
+
+        const evmSig = await buildEvmSignature(this.operator.signer)
+        try {
+            const response = await this.distributionContract
+                .connect({
+                    signer: evmSig,
+                    type: 'ethereum',
+                })
+                .writeInteraction<Distribute>({
+                    function: 'distribute',
+                    timestamp: stamp.toString(),
+                })
+
+            if (!response?.originalTxId) {
+                this.logger.error(`Failed distribution for ${stamp}`)
+
+                return false
+            }
+
+            this.logger.log(`Completed distribution for ${stamp}`)
+            
+            return true
+        } catch (error) {
+            this.logger.error('Exception in distribute', error)
+            
+            return false
+        }
+    }
+
+    public async persistDistribution(stamp: number): Promise<
+        Pick<DistributionData, 'summary' | 'summary_tx'>
+    > {
+        try {
+            const {
+                cachedValue: { state: { previousDistributions } }
+            } = await this.distributionContract.readState()
+            const summary = previousDistributions[stamp]
+
+            if (!this.bundlr) {
+                this.logger.error(
+                    'Bundler not initialized to persist distribution/summary'
+                )
+    
+                return { summary }
+            }
+
+            if (this.isLive !== 'true') {
+                this.logger.warn(
+                    `NOT LIVE: Not storing distribution/summary [${stamp}]`
+                )
+
+                return { summary }
+            }
+
+            const { id: summary_tx } = await this.bundlr.upload(
+                JSON.stringify({ [stamp]: summary }),
+                {
+                    tags: [
+                        { name: 'Protocol', value: 'ator' },
+                        { name: 'Protocol-Version', value: '0.1' },
+                        {
+                            name: 'Content-Timestamp',
+                            value: stamp.toString(),
+                        },
+                        {
+                            name: 'Content-Type',
+                            value: 'application/json',
+                        },
+                        { name: 'Entity-Type', value: 'distribution/summary' },
+                    ]
+                }
+            )
+
+            this.logger.log(
+                `Permanently stored distribution/summary [${stamp}]: ${summary_tx}`
+            )
+
+            return { summary, summary_tx }
+        } catch (error) {
+            this.logger.error(
+                'Exception in distribution service persisting summary',
+                error
+            )
+        }
+
+        return {}
     }
 }

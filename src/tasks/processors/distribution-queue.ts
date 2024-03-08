@@ -9,6 +9,7 @@ import { Score } from 'src/distribution/interfaces/distribution'
 import { VerificationData } from 'src/verification/schemas/verification-data'
 import { DistributionCompletionData } from 'src/distribution/dto/distribution-completion-data'
 import { ScoresCompletionData } from 'src/distribution/dto/scores-completion-data'
+import { DistributionCompletedResults } from 'src/distribution/dto/distribution-completed-result'
 
 @Processor('distribution-queue')
 export class DistributionQueue extends WorkerHost {
@@ -19,6 +20,9 @@ export class DistributionQueue extends WorkerHost {
     public static readonly JOB_COMPLETE_DISTRIBUTION = 'complete-distribution'
     public static readonly JOB_RETRY_COMPLETE_DISTRIBUTION =
         'retry-complete-distribution'
+    public static readonly JOB_PERSIST_DISTRIBUTION = 'persist-distribution'
+    public static readonly JOB_RETRY_PERSIST_DISTRIBUTION =
+        'retry-persist-distribution'
 
     constructor(
         private readonly distribution: DistributionService,
@@ -29,7 +33,13 @@ export class DistributionQueue extends WorkerHost {
 
     async process(
         job: Job<any, any, string>,
-    ): Promise<boolean | ScoresCompletionData | DistributionData | undefined> {
+    ): Promise<
+        boolean
+        | ScoresCompletionData
+        | DistributionCompletedResults
+        | DistributionData
+        | undefined
+    > {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
@@ -44,6 +54,12 @@ export class DistributionQueue extends WorkerHost {
 
             case DistributionQueue.JOB_RETRY_COMPLETE_DISTRIBUTION:
                 return this.retryCompleteDistributionHandler(job)
+
+            case DistributionQueue.JOB_PERSIST_DISTRIBUTION:
+                return this.persistDistributionHandler(job)
+            
+            case DistributionQueue.JOB_RETRY_PERSIST_DISTRIBUTION:
+                return this.retryPersistDistributionHandler(job)
 
             default:
                 this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)
@@ -97,6 +113,115 @@ export class DistributionQueue extends WorkerHost {
         }
     }
 
+    async persistDistributionHandler(
+        job: Job<{ stamp: number, retries: number }, boolean, string>
+    ): Promise<DistributionData | undefined> {
+        try {
+            if (!job.data) {
+                this.logger.error(`Missing job data persisting distribution`)
+
+                return undefined
+            }
+
+            const distributionCompletedResults = Object.values(
+                await job.getChildrenValues<
+                    DistributionCompletedResults | undefined
+                >()
+            ).at(0)
+
+            if (!distributionCompletedResults) {
+                this.logger.error(
+                    `Missing distribution completed results [${job.data.stamp}]`
+                )
+
+                return undefined
+            }
+
+            this.logger.log(
+                `Persisting distribution summary [${job.data.stamp}]`
+            )
+
+            const persistResult = await this.distribution.persistDistribution(
+                job.data.stamp
+            )
+
+            if (!persistResult && job.data.retries > 0) {
+                this.tasks.distributionQueue.add(
+                    DistributionQueue.JOB_RETRY_PERSIST_DISTRIBUTION,
+                    {
+                        stamp: job.data.stamp,
+                        distributionCompletedResults,
+                        retriesLeft: job.data.retries
+                    },
+                    TasksService.jobOpts
+                )
+            }
+
+            return {
+                ...distributionCompletedResults,
+                ...persistResult
+            }
+        } catch (err) {
+            this.logger.error(
+                `Exception persisting distribution summary [${job.data.stamp}]`,
+                err
+            )
+        }
+
+        return undefined
+    }
+
+    async retryPersistDistributionHandler(
+        job: Job<
+            {
+                stamp: number,
+                retriesLeft: number,
+                distributionCompletedResults: DistributionCompletedResults
+            },
+            any,
+            string
+        >
+    ): Promise<DistributionData | undefined> {
+        try {
+            if (!job.data) {
+                this.logger.error('No job data when retrying persisting distribution summary')
+
+                return undefined
+            }
+
+            this.logger.log(
+                `Persisting distribution summary [${job.data.stamp}], retries left: ${job.data.retriesLeft}`
+            )
+
+            const persistResult = await this.distribution.persistDistribution(
+                job.data.stamp
+            )
+
+            if (!persistResult && job.data.retriesLeft > 0) {
+                this.tasks.distributionQueue.add(
+                    DistributionQueue.JOB_RETRY_PERSIST_DISTRIBUTION,
+                    {
+                        ...job.data,
+                        retriesLeft: job.data.retriesLeft - 1
+                    },
+                    TasksService.jobOpts
+                )
+            }
+
+            return {
+                ...job.data.distributionCompletedResults,
+                ...persistResult
+            }
+        } catch (err) {
+            this.logger.error(
+                `Exception persisting distribution summary [${job.data.stamp}]: ${job.data.retriesLeft} retries left`,
+                err
+            )
+        }
+
+        return undefined
+    }
+
     async addScoresHandler(
         job: Job<any, any, string>,
     ): Promise<ScoresCompletionData> {
@@ -128,8 +253,8 @@ export class DistributionQueue extends WorkerHost {
     }
 
     async completeDistributionHandler(
-        job: Job<any, any, string>,
-    ): Promise<DistributionData | undefined> {
+        job: Job<DistributionCompletionData, any, string>,
+    ): Promise<DistributionCompletedResults | undefined> {
         try {
             const jobsData: ScoresCompletionData[] = Object.values(
                 await job.getChildrenValues(),
@@ -150,60 +275,62 @@ export class DistributionQueue extends WorkerHost {
                 `Distribution stats | processed: ${processedScores.length}, failed: ${failedScores.length}`,
             )
 
-            const data: DistributionCompletionData =
-                job.data as DistributionCompletionData
-            if (data != undefined) {
-                if (processedScores.length < data.total) {
-                    this.logger.warn(
-                        `Processed less scores (${processedScores.length}) then the total value set (${data.total})`,
-                    )
-                    if (data.retries > 0) {
-                        this.startRecoveryDistribution(
-                            data,
-                            processedScores,
-                            failedScores,
-                        )
-                        return undefined
-                    } else {
-                        this.logger.error(
-                            `Failed adding ${
-                                data.total - processedScores.length
-                            }/${failedScores.length} scores to distribution ${
-                                data.stamp
-                            }. No more retries left. Completing distribution with fallback on gradual calculations in contract.`,
-                        )
-                    }
-                }
+            const data = job.data
 
-                this.logger.log(`Completing distribution ${data.stamp}`)
-                const result = await this.distribution.distribute(data.stamp)
-
-                if (!result && data.retries > 0) {
-                    this.tasks.distributionQueue.add(
-                        DistributionQueue.JOB_RETRY_COMPLETE_DISTRIBUTION,
-                        {
-                            stamp: data.stamp,
-                            total: data.total,
-                            retries: data.retries - 1,
-                        },
-                        TasksService.jobOpts,
-                    )
-                }
-
-                return {
-                    complete: result,
-                    stamp: data.stamp,
-                    scores: processedScores.map((score) => ({
-                        ator_address: score.address,
-                        fingerprint: score.fingerprint,
-                        score: Number.parseInt(score.score),
-                    })),
-                }
-            } else {
+            if (!data) {
                 this.logger.error(
-                    'Failed to complete distribution without data',
+                    'Failed to complete distribution without data'
                 )
+
                 return undefined
+            }
+
+            if (processedScores.length < data.total) {
+                this.logger.warn(
+                    `Processed less scores (${processedScores.length}) then the total value set (${data.total})`,
+                )
+                if (data.retries > 0) {
+                    this.startRecoveryDistribution(
+                        data,
+                        processedScores,
+                        failedScores,
+                    )
+                    return undefined
+                } else {
+                    this.logger.error(
+                        `Failed adding ${
+                            data.total - processedScores.length
+                        }/${failedScores.length} scores to distribution ${
+                            data.stamp
+                        }. No more retries left. Completing distribution with fallback on gradual calculations in contract.`,
+                    )
+                }
+            }
+
+            this.logger.log(`Completing distribution ${data.stamp}`)
+
+            const result = await this.distribution.distribute(data.stamp)
+
+            if (!result && data.retries > 0) {
+                this.tasks.distributionQueue.add(
+                    DistributionQueue.JOB_RETRY_COMPLETE_DISTRIBUTION,
+                    {
+                        stamp: data.stamp,
+                        total: data.total,
+                        retries: data.retries - 1,
+                    },
+                    TasksService.jobOpts,
+                )
+            }
+
+            return {
+                complete: result,
+                stamp: data.stamp,
+                scores: processedScores.map((score) => ({
+                    ator_address: score.address,
+                    fingerprint: score.fingerprint,
+                    score: Number.parseInt(score.score),
+                })),
             }
         } catch (e) {
             this.logger.error('Exception while completing distribution', e)
@@ -243,10 +370,10 @@ export class DistributionQueue extends WorkerHost {
     }
 
     private async retryCompleteDistributionHandler(
-        job: Job<any, any, string>,
-    ): Promise<DistributionData | undefined> {
+        job: Job<DistributionCompletionData, any, string>,
+    ): Promise<DistributionCompletedResults | undefined> {
         try {
-            const data = job.data as DistributionCompletionData
+            const data = job.data
             if (data != undefined) {
                 this.logger.log(
                     `Completing distribution ${data.stamp}, retries left: ${data.retries}`,
