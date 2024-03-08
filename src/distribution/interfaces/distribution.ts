@@ -30,7 +30,7 @@ export type DistributionState = OwnableState &
         }
         previousDistributions: {
             [timestamp: string]: PreviousDistributionSummary
-          }
+        }
     }
 
 export interface SetDistributionAmount extends ContractFunctionInput {
