@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 import { ScoreData } from './score-data'
-import { DistributionState, PreviousDistributionSummary } from '../interfaces/distribution'
+import { PreviousDistributionSummary } from '../interfaces/distribution'
 
 export type DistributionDataDocument = HydratedDocument<DistributionData>
 
