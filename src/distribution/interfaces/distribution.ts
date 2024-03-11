@@ -11,6 +11,14 @@ export type Score = {
     fingerprint: string
 }
 
+export class PreviousDistributionSummary {
+    totalScore: string
+    totalDistributed: string
+    timeElapsed: string
+    tokensDistributedPerSecond: string
+    bonusTokens?: string
+}
+
 export type DistributionState = OwnableState &
     EvolvableState & {
         distributionAmount: string
@@ -21,7 +29,7 @@ export type DistributionState = OwnableState &
             [address: string]: string
         }
         previousDistributions: {
-            [timestamp: string]: { distributionAmount: string }
+            [timestamp: string]: PreviousDistributionSummary
         }
     }
 

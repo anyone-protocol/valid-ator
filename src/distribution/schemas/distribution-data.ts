@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 import { ScoreData } from './score-data'
+import { PreviousDistributionSummary } from '../interfaces/distribution'
 
 export type DistributionDataDocument = HydratedDocument<DistributionData>
 
@@ -14,6 +15,12 @@ export class DistributionData {
 
     @Prop({ type: Array<ScoreData>, required: true })
     scores: ScoreData[]
+
+    @Prop({ type: PreviousDistributionSummary, required: false })
+    summary?: PreviousDistributionSummary
+
+    @Prop({ type: String, required: false })
+    summary_tx?: string
 }
 
 export const DistributionDataSchema =
