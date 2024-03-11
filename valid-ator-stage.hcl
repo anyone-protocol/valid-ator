@@ -79,6 +79,10 @@ job "valid-ator-stage" {
         name = "valid-ator-stage"
         port = "validator"
         
+        tags = [
+          "logging",
+        ]
+        
         check {
           name     = "Stage valid-ator health check"
           type     = "http"
