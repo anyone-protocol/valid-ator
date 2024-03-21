@@ -28,6 +28,10 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     private jsonRpc: string | undefined
+    private infuraApiKey: string | undefined
+    private infuraApiSecret: string | undefined
+    private infuraNetwork: string | undefined
+    private infuraWsUrl: string | undefined
 
     private facilitatorAddress: string | undefined
     private facilityOperatorKey: string | undefined
@@ -41,7 +45,7 @@ export class EventsService implements OnApplicationBootstrap {
     private registratorContract: ethers.Contract
     private registratorSignerContract: any
 
-    private provider: ethers.JsonRpcProvider
+    private provider: ethers.WebSocketProvider
 
     constructor(
         private readonly config: ConfigService<{
@@ -51,6 +55,8 @@ export class EventsService implements OnApplicationBootstrap {
             REGISTRATOR_OPERATOR_KEY: string
             JSON_RPC: string
             IS_LIVE: string
+            INFURA_NETWORK: string
+            INFURA_WS_URL: string
         }>,
         private readonly cluster: ClusterService,
         @InjectQueue('facilitator-updates-queue')
@@ -64,6 +70,8 @@ export class EventsService implements OnApplicationBootstrap {
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
         this.jsonRpc = this.config.get<string>('JSON_RPC', { infer: true })
+        this.infuraNetwork = this.config.get<string>('INFURA_NETWORK', { infer: true })
+        this.infuraWsUrl = this.config.get<string>('INFURA_WS_URL', { infer: true })
 
         this.facilitatorAddress = this.config.get<string>(
             'FACILITY_CONTRACT_ADDRESS',
@@ -82,6 +90,8 @@ export class EventsService implements OnApplicationBootstrap {
             'REGISTRATOR_OPERATOR_KEY',
             { infer: true },
         )
+
+        this.provider = new ethers.WebSocketProvider(this.infuraWsUrl!, this.infuraNetwork)
 
         this.logger.log(
             `Initializing events service (IS_LIVE: ${this.isLive}, FACILITATOR: ${this.facilitatorAddress})`,
@@ -250,7 +260,6 @@ export class EventsService implements OnApplicationBootstrap {
                 'Missing JSON_RPC. Skipping facilitator subscription',
             )
         } else {
-            this.provider = new ethers.JsonRpcProvider(this.jsonRpc)
             if (this.facilityOperatorKey == undefined) {
                 this.logger.error(
                     'Missing FACILITY_OPERATOR_KEY. Skipping facilitator subscription',
@@ -329,73 +338,76 @@ export class EventsService implements OnApplicationBootstrap {
                 'Missing JSON_RPC. Skipping registrator subscription',
             )
         } else {
-            this.provider = new ethers.JsonRpcProvider(this.jsonRpc)
-            if (this.registratorOperatorKey == undefined) {
-                this.logger.error(
-                    'Missing REGISTRATOR_OPERATOR_KEY. Skipping registrator subscription',
-                )
-            } else {
-                this.registratorOperator = new ethers.Wallet(
-                    this.registratorOperatorKey,
-                    this.provider,
-                )
-                if (this.registratorAddress == undefined) {
+            try {
+                if (this.registratorOperatorKey == undefined) {
                     this.logger.error(
-                        'Missing REGISTRATOR_CONTRACT_ADDRESS. Skipping registrator subscription',
+                        'Missing REGISTRATOR_OPERATOR_KEY. Skipping registrator subscription',
                     )
                 } else {
-                    this.logger.log(
-                        `Subscribing to the Registrator contract ${this.registratorAddress} with ${this.registratorOperator.address}...`,
-                    )
-
-                    this.registratorContract = new ethers.Contract(
-                        this.registratorAddress,
-                        registratorABI,
+                    this.registratorOperator = new ethers.Wallet(
+                        this.registratorOperatorKey,
                         this.provider,
                     )
-                    this.registratorSignerContract = this.registratorContract.connect(this.registratorOperator)
-                    this.registratorContract.on(
-                        'Registered',
-                        async (_account: AddressLike, event: EventLog) => {
-                            if (this.cluster.isTheOne()) {
-                                let accountString: string
-                                if (_account instanceof Promise) {
-                                    accountString = await _account
-                                } else if (ethers.isAddressable(_account)) {
-                                    accountString = await _account.getAddress()
-                                } else {
-                                    accountString = _account
-                                }
+                    if (this.registratorAddress == undefined) {
+                        this.logger.error(
+                            'Missing REGISTRATOR_CONTRACT_ADDRESS. Skipping registrator subscription',
+                        )
+                    } else {
+                        this.logger.log(
+                            `Subscribing to the Registrator contract ${this.registratorAddress} with ${this.registratorOperator.address}...`,
+                        )
 
-                                if (accountString != undefined) {
-                                    this.logger.log(
-                                        `Noticed registeration lock for ${accountString}`,
-                                    )
-                                    await this.registratorUpdatesFlow.add({
-                                        name: 'add-registration-credit',
-                                        queueName: 'registrator-updates-queue',
-                                        data: {
-                                            account: accountString,
-                                            tx: event.transactionHash
-                                        },
-                                        opts: EventsService.jobOpts,
-                                        children: [
-                                            // add checks to do before passing registration...
-                                        ],
-                                    })
+                        this.registratorContract = new ethers.Contract(
+                            this.registratorAddress,
+                            registratorABI,
+                            this.provider,
+                        )
+                        this.registratorSignerContract = this.registratorContract.connect(this.registratorOperator)
+                        this.registratorContract.on(
+                            'Registered',
+                            async (_account: AddressLike, event: EventLog) => {
+                                if (this.cluster.isTheOne()) {
+                                    let accountString: string
+                                    if (_account instanceof Promise) {
+                                        accountString = await _account
+                                    } else if (ethers.isAddressable(_account)) {
+                                        accountString = await _account.getAddress()
+                                    } else {
+                                        accountString = _account
+                                    }
+
+                                    if (accountString != undefined) {
+                                        this.logger.log(
+                                            `Noticed registeration lock for ${accountString}`,
+                                        )
+                                        await this.registratorUpdatesFlow.add({
+                                            name: 'add-registration-credit',
+                                            queueName: 'registrator-updates-queue',
+                                            data: {
+                                                account: accountString,
+                                                tx: event.transactionHash
+                                            },
+                                            opts: EventsService.jobOpts,
+                                            children: [
+                                                // add checks to do before passing registration...
+                                            ],
+                                        })
+                                    } else {
+                                        this.logger.error(
+                                            'Trying to request facility update but missing address in data',
+                                        )
+                                    }
                                 } else {
-                                    this.logger.error(
-                                        'Trying to request facility update but missing address in data',
+                                    this.logger.debug(
+                                        'Not the one, skipping starting rewards update... should be started somewhere else',
                                     )
                                 }
-                            } else {
-                                this.logger.debug(
-                                    'Not the one, skipping starting rewards update... should be started somewhere else',
-                                )
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
                 }
+            } catch(error) {
+                this.logger.error(`Caught error while subscribing to registrator events: ${error}`)
             }
         }
     }

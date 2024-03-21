@@ -35,6 +35,8 @@ job "valid-ator-stage" {
           BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
           JSON_RPC="{{.Data.data.JSON_RPC}}"
           DRE_HOSTNAME="{{.Data.data.DRE_HOSTNAME}}"
+          INFURA_NETWORK="{{.Data.data.INFURA_NETWORK}}"
+          INFURA_WS_URL="{{.Data.data.INFURA_WS_URL}}"
         {{end}}
         RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
         DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
