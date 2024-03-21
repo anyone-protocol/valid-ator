@@ -122,16 +122,16 @@ export class VerificationService {
                     new StateUpdatePlugin(registryTxId, this.relayRegistryWarp),
                 )
 
-                const dreHostname = this.config.get<string>('DRE_HOSTNAME', {
-                    infer: true,
-                })
+                // const dreHostname = this.config.get<string>('DRE_HOSTNAME', {
+                //     infer: true,
+                // })
 
                 this.relayRegistryContract = this.relayRegistryWarp
                     .contract<RelayRegistryState>(registryTxId)
-                    .setEvaluationOptions({
-                        remoteStateSyncEnabled: true,
-                        remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
-                    })
+                    // .setEvaluationOptions({
+                    //     remoteStateSyncEnabled: true,
+                    //     remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
+                    // })
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
