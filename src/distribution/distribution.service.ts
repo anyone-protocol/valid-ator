@@ -319,23 +319,37 @@ export class DistributionService {
                 return { summary }
             }
 
+            const tags = [
+                { name: 'Protocol', value: 'ator' },
+                { name: 'Protocol-Version', value: '0.1' },
+                {
+                    name: 'Content-Timestamp',
+                    value: stamp.toString(),
+                },
+                {
+                    name: 'Content-Type',
+                    value: 'application/json',
+                },
+                { name: 'Entity-Type', value: 'distribution/summary' },
+                { name: 'Total-Score', value: summary.totalScore },
+                {
+                    name: 'Total-Distributed',
+                    value: summary.totalDistributed
+                },
+                { name: 'Time-Elapsed', value: summary.timeElapsed },
+                {
+                    name: 'Distribution-Rate',
+                    value: summary.tokensDistributedPerSecond
+                }
+            ]
+
+            if (summary.bonusTokens) {
+                tags.push({ name: 'Bonus-Tokens', value: summary.bonusTokens })
+            }
+
             const { id: summary_tx } = await this.bundlr.upload(
                 JSON.stringify({ [stamp]: summary }),
-                {
-                    tags: [
-                        { name: 'Protocol', value: 'ator' },
-                        { name: 'Protocol-Version', value: '0.1' },
-                        {
-                            name: 'Content-Timestamp',
-                            value: stamp.toString(),
-                        },
-                        {
-                            name: 'Content-Type',
-                            value: 'application/json',
-                        },
-                        { name: 'Entity-Type', value: 'distribution/summary' },
-                    ]
-                }
+                { tags }
             )
 
             this.logger.log(
