@@ -92,6 +92,19 @@ Entity-Type: <string with the type of entities stored in the datafile>
     }
 }
 ```
+
+* Entity-Type: `distribution/summary` - contains summary for a previous distribution round.  Each field is also exposed as a tag on the transaction, so downloading the json blob itself is not necessary.  These tags and their values are in the GQL results.
+```
+{
+    totalScore: string
+    totalDistributed: string
+    timeElapsed: string
+    tokensDistributedPerSecond: string
+    bonusTokens?: string
+}
+```
+
+
 ## Development
 
 ### Running in local
