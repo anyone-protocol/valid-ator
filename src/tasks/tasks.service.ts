@@ -57,7 +57,7 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     public static VALIDATION_FLOW: FlowJob = {
-        name: 'verify',
+        name: 'verify', // top-most task marks automatic, task-based transition to the next phase
         queueName: 'tasks-queue',
         opts: TasksService.jobOpts,
         children: [
@@ -87,31 +87,39 @@ export class TasksService implements OnApplicationBootstrap {
         validation: ValidationData,
     ): FlowJob {
         return {
-            name: 'persist-verification',
-            queueName: 'verification-queue',
+            name: 'distribute', // top-most task marks automatic, task-based transition to the next phase
+            queueName: 'tasks-queue',
             opts: TasksService.jobOpts,
             children: [
                 {
-                    name: 'confirm-verification',
+                    name: 'persist-verification',
                     queueName: 'verification-queue',
-                    data: validation.validated_at,
                     opts: TasksService.jobOpts,
-                    children: validation.relays.map((relay, index, array) => ({
-                        name: 'verify-relay',
-                        queueName: 'verification-queue',
-                        opts: TasksService.jobOpts,
-                        data: relay,
-                        children: [{
-                            name: 'set-relay-family',
+                    children: [
+                        {
+                            name: 'confirm-verification',
                             queueName: 'verification-queue',
+                            data: validation.validated_at,
                             opts: TasksService.jobOpts,
-                            data: relay
-                        }]
-                    })),
-                },
-            ],
+                            children: validation.relays.map((relay, index, array) => ({
+                                name: 'verify-relay',
+                                queueName: 'verification-queue',
+                                opts: TasksService.jobOpts,
+                                data: relay,
+                                children: [{
+                                    name: 'set-relay-family',
+                                    queueName: 'verification-queue',
+                                    opts: TasksService.jobOpts,
+                                    data: relay
+                                }]
+                            })),
+                        },
+                    ],
+                }
+            ]
         }
     }
+
 
     public static DISTRIBUTION_FLOW(
         stamp: number,
@@ -236,20 +244,6 @@ export class TasksService implements OnApplicationBootstrap {
             this.logger.log('The validation of relays should already be queued')
         }
 
-        if (!this.state.isDistributing) {
-            if (this.cluster.isTheOne()) {
-                await this.queueDistributing(0)
-            } else {
-                this.logger.debug(
-                    'Not the one, skipping start of distribution... Should start in another process',
-                )
-            }
-        } else {
-            this.logger.log(
-                'The distribution of tokens should already be queued',
-            )
-        }
-
         if (!this.state.isCheckingBalances) {
             if (this.cluster.isTheOne()) {
                 await this.queueCheckBalances(0)
@@ -273,25 +267,6 @@ export class TasksService implements OnApplicationBootstrap {
 
         await this.tasksQueue.add(
             'check-balances',
-            {},
-            {
-                delay: delayJob,
-                removeOnComplete: TasksService.removeOnComplete,
-                removeOnFail: TasksService.removeOnFail,
-            },
-        )
-    }
-
-    public async queueDistributing(
-        delayJob: number = 1000 * 60 * 60,
-    ): Promise<void> {
-        if (!this.state.isDistributing) {
-            this.state.isDistributing = true
-            await this.updateServiceState()
-        }
-
-        await this.tasksQueue.add(
-            'distribute',
             {},
             {
                 delay: delayJob,

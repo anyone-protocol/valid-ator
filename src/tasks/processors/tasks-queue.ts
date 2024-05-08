@@ -87,7 +87,6 @@ export class TasksQueue extends WorkerHost {
                         error,
                     )
                 }
-                await this.tasks.queueDistributing() // using default delay time in param
 
                 break
 
