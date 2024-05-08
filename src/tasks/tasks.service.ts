@@ -234,7 +234,7 @@ export class TasksService implements OnApplicationBootstrap {
 
         if (!this.state.isValidating) {
             if (this.cluster.isTheOne()) {
-                await this.updateOnionooRelays(0) // do an early update post reboot and time it from there
+                await this.queueValidateRelays(0) // do an early update post reboot and time it from there
             } else {
                 this.logger.debug(
                     'Not the one, skipping start of onionoo updates... Should start in another process',
@@ -276,7 +276,7 @@ export class TasksService implements OnApplicationBootstrap {
         )
     }
 
-    public async updateOnionooRelays(
+    public async queueValidateRelays(
         delayJob: number = 1000 * 60 * 60
     ): Promise<void> {
         if (!this.state.isValidating) {

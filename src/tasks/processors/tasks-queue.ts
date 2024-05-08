@@ -38,7 +38,7 @@ export class TasksQueue extends WorkerHost {
                     )
                 }
 
-                await this.tasks.updateOnionooRelays()
+                await this.tasks.queueValidateRelays()
                 break
 
             case TasksQueue.JOB_VERIFY:
