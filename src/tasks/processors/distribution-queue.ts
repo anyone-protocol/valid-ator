@@ -93,7 +93,7 @@ export class DistributionQueue extends WorkerHost {
                 })
 
                 this.tasks.distributionFlow.add(
-                    TasksService.DISTRIBUTE_RELAY_SCORES(
+                    TasksService.DISTRIBUTION_FLOW(
                         data.verified_at,
                         scores.length,
                         DistributionService.maxDistributionRetries,
@@ -360,7 +360,7 @@ export class DistributionQueue extends WorkerHost {
         })
 
         this.tasks.distributionFlow.add(
-            TasksService.DISTRIBUTE_RELAY_SCORES(
+            TasksService.DISTRIBUTION_FLOW(
                 data.stamp,
                 failedScores.length,
                 data.retries - 1,

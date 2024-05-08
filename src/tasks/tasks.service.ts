@@ -24,35 +24,8 @@ export class TasksService implements OnApplicationBootstrap {
         removeOnComplete: TasksService.removeOnComplete,
         removeOnFail: TasksService.removeOnFail,
     }
-
-    public static VALIDATE_ONIONOO_RELAYS_FLOW: FlowJob = {
-        name: 'publish-validation',
-        queueName: 'tasks-queue',
-        opts: TasksService.jobOpts,
-        children: [
-            {
-                name: 'validate-relays',
-                queueName: 'validation-queue',
-                opts: TasksService.jobOpts,
-                children: [
-                    {
-                        name: 'filter-relays',
-                        queueName: 'validation-queue',
-                        opts: TasksService.jobOpts,
-                        children: [
-                            {
-                                name: 'fetch-relays',
-                                queueName: 'validation-queue',
-                                opts: TasksService.jobOpts,
-                            },
-                        ],
-                    },
-                ],
-            },
-        ],
-    }
-
-    public static CHECK_BALANCES(stamp: number): FlowJob {
+    
+    public static CHECK_BALANCES_FLOW(stamp: number): FlowJob {
         return {
             name: 'publish-balance-checks',
             queueName: 'balance-checks-queue',
@@ -83,7 +56,34 @@ export class TasksService implements OnApplicationBootstrap {
         }
     }
 
-    public static PUBLISH_RELAY_VALIDATIONS(
+    public static VALIDATION_FLOW: FlowJob = {
+        name: 'verify',
+        queueName: 'tasks-queue',
+        opts: TasksService.jobOpts,
+        children: [
+            {
+                name: 'validate-relays',
+                queueName: 'validation-queue',
+                opts: TasksService.jobOpts,
+                children: [
+                    {
+                        name: 'filter-relays',
+                        queueName: 'validation-queue',
+                        opts: TasksService.jobOpts,
+                        children: [
+                            {
+                                name: 'fetch-relays',
+                                queueName: 'validation-queue',
+                                opts: TasksService.jobOpts,
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    }
+
+    public static VERIFICATION_FLOW(
         validation: ValidationData,
     ): FlowJob {
         return {
@@ -113,7 +113,7 @@ export class TasksService implements OnApplicationBootstrap {
         }
     }
 
-    public static DISTRIBUTE_RELAY_SCORES(
+    public static DISTRIBUTION_FLOW(
         stamp: number,
         total: number,
         retries: number,
@@ -150,7 +150,7 @@ export class TasksService implements OnApplicationBootstrap {
         public validationFlow: FlowProducer,
         @InjectQueue('verification-queue') public verificationQueue: Queue,
         @InjectFlowProducer('verification-flow')
-        public publishingFlow: FlowProducer,
+        public verificationFlow: FlowProducer,
         @InjectQueue('distribution-queue') public distributionQueue: Queue,
         @InjectFlowProducer('distribution-flow')
         public distributionFlow: FlowProducer,
@@ -291,7 +291,7 @@ export class TasksService implements OnApplicationBootstrap {
         }
 
         await this.tasksQueue.add(
-            'run-distribution',
+            'distribute',
             {},
             {
                 delay: delayJob,
@@ -310,7 +310,7 @@ export class TasksService implements OnApplicationBootstrap {
         }
 
         await this.tasksQueue.add(
-            'validate-onionoo-relays',
+            'validate',
             {},
             {
                 delay: delayJob,

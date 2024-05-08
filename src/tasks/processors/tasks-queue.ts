@@ -10,10 +10,9 @@ import { VerificationService } from 'src/verification/verification.service'
 export class TasksQueue extends WorkerHost {
     private readonly logger = new Logger(TasksQueue.name)
 
-    public static readonly JOB_VALIDATE_ONIONOO_RELAYS =
-        'validate-onionoo-relays'
-    public static readonly JOB_PUBLISH_VALIDATION = 'publish-validation'
-    public static readonly JOB_RUN_DISTRIBUTION = 'run-distribution'
+    public static readonly JOB_VALIDATE = 'validate'
+    public static readonly JOB_VERIFY = 'verify'
+    public static readonly JOB_DISTRIBUTE = 'distribute'
     public static readonly JOB_CHECK_BALANCES = 'check-balances'
 
     constructor(
@@ -27,10 +26,10 @@ export class TasksQueue extends WorkerHost {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
-            case TasksQueue.JOB_VALIDATE_ONIONOO_RELAYS:
+            case TasksQueue.JOB_VALIDATE:
                 try {
                     this.tasks.validationFlow.add(
-                        TasksService.VALIDATE_ONIONOO_RELAYS_FLOW,
+                        TasksService.VALIDATION_FLOW,
                     )
                 } catch (error) {
                     this.logger.error(
@@ -42,14 +41,14 @@ export class TasksQueue extends WorkerHost {
                 await this.tasks.updateOnionooRelays()
                 break
 
-            case TasksQueue.JOB_PUBLISH_VALIDATION:
+            case TasksQueue.JOB_VERIFY:
                 const validationData: ValidationData[] = Object.values(
                     await job.getChildrenValues(),
                 ).reduce((prev, curr) => (prev as []).concat(curr as []), [])
 
                 if (validationData.length > 0)
-                    this.tasks.publishingFlow.add(
-                        TasksService.PUBLISH_RELAY_VALIDATIONS(
+                    this.tasks.verificationFlow.add(
+                        TasksService.VERIFICATION_FLOW(
                             validationData[0],
                         ),
                     )
@@ -59,7 +58,7 @@ export class TasksQueue extends WorkerHost {
                     )
                 break
 
-            case TasksQueue.JOB_RUN_DISTRIBUTION:
+            case TasksQueue.JOB_DISTRIBUTE:
                 try {
                     const verificationData: VerificationData | null =
                         await this.verification.getMostRecent()
@@ -94,7 +93,7 @@ export class TasksQueue extends WorkerHost {
 
             case TasksQueue.JOB_CHECK_BALANCES:
                 this.tasks.balancesFlow.add(
-                    TasksService.CHECK_BALANCES(Date.now()),
+                    TasksService.CHECK_BALANCES_FLOW(Date.now()),
                 )
 
                 this.tasks.queueCheckBalances() // using default delay time in param
