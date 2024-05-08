@@ -123,16 +123,16 @@ export class DistributionService {
                     ),
                 )
 
-                // const dreHostname = this.config.get<string>('DRE_HOSTNAME', {
-                //     infer: true,
-                // })
+                const dreHostname = this.config.get<string>('DRE_HOSTNAME', {
+                    infer: true,
+                })
 
                 this.distributionContract = this.distributionWarp
                     .contract<DistributionState>(distributionContractTxId)
-                    // .setEvaluationOptions({
-                    //     remoteStateSyncEnabled: true,
-                    //     remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
-                    // })
+                    .setEvaluationOptions({
+                        remoteStateSyncEnabled: true,
+                        remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
+                    })
             } else this.logger.error('Missing distribution contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
