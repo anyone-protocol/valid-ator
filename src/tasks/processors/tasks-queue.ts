@@ -39,7 +39,7 @@ export class TasksQueue extends WorkerHost {
                     )
                 }
 
-                await this.tasks.updateOnionooRelays() // using default delay time in param
+                await this.tasks.updateOnionooRelays()
                 break
 
             case TasksQueue.JOB_PUBLISH_VALIDATION:

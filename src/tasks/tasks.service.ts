@@ -226,7 +226,7 @@ export class TasksService implements OnApplicationBootstrap {
 
         if (!this.state.isValidating) {
             if (this.cluster.isTheOne()) {
-                await this.updateOnionooRelays(0) // Onionoo has its own rhythm so we'll hit cache and do nothing if too soon
+                await this.updateOnionooRelays(0) // do an early update post reboot and time it from there
             } else {
                 this.logger.debug(
                     'Not the one, skipping start of onionoo updates... Should start in another process',
@@ -302,7 +302,7 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     public async updateOnionooRelays(
-        delayJob: number = 1000 * 60 * 10,
+        delayJob: number = 1000 * 60 * 60
     ): Promise<void> {
         if (!this.state.isValidating) {
             this.state.isValidating = true
