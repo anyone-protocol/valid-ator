@@ -20,7 +20,7 @@ describe('ValidationService', () => {
                 ConfigModule.forRoot(),
                 HttpModule.register({ timeout: 60 * 1000, maxRedirects: 3 }),
                 MongooseModule.forRoot(
-                    'mongodb://localhost/validATOR-onionoo-service-tests',
+                    'mongodb://localhost/validator-validation-service-tests',
                 ),
 
                 MongooseModule.forFeature([

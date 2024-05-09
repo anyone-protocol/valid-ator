@@ -237,7 +237,7 @@ export class TasksService implements OnApplicationBootstrap {
                 await this.queueValidateRelays(0) // do an early update post reboot and time it from there
             } else {
                 this.logger.debug(
-                    'Not the one, skipping start of onionoo updates... Should start in another process',
+                    'Not the one, skipping start of validating relays... Should start in another process',
                 )
             }
         } else {

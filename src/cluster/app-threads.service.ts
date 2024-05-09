@@ -15,7 +15,8 @@ export class AppThreadsService {
                 .map((worker) => worker?.process.pid)
                 .filter(
                     (pid, index) =>
-                        pid !== undefined && index !== this.localLeaderPid,
+                        pid !== undefined 
+                        && index !== this.localLeaderPid // don't reelect current one, to allow reelection during shutdown
                 )
 
             if (availablePids.length > 0) {
@@ -24,6 +25,9 @@ export class AppThreadsService {
                     (w) => w?.process.pid == availablePids[leaderIndex],
                 )
                 AppThreadsService.localLeaderPid = leader?.process.pid || -1
+                console.log(
+                    `Elected leader ${AppThreadsService.localLeaderPid} among ${availablePids}`,
+                )
             } else {
                 console.error(
                     'No local candidates available to be elected as leaders.',

@@ -68,13 +68,13 @@ export class ValidationService {
         } else this.createServiceState()
 
         this.logger.log(
-            `Bootstrapped Onionoo Connector [seen: ${this.lastSeen}, id: ${this.dataId}]`,
+            `Bootstrapped Validation Service [seen: ${this.lastSeen}, id: ${this.dataId}]`,
         )
     }
 
     public async fetchNewRelays(): Promise<RelayInfo[]> {
         this.logger.debug(
-            `Fetching new relays from Onionoo [seen: ${this.lastSeen}]`,
+            `Fetching new relays [seen: ${this.lastSeen}]`,
         )
 
         var relays: RelayInfo[] = []
@@ -99,7 +99,7 @@ export class ValidationService {
                                 this.logger.error(
                                     `Fetching relays from ${detailsUri} failed with ${error.response?.status}`,
                                 )
-                                throw 'Failed to fetch details from Onionoo'
+                                throw 'Failed to fetch relay details'
                             }),
                         ),
                 )
@@ -126,9 +126,9 @@ export class ValidationService {
                     } else this.lastSeen = ''
 
                     this.logger.log(
-                        `Received ${relays.length} relays from Onionoo [seen: ${this.lastSeen}]`,
+                        `Received ${relays.length} relays from validated details [seen: ${this.lastSeen}]`,
                     )
-                } else this.logger.debug('No new updates from Onionoo') // 304 - Not modified
+                } else this.logger.debug('No new relay updates from validated details') // 304 - Not modified
             } catch (e) {
                 this.logger.error(e)
             }

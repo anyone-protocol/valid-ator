@@ -15,7 +15,7 @@ describe('VerificationService', () => {
             imports: [
                 ConfigModule.forRoot(),
                 MongooseModule.forRoot(
-                    'mongodb://localhost/validATOR-onionoo-service-tests',
+                    'mongodb://localhost/validator-validation-service-tests',
                 ),
                 MongooseModule.forFeature([
                     {
