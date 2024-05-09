@@ -44,7 +44,7 @@ job "valid-ator-stage" {
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/sepolia/stage/address" ]]"
         TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/sepolia/stage/address" ]]"
         {{- range service "validator-stage-mongo" }}
-          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-stage"
+          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-stage-testnet"
         {{- end }}
         {{- range service "validator-stage-redis" }}
           REDIS_HOSTNAME="{{ .Address }}"

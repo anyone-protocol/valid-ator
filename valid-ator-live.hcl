@@ -43,7 +43,7 @@ job "valid-ator-live" {
         REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/live/address" ]]"
         TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/sepolia/live/address" ]]"
         {{- range service "validator-live-mongo" }}
-          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-live"
+          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-live-testnet"
         {{- end }}
         {{- range service "validator-live-redis" }}
           REDIS_HOSTNAME="{{ .Address }}"
