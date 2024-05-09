@@ -26,7 +26,7 @@ export class ValidationService {
 
     constructor(
         private readonly httpService: HttpService,
-        private readonly config: ConfigService<{ ONIONOO_DETAILS_URI: string }>,
+        private readonly config: ConfigService<{ ONIONOO_DETAILS_URI: string, DETAILS_URI_AUTH: string }>,
         @InjectModel(RelayData.name)
         private readonly relayDataModel: Model<RelayData>,
         @InjectModel(ValidationServiceData.name)
@@ -82,6 +82,9 @@ export class ValidationService {
             infer: true,
         })
         if (detailsUri !== undefined) {
+            const detailsAuth: string = this.config.get<string>('DETAILS_URI_AUTH', {
+                infer: true,
+            }) || ""
             const requestStamp = Date.now()
             try {
                 const { headers, status, data } = await firstValueFrom(
@@ -90,6 +93,7 @@ export class ValidationService {
                             headers: {
                                 'content-encoding': 'gzip',
                                 'if-modified-since': `${this.lastSeen}`,
+                                'authorization': `${detailsAuth}`
                             },
                             validateStatus: (status) =>
                                 status === 304 || status === 200,
