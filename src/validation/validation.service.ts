@@ -52,7 +52,7 @@ export class ValidationService {
                         .get<DetailsResponse>(detailsUri, {
                             headers: {
                                 'content-encoding': 'gzip',
-                                'if-modified-since': `${this.lastSeen}`,
+                                // 'if-modified-since': `${this.lastSeen}`,
                                 'authorization': `${detailsAuth}`
                             },
                             validateStatus: (status) =>
@@ -61,7 +61,7 @@ export class ValidationService {
                         .pipe(
                             catchError((error: AxiosError) => {
                                 this.logger.error(
-                                    `Fetching relays from ${detailsUri} failed with ${error.response?.status}`,
+                                    `Fetching relays from ${detailsUri} failed with ${error.response?.status}, ${error}`,
                                 )
                                 throw 'Failed to fetch relay details'
                             }),

@@ -226,24 +226,29 @@ export class TasksService implements OnApplicationBootstrap {
             if (this.isLive != 'true') {
                 this.logger.debug('Cleaning up queues for dev...')
                 await this.tasksQueue.obliterate({ force: true })
-
                 await this.validationQueue.obliterate({ force: true })
                 await this.verificationQueue.obliterate({ force: true })
                 await this.distributionQueue.obliterate({ force: true })
-            }
 
-            if (this.state.isValidating) {
-                this.logger.log('The validation of relays should already be queued')
-            } else {
                 await this.queueValidateRelays(0)
                 this.logger.log('Queued immediate validation of relays')
-            }
-
-            if (this.state.isCheckingBalances) {
-                this.logger.log('The checking of balances should already be queued')
-            } else {
                 await this.queueCheckBalances(0)
                 this.logger.log('Queued immediate balance checks')
+            } else {
+
+                if (this.state.isValidating) {
+                    this.logger.log('The validation of relays should already be queued')
+                } else {
+                    await this.queueValidateRelays(0)
+                    this.logger.log('Queued immediate validation of relays')
+                }
+
+                if (this.state.isCheckingBalances) {
+                    this.logger.log('The checking of balances should already be queued')
+                } else {
+                    await this.queueCheckBalances(0)
+                    this.logger.log('Queued immediate balance checks')
+                }
             }
 
         } else {

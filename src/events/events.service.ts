@@ -99,35 +99,39 @@ export class EventsService implements OnApplicationBootstrap {
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        if (this.isLive != 'true' && this.cluster.isTheOne()) {
-            await this.facilitatorUpdatesQueue.obliterate({ force: true })
-            await this.registratorUpdatesQueue.obliterate({ force: true })
-        }
-        
-        if (this.facilitatorAddress != undefined) {
-            this.subscribeToFacilitator().catch((error) =>
-                this.logger.error(
-                    'Failed subscribing to facilitator events:',
-                    error,
-                ),
-            )
-        } else {
-            this.logger.warn(
-                'Missing FACILITY_CONTRACT_ADDRESS, not subscribing to Facilitator EVM events',
-            )
-        }
+        if (this.cluster.isTheOne()) {
+            if (this.isLive != 'true') {
+                await this.facilitatorUpdatesQueue.obliterate({ force: true })
+                await this.registratorUpdatesQueue.obliterate({ force: true })
+            }
+            
+            if (this.facilitatorAddress != undefined) {
+                this.subscribeToFacilitator().catch((error) =>
+                    this.logger.error(
+                        'Failed subscribing to facilitator events:',
+                        error,
+                    ),
+                )
+            } else {
+                this.logger.warn(
+                    'Missing FACILITY_CONTRACT_ADDRESS, not subscribing to Facilitator EVM events',
+                )
+            }
 
-        if (this.registratorAddress != undefined) {
-            this.subscribeToRegistrator().catch((error) =>
-                this.logger.error(
-                    'Failed subscribing to registrator events:',
-                    error,
-                ),
-            )
+            if (this.registratorAddress != undefined) {
+                this.subscribeToRegistrator().catch((error) =>
+                    this.logger.error(
+                        'Failed subscribing to registrator events:',
+                        error,
+                    ),
+                )
+            } else {
+                this.logger.warn(
+                    'Missing REGISTRATOR_CONTRACT_ADDRESS, not subscribing to Registrator EVM events',
+                )
+            }
         } else {
-            this.logger.warn(
-                'Missing REGISTRATOR_CONTRACT_ADDRESS, not subscribing to Registrator EVM events',
-            )
+            this.logger.debug('Not the one, so skipping event subscriptions')
         }
     }
 
