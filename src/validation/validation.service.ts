@@ -7,7 +7,6 @@ import { RelayInfo } from './interfaces/8_3/relay-info'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { RelayData } from './schemas/relay-data'
-import { ValidationServiceData } from './schemas/validation-service-data'
 import { RelayDataDto } from './dto/relay-data-dto'
 import { ethers } from 'ethers'
 import { ConfigService } from '@nestjs/config'
@@ -29,48 +28,9 @@ export class ValidationService {
         private readonly config: ConfigService<{ ONIONOO_DETAILS_URI: string, DETAILS_URI_AUTH: string }>,
         @InjectModel(RelayData.name)
         private readonly relayDataModel: Model<RelayData>,
-        @InjectModel(ValidationServiceData.name)
-        private readonly validationServiceDataModel: Model<ValidationServiceData>,
         @InjectModel(ValidationData.name)
         private readonly validationDataModel: Model<ValidationData>,
     ) {}
-
-    private async createServiceState(): Promise<void> {
-        const newData = await this.validationServiceDataModel.create({
-            apiVersion: this.currentApiVersion,
-            last_seen: '',
-        })
-        this.dataId = newData._id
-    }
-
-    async onApplicationBootstrap(): Promise<void> {
-        const hasData = await this.validationServiceDataModel.exists({
-            apiVersion: this.currentApiVersion,
-        })
-
-        if (hasData) {
-            const serviceData = await this.validationServiceDataModel
-                .findOne({ apiVersion: this.currentApiVersion })
-                .exec()
-                .catch((error) => {
-                    this.logger.error(error)
-                })
-
-            if (serviceData != null) {
-                this.lastSeen = serviceData.last_seen
-                this.dataId = serviceData._id
-            } else {
-                this.logger.warn(
-                    'This should not happen. Data was deleted, or is incorrect',
-                )
-                this.createServiceState()
-            }
-        } else this.createServiceState()
-
-        this.logger.log(
-            `Bootstrapped Validation Service [seen: ${this.lastSeen}, id: ${this.dataId}]`,
-        )
-    }
 
     public async fetchNewRelays(): Promise<RelayInfo[]> {
         this.logger.debug(
@@ -120,13 +80,6 @@ export class ValidationService {
                         requestStamp > Date.parse(lastMod)
                     ) {
                         this.lastSeen = new Date(lastMod).toUTCString()
-                        await this.validationServiceDataModel.findByIdAndUpdate(
-                            this.dataId,
-                            {
-                                apiVersion: data.version,
-                                last_seen: this.lastSeen,
-                            },
-                        )
                     } else this.lastSeen = ''
 
                     this.logger.log(

@@ -9,9 +9,6 @@ export class TaskServiceData {
     isValidating: boolean
 
     @Prop({ type: Boolean, default: false })
-    isDistributing: boolean
-
-    @Prop({ type: Boolean, default: false })
     isCheckingBalances: boolean
 }
 

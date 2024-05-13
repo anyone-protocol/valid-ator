@@ -30,17 +30,17 @@ export class ClusterService
     public isLeader?: boolean
 
     public isLocalLeader(): boolean {
-        return (
-            AppThreadsService.localLeaderPid > -1 &&
-            AppThreadsService.localLeaderPid == process.pid
-        )
+        let isLL = process.env['IS_LOCAL_LEADER']
+        return (isLL != undefined && isLL == 'true')
     }
 
     public isTheOne(): boolean {
+        const isLL = this.isLocalLeader()
+        this.logger.debug(`is the one? isLeader: ${this.isLeader} isLocalLeader: ${isLL} - ${process.pid}`)
         return (
             this.isLeader != undefined &&
             this.isLeader == true &&
-            this.isLocalLeader()
+            isLL
         )
     }
 

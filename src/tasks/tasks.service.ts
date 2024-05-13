@@ -170,7 +170,6 @@ export class TasksService implements OnApplicationBootstrap {
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
         this.state = {
-            isDistributing: false,
             isValidating: false,
             isCheckingBalances: false,
         }
@@ -194,66 +193,63 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     async onApplicationBootstrap(): Promise<void> {
-        this.logger.log('Bootstrapping Tasks Service')
-        const hasData = await this.taskServiceDataModel.exists({})
+        if (this.cluster.isTheOne()) {
+            this.logger.log('Bootstrapping Tasks Service')
+            const hasData = await this.taskServiceDataModel.exists({})
 
-        if (hasData) {
-            const serviceData = await this.taskServiceDataModel
-                .findOne({})
-                .exec()
-                .catch((error) => {
-                    this.logger.error(error)
-                })
+            if (hasData) {
+                const serviceData = await this.taskServiceDataModel
+                    .findOne({})
+                    .exec()
+                    .catch((error) => {
+                        this.logger.error(error)
+                    })
 
-            if (serviceData != null) {
-                this.dataId = serviceData._id
-                this.state = {
-                    isValidating: serviceData.isValidating,
-                    isDistributing: serviceData.isDistributing,
-                    isCheckingBalances: serviceData.isCheckingBalances,
+                if (serviceData != null) {
+                    this.dataId = serviceData._id
+                    this.state = {
+                        isValidating: serviceData.isValidating,
+                        isCheckingBalances: serviceData.isCheckingBalances,
+                    }
+                } else {
+                    this.logger.warn(
+                        'This should not happen. Data was deleted, or is incorrect',
+                    )
+                    this.createServiceState()
                 }
-            } else {
-                this.logger.warn(
-                    'This should not happen. Data was deleted, or is incorrect',
-                )
-                this.createServiceState()
+            } else this.createServiceState()
+
+            this.logger.log(
+                `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}]`,
+            )
+
+            if (this.isLive != 'true') {
+                this.logger.debug('Cleaning up queues for dev...')
+                await this.tasksQueue.obliterate({ force: true })
+
+                await this.validationQueue.obliterate({ force: true })
+                await this.verificationQueue.obliterate({ force: true })
+                await this.distributionQueue.obliterate({ force: true })
             }
-        } else this.createServiceState()
 
-        this.logger.log(
-            `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}, isDistributing: ${this.state.isDistributing}]`,
-        )
-
-        if (this.isLive != 'true' && this.cluster.isTheOne()) {
-            await this.tasksQueue.obliterate({ force: true })
-
-            await this.validationQueue.obliterate({ force: true })
-            await this.verificationQueue.obliterate({ force: true })
-            await this.distributionQueue.obliterate({ force: true })
-        }
-
-        if (!this.state.isValidating) {
-            if (this.cluster.isTheOne()) {
-                await this.queueValidateRelays(0) // do an early update post reboot and time it from there
+            if (this.state.isValidating) {
+                this.logger.log('The validation of relays should already be queued')
             } else {
-                this.logger.debug(
-                    'Not the one, skipping start of validating relays... Should start in another process',
-                )
+                await this.queueValidateRelays(0)
+                this.logger.log('Queued immediate validation of relays')
             }
-        } else {
-            this.logger.log('The validation of relays should already be queued')
-        }
 
-        if (!this.state.isCheckingBalances) {
-            if (this.cluster.isTheOne()) {
+            if (this.state.isCheckingBalances) {
+                this.logger.log('The checking of balances should already be queued')
+            } else {
                 await this.queueCheckBalances(0)
-            } else {
-                this.logger.debug(
-                    'Not the one, skipping start of balance checks... Should start in another process',
-                )
+                this.logger.log('Queued immediate balance checks')
             }
+
         } else {
-            this.logger.log('The checking of balances should already be queued')
+            this.logger.debug(
+                'Not the one, skipping bootstrap of tasks service',
+            )
         }
     }
 

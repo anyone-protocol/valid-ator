@@ -2,10 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { ValidationService } from './validation.service'
 import { HttpModule } from '@nestjs/axios'
 import { MongooseModule } from '@nestjs/mongoose'
-import {
-    ValidationServiceData,
-    ValidationServiceDataSchema,
-} from './schemas/validation-service-data'
 import { RelayData, RelayDataSchema } from './schemas/relay-data'
 import { ConfigModule } from '@nestjs/config'
 import { ValidationData, ValidationDataSchema } from './schemas/validation-data'
@@ -24,10 +20,6 @@ describe('ValidationService', () => {
                 ),
 
                 MongooseModule.forFeature([
-                    {
-                        name: ValidationServiceData.name,
-                        schema: ValidationServiceDataSchema,
-                    },
                     { name: RelayData.name, schema: RelayDataSchema },
                     { name: ValidationData.name, schema: ValidationDataSchema },
                 ]),
