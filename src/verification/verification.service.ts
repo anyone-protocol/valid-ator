@@ -114,7 +114,7 @@ export class VerificationService {
 
                 this.relayRegistryWarp = WarpFactory.forMainnet({
                     inMemory: true,
-                    dbLocation: '-relay-registry',
+                    dbLocation: '-relay-registry-testnet',
                 })
                     .use(new EthersExtension())
                     .use(new EvmSignatureVerificationServerPlugin())
