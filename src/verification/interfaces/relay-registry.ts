@@ -4,15 +4,24 @@ import { ContractFunctionInput } from 'src/util/contract-function-input'
 
 export type Fingerprint = string
 export type EvmAddress = string
+export type PublicKey = string
 
-export type RelayRegistryState = OwnableState &
-    EvolvableState & {
-        claimable: { [address in Fingerprint as string]: EvmAddress }
-        verified: { [address in Fingerprint as string]: EvmAddress }
-        registrationCredits: { [address in EvmAddress as string]: number }
-        blockedAddresses: EvmAddress[]
-        families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
+export type RelayRegistryState = OwnableState & EvolvableState & {
+    claimable: { [fingerprint in Fingerprint as string]: EvmAddress }
+    verified: { [fingerprint in Fingerprint as string]: EvmAddress }
+    registrationCredits: { [address in EvmAddress as string]: number }
+    blockedAddresses: EvmAddress[]
+    families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
+    registrationCreditsRequired: boolean
+    encryptionPublicKey: string
+    serials: {
+      [fingerprint in Fingerprint as string]: {
+        serial?: string
+        verified?: boolean
+      }
     }
+    familyRequired: boolean
+  }
 
 export interface AddClaimable extends ContractFunctionInput {
     function: 'addClaimable'
@@ -81,3 +90,45 @@ export interface SetFamily extends ContractFunctionInput {
     fingerprint: Fingerprint,
     family: Fingerprint[]
 }
+export interface SetFamily extends ContractFunctionInput {
+    function: 'setFamily'
+    fingerprint: Fingerprint
+    family: Fingerprint[]
+  }
+  
+  export interface ToggleRegistrationCreditRequirement
+    extends ContractFunctionInput
+  {
+    function: 'toggleRegistrationCreditRequirement'
+    enabled: boolean
+  }
+  
+  export interface SetEncryptionPublicKey extends ContractFunctionInput {
+    function: 'setEncryptionPublicKey'
+    encryptionPublicKey: PublicKey
+  }
+  
+  export interface VerifySerials extends ContractFunctionInput {
+    function: 'verifySerials'
+    fingerprints: Fingerprint[]
+  }
+  
+  export interface RemoveSerials extends ContractFunctionInput {
+    function: 'removeSerials'
+    fingerprints: Fingerprint[]
+  }
+  
+  export interface GetVerifiedRelays extends ContractFunctionInput {
+    function: 'getVerifiedRelays'
+  }
+  
+  export interface ToggleFamilyRequirement extends ContractFunctionInput {
+    function: 'toggleFamilyRequirement'
+    enabled: boolean
+  }
+  
+  export interface RegisterSerial extends ContractFunctionInput {
+    function: 'registerSerial'
+    fingerprint: string
+    serial: string
+  }

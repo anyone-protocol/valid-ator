@@ -499,13 +499,13 @@ export class VerificationService {
         relay: ValidatedRelay
     ): Promise<RelayVerificationResult> {
         if (!this.relayRegistryContract) {
-            this.logger.error('Contract not initialized')
+            this.logger.error('Relay registry contract not initialized')
 
             return 'Failed'
         }
 
         if (!this.operator) {
-            this.logger.error('Validator key not defined')
+            this.logger.error('Relay registry operator not defined')
 
             return 'Failed'
         }
