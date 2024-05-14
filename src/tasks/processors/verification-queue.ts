@@ -57,7 +57,7 @@ export class VerificationQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         'Exception while verifying validated relay:',
-                        error,
+                        error.stack
                     )
                 }
 
@@ -85,7 +85,7 @@ export class VerificationQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         `Exception while setting relay family for [${relay.fingerprint}]`,
-                        error
+                        error.stack
                     )
                 }
 
@@ -110,7 +110,7 @@ export class VerificationQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         `Exception while confirming verification of relay(s)`,
-                        error,
+                        error.stack
                     )
                 }
 
@@ -156,7 +156,7 @@ export class VerificationQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         `Exception while persisting verification results`,
-                        error,
+                        error.stack
                     )
                 }
                 return undefined
@@ -206,7 +206,7 @@ export class VerificationQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         `Exception while persisting verification results`,
-                        error,
+                        error.stack
                     )
                 }
 

@@ -108,7 +108,7 @@ export class DistributionQueue extends WorkerHost {
                 return false
             }
         } catch (e) {
-            this.logger.error('Exception while starting distribution', e)
+            this.logger.error('Exception while starting distribution', e.stack)
             return false
         }
     }
@@ -164,7 +164,7 @@ export class DistributionQueue extends WorkerHost {
         } catch (err) {
             this.logger.error(
                 `Exception persisting distribution summary [${job.data.stamp}]`,
-                err
+                err.stack
             )
         }
 
@@ -215,7 +215,7 @@ export class DistributionQueue extends WorkerHost {
         } catch (err) {
             this.logger.error(
                 `Exception persisting distribution summary [${job.data.stamp}]: ${job.data.retriesLeft} retries left`,
-                err
+                err.stack
             )
         }
 
@@ -247,7 +247,7 @@ export class DistributionQueue extends WorkerHost {
                 return { result: false, scores: [] }
             }
         } catch (e) {
-            this.logger.error('Exception while adding scores', e)
+            this.logger.error('Exception while adding scores', e.stack)
             return { result: false, scores: [] }
         }
     }
@@ -333,7 +333,7 @@ export class DistributionQueue extends WorkerHost {
                 })),
             }
         } catch (e) {
-            this.logger.error('Exception while completing distribution', e)
+            this.logger.error('Exception while completing distribution', e.stack)
             return undefined
         }
     }
@@ -406,7 +406,7 @@ export class DistributionQueue extends WorkerHost {
         } catch (e) {
             this.logger.error(
                 'Exception while retrying the completing of distribution',
-                e,
+                e.stack,
             )
             return undefined
         }

@@ -34,7 +34,7 @@ export class TasksQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         'Exception while adding validate relays job',
-                        error,
+                        error.stack,
                     )
                 }
 
@@ -84,7 +84,7 @@ export class TasksQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         'Exception while running distribution',
-                        error,
+                        error.stack,
                     )
                 }
 

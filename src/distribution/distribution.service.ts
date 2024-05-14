@@ -165,7 +165,7 @@ export class DistributionService {
                     }
                 }
             } catch (error) {
-                this.logger.error(`Exception in getAllocation:`, error)
+                this.logger.error(`Exception in getAllocation:`, error.stack)
                 return undefined
             }
         } else {
@@ -236,7 +236,7 @@ export class DistributionService {
                         return false
                     }
                 } catch (error) {
-                    this.logger.error(`Exception in addScores`, error)
+                    this.logger.error(`Exception in addScores`, error.stack)
                     return false
                 }
             } else {
@@ -288,7 +288,7 @@ export class DistributionService {
             
             return true
         } catch (error) {
-            this.logger.error('Exception in distribute', error)
+            this.logger.error('Exception in distribute', error.stack)
             
             return false
         }
@@ -360,7 +360,7 @@ export class DistributionService {
         } catch (error) {
             this.logger.error(
                 'Exception in distribution service persisting summary',
-                error
+                error.stack
             )
         }
 

@@ -87,7 +87,7 @@ export class ValidationService {
                     )
                 } else this.logger.debug('No new relay updates from validated details') // 304 - Not modified
             } catch (e) {
-                this.logger.error(e)
+                this.logger.error('Exception when fetching new relays', e.stack)
             }
         } else
             this.logger.warn(
@@ -246,7 +246,7 @@ export class ValidationService {
                                 relayData.advertised_bandwidth,
                             family: relayData.effective_family
                         })
-                        .catch((error) => this.logger.error(error))
+                        .catch((error) => this.logger.error('Failed creating relay data model', error.stack))
                 }
             })
 
@@ -262,7 +262,7 @@ export class ValidationService {
             .sort({ validated_at: 'desc' })
             .exec()
             .catch((error) => {
-                this.logger.error(error)
+                this.logger.error('Failed fetching last validation of the relay', error.stack)
                 return null
             })
     }
@@ -273,7 +273,7 @@ export class ValidationService {
             .sort({ validated_at: 'desc' })
             .exec()
             .catch((error) => {
-                this.logger.error(error)
+                this.logger.error('Failed fetching last validation', error.stack)
                 return null
             })
     }

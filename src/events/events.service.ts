@@ -241,7 +241,7 @@ export class EventsService implements OnApplicationBootstrap {
                     } else {
                         this.logger.error(
                             `Error while calling updateAllocation for ${data.address}:`,
-                            updateError,
+                            updateError.stack,
                         )
                     }
                 }
@@ -411,7 +411,7 @@ export class EventsService implements OnApplicationBootstrap {
                     }
                 }
             } catch(error) {
-                this.logger.error(`Caught error while subscribing to registrator events: ${error}`)
+                this.logger.error(`Caught error while subscribing to registrator events:`, error.stack)
             }
         }
     }
