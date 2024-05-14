@@ -105,7 +105,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 ```
 
 
-## Development setup
+## Development
 
 1. TLS CA key - `export NODE_EXTRA_CA_CERTS=$(pwd)/admin-ui-ca.crt`
 
@@ -115,22 +115,6 @@ Entity-Type: <string with the type of entities stored in the datafile>
 
 4. Dependencies - `npm install`
 
-### Running 
+5. Testing - `npm test -- --watch`
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-```
-
-### Testing
-
-```bash
-# dev testing
-$ npm test -- --watch
-
-# unit tests
-$ npm test
-```
+6. Running - `npm run start:dev`
