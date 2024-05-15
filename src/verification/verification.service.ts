@@ -545,7 +545,7 @@ export class VerificationService {
             } catch (error) {
                 this.logger.error(
                     `Exception setting relay family [${relay.fingerprint}]`,
-                    error,
+                    error.stack,
                 )
 
                 return 'Failed'
@@ -610,7 +610,7 @@ export class VerificationService {
                 } catch (error) {
                     this.logger.error(
                         `Exception when verifying relay [${relay.fingerprint}]`,
-                        error,
+                        error.stack,
                     )
                     return 'Failed'
                 }
