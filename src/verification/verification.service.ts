@@ -524,6 +524,9 @@ export class VerificationService {
 
         if (this.isLive === 'true') {
             try {
+                this.logger.debug(
+                    `Starting to set relay family for [${relay.fingerprint}]`,
+                )
                 const evmSig = await buildEvmSignature(this.operator.signer)
                 const response = await this.relayRegistryContract
                     .connect({
