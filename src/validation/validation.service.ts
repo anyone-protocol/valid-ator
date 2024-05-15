@@ -16,11 +16,9 @@ import { ValidatedRelay } from './schemas/validated-relay'
 @Injectable()
 export class ValidationService {
     private readonly logger = new Logger(ValidationService.name)
-    private dataId: Types.ObjectId
     private lastSeen: String = ''
 
-    private readonly currentApiVersion = '8.0' // as reported via Onionoo API (04_2023: inconsistently with documentation and content standard)
-    private readonly atorKeyPattern = '@ator:' // this pattern should be lowercase
+    private readonly atorKeyPattern = '@anon:' // this pattern should be lowercase
     private readonly keyLength = 42
 
     constructor(
