@@ -27,6 +27,7 @@ export class AppThreadsService {
                 console.log(
                     `Skipping parallelization... Process pid ${process.pid}`,
                 )
+                process.env['IS_LOCAL_LEADER'] = 'true'
                 callback()
             }
         } else if (cluster.isWorker) {
