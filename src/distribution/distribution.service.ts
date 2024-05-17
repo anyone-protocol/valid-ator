@@ -319,6 +319,14 @@ export class DistributionService {
                 return { summary }
             }
 
+            if (summary == undefined) {
+                this.logger.warn(
+                    `No distribution data found. Skipping storing of distribution/summary [${stamp}]`
+                )
+
+                return {}
+            }
+
             const tags = [
                 { name: 'Protocol', value: 'ator' },
                 { name: 'Protocol-Version', value: '0.1' },
