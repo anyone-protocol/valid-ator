@@ -68,7 +68,7 @@ job "valid-ator-live" {
         DISTRIBUTION_OPERATOR_MIN_BALANCE=0
         FACILITY_OPERATOR_MIN_BALANCE=1000000
         FACILITY_TOKEN_MIN_BALANCE=1000000
-        CPU_COUNT="2"
+        CPU_COUNT="1"
       }
 
       resources {
