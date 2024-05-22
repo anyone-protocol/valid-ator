@@ -136,13 +136,15 @@ export class VerificationService {
         } else this.logger.error('Missing contract owner key...')
     }
 
-    public async addRegistrationCredit(address: string, tx: string): Promise<boolean> {
+    public async addRegistrationCredit(address: string, tx: string, fingerprint: string): Promise<boolean> {
         if (
             this.relayRegistryContract !== undefined &&
             this.operator !== undefined
         ) {
             if (this.isLive === 'true') {
                 try {
+                    // TODO: make use of fingerprint
+
                     const evmSig = await buildEvmSignature(this.operator.signer)
                     const response = await this.relayRegistryContract
                         .connect({

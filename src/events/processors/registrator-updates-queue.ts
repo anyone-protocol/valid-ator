@@ -31,7 +31,7 @@ export class RegistratorUpdatesQueue extends WorkerHost {
                         this.logger.log(
                             `Adding registration credit for ${data.address} seen at ${data.tx}`,
                         )
-                        return await this.verification.addRegistrationCredit(data.address, data.tx)
+                        return await this.verification.addRegistrationCredit(data.address, data.tx, data.fingerprint)
                     } else {
                         this.logger.error('Missing address in job data')
                         return undefined

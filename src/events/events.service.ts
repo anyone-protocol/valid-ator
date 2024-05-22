@@ -369,7 +369,7 @@ export class EventsService implements OnApplicationBootstrap {
                         this.registratorSignerContract = this.registratorContract.connect(this.registratorOperator)
                         this.registratorContract.on(
                             'Registered',
-                            async (_account: AddressLike, event: EventLog) => {
+                            async (_account: AddressLike, _fingerprint: string | Promise<string>, event: EventLog) => {
                                 if (this.cluster.isTheOne()) {
                                     let accountString: string
                                     if (_account instanceof Promise) {
@@ -380,15 +380,23 @@ export class EventsService implements OnApplicationBootstrap {
                                         accountString = _account
                                     }
 
+                                    let fingerprintString: string
+                                    if (_fingerprint instanceof Promise) {
+                                        fingerprintString = await _fingerprint
+                                    } else {
+                                        fingerprintString = _fingerprint
+                                    }
+
                                     if (accountString != undefined) {
                                         this.logger.log(
-                                            `Noticed registeration lock for ${accountString}`,
+                                            `Noticed registeration lock for ${accountString} with fingerprint: ${fingerprintString}`,
                                         )
                                         await this.registratorUpdatesFlow.add({
                                             name: 'add-registration-credit',
                                             queueName: 'registrator-updates-queue',
                                             data: {
                                                 account: accountString,
+                                                fingerprint: fingerprintString,
                                                 tx: event.transactionHash
                                             },
                                             opts: EventsService.jobOpts,
