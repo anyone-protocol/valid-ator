@@ -43,8 +43,8 @@ export class VerificationService {
             RELAY_REGISTRY_OPERATOR_KEY: string
             RELAY_REGISTRY_CONTRACT_TXID: string
             IS_LIVE: string
-            BUNDLR_NODE: string
-            BUNDLR_NETWORK: string
+            IRYS_NODE: string
+            IRYS_NETWORK: string
             DISTRIBUTION_CONTRACT_TXID: string
             DRE_HOSTNAME: string
         }>,
@@ -68,10 +68,10 @@ export class VerificationService {
 
         if (relayRegistryOperatorKey !== undefined) {
             this.bundlr = (() => {
-                const node = config.get<string>('BUNDLR_NODE', {
+                const node = config.get<string>('IRYS_NODE', {
                     infer: true,
                 })
-                const network = config.get<string>('BUNDLR_NETWORK', {
+                const network = config.get<string>('IRYS_NETWORK', {
                     infer: true,
                 })
 

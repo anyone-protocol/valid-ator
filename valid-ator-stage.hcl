@@ -32,7 +32,7 @@ job "valid-ator-stage" {
           DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
           REGISTRATOR_OPERATOR_KEY="{{.Data.data.REGISTRATOR_OPERATOR_KEY}}"
-          BUNDLR_NETWORK="{{.Data.data.BUNDLR_NETWORK}}"
+          IRYS_NETWORK="{{.Data.data.IRYS_NETWORK}}"
           JSON_RPC="{{.Data.data.JSON_RPC}}"
           DRE_HOSTNAME="{{.Data.data.DRE_HOSTNAME}}"
           INFURA_NETWORK="{{.Data.data.INFURA_NETWORK}}"
@@ -63,7 +63,7 @@ job "valid-ator-stage" {
         VALIDATOR_VERSION="[[.commit_sha]]"
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
-        BUNDLR_NODE="http://node2.bundlr.network"
+        IRYS_NODE="http://node2.irys.xyz"
         RELAY_REGISTRY_OPERATOR_MIN_BALANCE=1000000
         RELAY_REGISTRY_UPLOADER_MIN_BALANCE=1000000
         DISTRIBUTION_OPERATOR_MIN_BALANCE=1000000
