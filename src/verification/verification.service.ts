@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
+import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
     AddRegistrationCredit,
@@ -25,6 +25,8 @@ import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import Bundlr from '@bundlr-network/client'
 import { RelayValidationStatsDto } from './dto/relay-validation-stats'
+import secp256k1 from 'secp256k1'
+import tweetnacl from 'tweetnacl'
 
 @Injectable()
 export class VerificationService {
@@ -155,7 +157,7 @@ export class VerificationService {
                             function: 'addRegistrationCredit',
                             address: address,
                         }, {
-                            tags: [{name: 'EVM-TX', value: tx}]
+                            tags: [ new Tag('EVM-TX', tx) ]
                         })
 
                     this.logger.log(
@@ -629,5 +631,30 @@ export class VerificationService {
             )
             return 'Failed'
         }
+    }
+
+    public async verifyRelaySerial(
+        message: Uint8Array,
+        signature: Uint8Array,
+        publicKey: Uint8Array
+        // cpuId: string,
+        // atecId: string,
+        // fingerprint: string,
+        // address: string
+    ) {
+        console.log('message length', message.length, message.byteLength)
+        console.log('signature length', signature.length, signature.byteLength)
+        console.log('publicKey length', publicKey.length, publicKey.byteLength)
+        console.log('tweetnacl.sign.publicKeyLength', tweetnacl.sign.publicKeyLength)
+
+        // const keypair = tweetnacl.sign.keyPair.fromSecretKey(publicKey)
+        // keypair.publicKey
+
+        // tweetnacl.sign.open(message, publicKey)
+        return tweetnacl.sign.detached.verify(message, signature, publicKey)
+
+        // return secp256k1.ecdsaVerify(signature, message, publicKey)
+
+        // return false
     }
 }
