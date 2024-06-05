@@ -46,8 +46,8 @@ export class BalancesService implements OnApplicationBootstrap {
             JSON_RPC: string
             DISTRIBUTION_OPERATOR_KEY: string
             RELAY_REGISTRY_OPERATOR_KEY: string
-            IRYS_NODE: string
-            IRYS_NETWORK: string
+            BUNDLR_NODE: string
+            BUNDLR_NETWORK: string
             RELAY_REGISTRY_UPLOADER_MIN_BALANCE: number
             RELAY_REGISTRY_OPERATOR_MIN_BALANCE: number
             DISTRIBUTION_OPERATOR_MIN_BALANCE: number
@@ -130,10 +130,10 @@ export class BalancesService implements OnApplicationBootstrap {
 
         if (relayRegistryOperatorKey !== undefined) {
             this.bundlr = (() => {
-                const node = config.get<string>('IRYS_NODE', {
+                const node = config.get<string>('BUNDLR_NODE', {
                     infer: true,
                 })
-                const network = config.get<string>('IRYS_NETWORK', {
+                const network = config.get<string>('BUNDLR_NETWORK', {
                     infer: true,
                 })
 

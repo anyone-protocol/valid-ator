@@ -43,8 +43,8 @@ export class DistributionService {
             DISTRIBUTION_CONTRACT_TXID: string
             DISTRIBUTION_OPERATOR_KEY: string
             DRE_HOSTNAME: string
-            IRYS_NODE: string
-            IRYS_NETWORK: string
+            BUNDLR_NODE: string
+            BUNDLR_NETWORK: string
         }>,
     ) {
         LoggerFactory.INST.logLevel('error')
@@ -64,12 +64,13 @@ export class DistributionService {
 
         if (distributionOperatorKey !== undefined) {
             this.bundlr = (() => {
-                const node = config.get<string>('IRYS_NODE', {
+                const node = config.get<string>('BUNDLR_NODE', {
                     infer: true,
                 })
-                const network = config.get<string>('IRYS_NETWORK', {
+                const network = config.get<string>('BUNDLR_NETWORK', {
                     infer: true,
                 })
+
                 if (node !== undefined && network !== undefined) {
                     return new Bundlr(node, network, distributionOperatorKey)
                 } else {
