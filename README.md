@@ -72,7 +72,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
-* Entity-Type: `relay/hex-map` - contains an array with objects identified with with H3 cell id and carrying relay counts for the region. [View live sample](http://arweave.net/...)
+* Entity-Type: `relay/hex-map` - contains an array with objects identified with with H3 cell id and carrying relay counts for the region. [View live sample](http://arweave.net/FD-0d2X9WWbvflTet32PLD1Ur0JSDeB-6jkRLTQ6vBk)
 
 ```
 [
