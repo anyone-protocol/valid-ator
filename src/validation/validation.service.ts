@@ -30,7 +30,9 @@ export class ValidationService {
         private readonly relayDataModel: Model<RelayData>,
         @InjectModel(ValidationData.name)
         private readonly validationDataModel: Model<ValidationData>,
-    ) {}
+    ) {
+        geoip.startWatchingDataUpdate()
+    }
 
     public async fetchNewRelays(): Promise<RelayInfo[]> {
         this.logger.debug(

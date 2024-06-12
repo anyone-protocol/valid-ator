@@ -224,41 +224,44 @@ export class VerificationService {
             if (this.isLive === 'true') {
                 try {
                     let stamp = Date.now()
-                    let verifiedRelays = data.filter((v) => v.result == 'AlreadyVerified')
-                    if (verifiedRelays != undefined && verifiedRelays.length > 0) {
-                        const grouped = verifiedRelays.reduce((curr, item) => {
-                                if (curr[item.relay.primary_address_hex] == undefined) curr[item.relay.primary_address_hex] = 1
-                                else curr[item.relay.primary_address_hex] = curr[item.relay.primary_address_hex] + 1
-                                return curr
-                            }, {} as Record<string, number>)
-                        
-                        const response = await this.bundlr?.upload(
-                            JSON.stringify(grouped),
-                            {
-                                tags: [
-                                    { name: 'Protocol', value: 'ator' },
-                                    { name: 'Protocol-Version', value: '0.1' },
-                                    {
-                                        name: 'Content-Timestamp',
-                                        value: stamp.toString(),
-                                    },
-                                    {
-                                        name: 'Content-Type',
-                                        value: 'application/json',
-                                    },
-                                    { name: 'Entity-Type', value: 'relay/hex-map' },
-                                ],
-                            },
-                        )
-                        this.logger.log(
-                            `Permanently stored relay hex map ${stamp} with ${data.length} relay(s): ${response.id} `,
-                        )
-                        return response.id
-                    } else {
-                        this.logger.log(
-                            `No already verified relays found`,
-                        )
+                    
+                    const grouped = data.reduce((curr, item) => {
+                            (curr[item.relay.primary_address_hex] ||= []).push(item)
+                            return curr
+                        }, {} as Record<string, VerificationResults>)
+                    const filled = []
+                    for (const hex_id in grouped) {
+                        filled.push({
+                            h3cell: hex_id,
+                            claimable: grouped[hex_id].filter((v) => v.result == 'OK' || v.result == 'AlreadyRegistered').length,
+                            verified: grouped[hex_id].filter((v) => v.result == 'AlreadyVerified').length,
+                            running: grouped[hex_id].filter((v) => v.relay.running).length,
+                            running_verified: grouped[hex_id].filter((v) => v.relay.running && v.result == 'AlreadyVerified').length,
+                        })
                     }
+                    
+                    const response = await this.bundlr?.upload(
+                        JSON.stringify(filled),
+                        {
+                            tags: [
+                                { name: 'Protocol', value: 'ator' },
+                                { name: 'Protocol-Version', value: '0.1' },
+                                {
+                                    name: 'Content-Timestamp',
+                                    value: stamp.toString(),
+                                },
+                                {
+                                    name: 'Content-Type',
+                                    value: 'application/json',
+                                },
+                                { name: 'Entity-Type', value: 'relay/hex-map' },
+                            ],
+                        },
+                    )
+                    this.logger.log(
+                        `Permanently stored relay hex map ${stamp} with ${data.length} relay(s): ${response.id} `,
+                    )
+                    return response.id
                 } catch (error) {
                     this.logger.warn(
                         `Exception when storing relay hex map: ${error}`,
@@ -400,11 +403,11 @@ export class VerificationService {
                             (current.result === 'Failed' ? 1 : 0),
                         unclaimed:
                             previous.verification.unclaimed +
-                            (current.result === 'AlreadyRegistered' ? 1 : 0),
+                            ((current.result === 'OK' ||
+                                current.result === 'AlreadyRegistered') ? 1 : 0),
                         verified:
                             previous.verification.verified +
-                            (current.result === 'OK' ||
-                            current.result === 'AlreadyVerified'
+                            (current.result === 'AlreadyVerified'
                                 ? 1
                                 : 0),
                         running:
@@ -414,23 +417,20 @@ export class VerificationService {
                     verified_and_running: {
                         consensus_weight:
                             previous.verified_and_running.consensus_weight +
-                            ((current.result === 'OK' ||
-                                current.result === 'AlreadyVerified') &&
+                            ((current.result === 'AlreadyVerified') &&
                             current.relay.running
                                 ? current.relay.consensus_weight
                                 : 0),
                         consensus_weight_fraction:
                             previous.verified_and_running
                                 .consensus_weight_fraction +
-                            ((current.result === 'OK' ||
-                                current.result === 'AlreadyVerified') &&
+                            ((current.result === 'AlreadyVerified') &&
                             current.relay.running
                                 ? current.relay.consensus_weight_fraction
                                 : 0),
                         observed_bandwidth:
                             previous.verified_and_running.observed_bandwidth +
-                            ((current.result === 'OK' ||
-                                current.result === 'AlreadyVerified') &&
+                            ((current.result === 'AlreadyVerified') &&
                             current.relay.running
                                 ? current.relay.observed_bandwidth
                                 : 0),

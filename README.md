@@ -72,13 +72,20 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
-* Entity-Type: `relay/hex-map` - contains an object with H3 haxagon ids and appropriate relay counts for the hex region. [View live sample](http://arweave.net/bKdUd6vonjrZS4-FUGMPr5ecOeF405pR2DdO_at1D9I)
+* Entity-Type: `relay/hex-map` - contains an array with objects identified with with H3 cell id and carrying relay counts for the region. [View live sample](http://arweave.net/...)
 
 ```
-{
-    <hex-id>: number,
-    ...
-}
+[
+  {
+    h3cell: string (required),
+    claimable: number,
+    verified: number,
+    running: number,
+    running_verified: number
+  },
+  
+  ...
+]
 ```
 
 * Entity-Type: `validation/stats` - contains an object detailing the metrics of the relay verification process.  [View live sample](http://arweave.net/AHtmz9nOA1L8QSdBf_miBN9CzwbbNPi-YyE9V1d2U9c)
@@ -102,7 +109,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
-* Entity-Type: `distribution/summary` - contains summary for a previous distribution round.  Each field is also exposed as a tag on the transaction, so downloading the json blob itself is not necessary.  These tags and their values are in the GQL results.
+* Entity-Type: `distribution/summary` - contains summary for a previous distribution round.  Each field is also exposed as a tag on the transaction, so downloading the json blob itself is not necessary.  These tags and their values are in the GQL results. [View live sample](http://arweave.net/yVrttNPdI3bFCFNRCgqFSlA5L-91bJKloC2zFQdHiNM)
 ```
 {
     totalScore: string
