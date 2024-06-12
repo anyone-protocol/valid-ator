@@ -25,6 +25,7 @@ import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import Bundlr from '@bundlr-network/client'
 import { RelayValidationStatsDto } from './dto/relay-validation-stats'
+import e from 'express'
 
 @Injectable()
 export class VerificationService {
@@ -217,6 +218,65 @@ export class VerificationService {
         } = await this.relayRegistryContract.readState()
 
         return (state.families || {})[fingerprint] || []
+    }
+
+    async storeRelayHexMap(data: VerificationResults) {
+        if (this.bundlr !== undefined) {
+            if (this.isLive === 'true') {
+                try {
+                    let stamp = Date.now()
+                    let verifiedRelays = data.filter((v) => v.result == 'AlreadyVerified')
+                    if (verifiedRelays != undefined && verifiedRelays.length > 0) {
+                        const grouped = verifiedRelays.reduce((curr, item) => {
+                                if (curr[item.relay.primary_address_hex] == undefined) curr[item.relay.primary_address_hex] = 1
+                                else curr[item.relay.primary_address_hex] = curr[item.relay.primary_address_hex] + 1
+                                return curr
+                            }, {} as Record<string, number>)
+                        
+                        const response = await this.bundlr?.upload(
+                            JSON.stringify(grouped),
+                            {
+                                tags: [
+                                    { name: 'Protocol', value: 'ator' },
+                                    { name: 'Protocol-Version', value: '0.1' },
+                                    {
+                                        name: 'Content-Timestamp',
+                                        value: stamp.toString(),
+                                    },
+                                    {
+                                        name: 'Content-Type',
+                                        value: 'application/json',
+                                    },
+                                    { name: 'Entity-Type', value: 'relay/hex-map' },
+                                ],
+                            },
+                        )
+                        this.logger.log(
+                            `Permanently stored relay hex map ${stamp} with ${data.length} relay(s): ${response.id} `,
+                        )
+                        return response.id
+                    } else {
+                        this.logger.log(
+                            `No already verified relays found`,
+                        )
+                    }
+                } catch (e) {
+                    this.logger.warn(
+                        `Exception when storing relay hex map: ${e}`,
+                    )
+                }
+            } else {
+                this.logger.warn(
+                    `NOT LIVE: Not storing relay hex map`,
+                )
+                return 'not-live-skipped-store-relay-hex-map'
+            }
+        } else {
+            this.logger.error(
+                'Bundler not initialized, not persisting relay hex map',
+            )
+        }
+        return ''
     }
 
     private async storeRelayMetrics(

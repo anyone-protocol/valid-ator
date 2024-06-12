@@ -139,6 +139,16 @@ export class VerificationQueue extends WorkerHost {
                             verificationData.relay_metrics_tx.length > 0 &&
                             verificationData.validation_stats_tx.length > 0
                         ) {
+                            try {
+                                this.logger.log(`Publishing relay hex info...`)
+                                const relayHexMapData = await this.verification.storeRelayHexMap(verificationResults)
+                            } catch (error) {
+                                this.logger.error(
+                                    `Failed storing relay hex map`,
+                                    error.stack
+                                )
+                            }
+
                             return verificationData
                         } else {
                             this.tasks.verificationQueue.add(
