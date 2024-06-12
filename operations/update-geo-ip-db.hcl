@@ -3,7 +3,7 @@ job "update-geo-ip-db" {
   type = "batch"
   
   periodic {
-    cron            = [ "0 3 * * 7" ] # every Sunday at 3am
+    cron            = "0 3 * * 7" # every Sunday at 3am
     prohibit_overlap = true
   }
   
