@@ -182,7 +182,9 @@ export class ValidationService {
     }
 
    private ipToGeoHex(ip: string): string {
-        let lookupRes = geoip.lookup(ip)?.ll
+        let portIndex = ip.indexOf(':')
+        let cleanIp = ip.substring(0, portIndex)
+        let lookupRes = geoip.lookup(cleanIp)?.ll
         if (lookupRes != undefined) {
             let [lat, lng] = lookupRes
             return latLngToCell(lat, lng, 4) // resolution 4 - avg hex area 1,770 km^2
