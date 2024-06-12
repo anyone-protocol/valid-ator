@@ -25,7 +25,6 @@ import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import Bundlr from '@bundlr-network/client'
 import { RelayValidationStatsDto } from './dto/relay-validation-stats'
-import e from 'express'
 
 @Injectable()
 export class VerificationService {
@@ -260,9 +259,9 @@ export class VerificationService {
                             `No already verified relays found`,
                         )
                     }
-                } catch (e) {
+                } catch (error) {
                     this.logger.warn(
-                        `Exception when storing relay hex map: ${e}`,
+                        `Exception when storing relay hex map: ${error}`,
                     )
                 }
             } else {

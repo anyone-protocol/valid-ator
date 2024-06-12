@@ -56,7 +56,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 
 ### Entity types and data format
 
-* Entity-Type: `relay/metrics` - contains an array of objects with relay verification results and associated relay metrics observed during the verification process. [View live sample](http://arweave.net/bKdUd6vonjrZS4-FUGMPr5ecOeF405pR2DdO_at1D9I)
+* Entity-Type: `relay/metrics` - contains an array of objects with relay verification results and associated relay metrics observed during the verification process.
 
 ```
 {
@@ -69,6 +69,15 @@ Entity-Type: <string with the type of entities stored in the datafile>
         observed_bandwidth: number (optional, default: 0)
         running: boolean (optional, default: false)
     }
+}
+```
+
+* Entity-Type: `relay/hex-map` - contains an object with H3 haxagon ids and appropriate relay counts for the hex region. [View live sample](http://arweave.net/bKdUd6vonjrZS4-FUGMPr5ecOeF405pR2DdO_at1D9I)
+
+```
+{
+    <hex-id>: number,
+    ...
 }
 ```
 
