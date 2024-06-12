@@ -6,6 +6,12 @@ job "valid-ator-live" {
     
     count = 1
 
+    volume "geo-ip-db" {
+      type      = "host"
+      read_only = false
+      source    = "geo-ip-db"
+    }
+
     network {
       mode = "bridge"
       port "validator" {
@@ -69,6 +75,14 @@ job "valid-ator-live" {
         FACILITY_OPERATOR_MIN_BALANCE=1000000
         FACILITY_TOKEN_MIN_BALANCE=1000000
         CPU_COUNT="1"
+        GEODATADIR="/geo-ip-db/data"
+        GEOTMPDIR="/geo-ip-db/tmp"
+      }
+
+      volume_mount {
+        volume      = "geo-ip-db"
+        destination = "/geo-ip-db"
+        read_only   = false
       }
 
       resources {
