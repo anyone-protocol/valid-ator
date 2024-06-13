@@ -9,7 +9,7 @@ import {
     SetFamily,
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
-import { AddressLike, Wallet } from 'ethers'
+import { Wallet, isAddress, isHexString, toUtf8Bytes } from 'ethers'
 import {
     buildEvmSignature,
     EvmSignatureVerificationServerPlugin,
@@ -25,8 +25,13 @@ import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import Bundlr from '@bundlr-network/client'
 import { RelayValidationStatsDto } from './dto/relay-validation-stats'
-import secp256k1 from 'secp256k1'
-import tweetnacl from 'tweetnacl'
+import { p256 } from '@noble/curves/p256'
+import { bytesToHex } from '@noble/curves/abstract/utils'
+import { createHash } from 'crypto'
+import { ECPointCompress } from '../util/ec-point-compress'
+import { isFingerprintValid } from '../util/fingerprint'
+import { isAddressValid } from '../util/address-evm'
+import { isHexStringValid } from '../util/hex-string'
 
 @Injectable()
 export class VerificationService {
@@ -634,27 +639,96 @@ export class VerificationService {
     }
 
     public async verifyRelaySerial(
-        message: Uint8Array,
-        signature: Uint8Array,
-        publicKey: Uint8Array
-        // cpuId: string,
-        // atecId: string,
-        // fingerprint: string,
-        // address: string
+        nodeId: string,
+        nftId: string,
+        deviceSerial: string,
+        atecSerial: string,
+        fingerprint: string,
+        address: string,
+        publicKey: string,
+        signature: string
     ) {
-        console.log('message length', message.length, message.byteLength)
-        console.log('signature length', signature.length, signature.byteLength)
-        console.log('publicKey length', publicKey.length, publicKey.byteLength)
-        console.log('tweetnacl.sign.publicKeyLength', tweetnacl.sign.publicKeyLength)
+        if (!isFingerprintValid(fingerprint)) {
+            this.logger.error('Invalid fingerprint', fingerprint)
 
-        // const keypair = tweetnacl.sign.keyPair.fromSecretKey(publicKey)
-        // keypair.publicKey
+            return false
+        }
 
-        // tweetnacl.sign.open(message, publicKey)
-        return tweetnacl.sign.detached.verify(message, signature, publicKey)
+        if (!isAddressValid(address)) {
+            this.logger.error('Invalid address', address)
 
-        // return secp256k1.ecdsaVerify(signature, message, publicKey)
+            return false
+        }
 
-        // return false
+        // TODO -> validate nodeId (what is a valid node id???)
+        const nodeIdHex = bytesToHex(toUtf8Bytes(nodeId))
+
+        const parsedNftId = Number.parseInt(nftId)
+        // TODO -> check if nft id has been mapped already
+        // TODO -> check if address owns nft id
+        const isNftIdValid = true // TODO ^
+        if (!isNftIdValid) {
+            this.logger.error('Invalid NFT ID', nftId)
+
+            return false
+        }
+
+        // TODO -> check device serial has not been claimed/mapped
+        const isDeviceSerialValid = deviceSerial.length === 16
+            && isHexStringValid(deviceSerial)
+        if (!isDeviceSerialValid) {
+            this.logger.error('Invalid device serial', deviceSerial)
+
+            return false
+        }
+
+        // TODO -> check atec serial has not been claimed/mapped
+        const isAtecSerialValid = atecSerial.length === 18
+            && isHexStringValid(atecSerial)
+        if (!isAtecSerialValid) {
+            this.logger.error('Invalid atec serial', atecSerial)
+
+            return false
+        }
+
+        const isSignatureFormatValid = signature.length === 128
+            && isHexStringValid(signature)
+        if (!isSignatureFormatValid) {
+            this.logger.error('Invalid signature', signature)
+
+            return false
+        }
+
+        const nftIdHex = parsedNftId.toString(16).padStart(4, '0')
+        const nftIdHexLsb = [
+            nftIdHex[2],
+            nftIdHex[3],
+            nftIdHex[0],
+            nftIdHex[1]
+        ].join('')
+        const messageHexString = (
+            nodeIdHex
+            + nftIdHexLsb
+            + deviceSerial
+            + atecSerial
+            + fingerprint
+            + address
+        ).toLowerCase()
+        const message = Uint8Array.from(
+            (messageHexString.match(/.{1,2}/g) || [])
+                .map((byte) => parseInt(byte, 16))
+        )
+        const messageHash = createHash('sha256').update(message).digest('hex')
+        const publicKeyBytes = Uint8Array.from(
+            (publicKey.match(/.{1,2}/g) || []).map((byte) => parseInt(byte, 16))
+        )
+        const publicKeyCompressed = ECPointCompress(
+            publicKeyBytes.slice(0, publicKeyBytes.length / 2),
+            publicKeyBytes.slice(publicKeyBytes.length / 2)
+        )
+
+        // TODO -> update mapping as valid, claimed, etc
+
+        return p256.verify(signature, messageHash, publicKeyCompressed)
     }
 }
