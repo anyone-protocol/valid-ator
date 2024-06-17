@@ -1,10 +1,16 @@
-job "valid-ator-live" {
+job "valid-ator-stage" {
   datacenters = ["ator-fin"]
   type = "service"
 
-  group "valid-ator-live-group" {
+  group "valid-ator-stage-group" {
     
     count = 1
+
+    volume "geo-ip-db" {
+      type      = "host"
+      read_only = false
+      source    = "geo-ip-db"
+    }
 
     network {
       mode = "bridge"
@@ -14,19 +20,20 @@ job "valid-ator-live" {
       }
     }
 
-    task "valid-ator-live-service" {
+    task "valid-ator-stage-service" {
       driver = "docker"
       config {
         image = "ghcr.io/ator-development/valid-ator:[[.deploy]]"
+        force_pull = true
       }
 
       vault {
-        policies = ["valid-ator-live"]
+        policies = ["valid-ator-stage"]
       }
 
       template {
         data = <<EOH
-        {{with secret "kv/valid-ator/live"}}
+        {{with secret "kv/valid-ator/stage"}}
           RELAY_REGISTRY_OPERATOR_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
           DISTRIBUTION_OPERATOR_KEY="{{.Data.data.DISTRIBUTION_OPERATOR_KEY}}"
           FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
@@ -37,19 +44,19 @@ job "valid-ator-live" {
           INFURA_NETWORK="{{.Data.data.INFURA_NETWORK}}"
           INFURA_WS_URL="{{.Data.data.INFURA_WS_URL}}"
         {{end}}
-        RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/live/relay-registry-address" ]]"
-        DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/live/distribution-address" ]]"
-        FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/sepolia/live/address" ]]"
-        REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/live/address" ]]"
-        TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/sepolia/live/address" ]]"
-        {{- range service "validator-live-mongo" }}
-          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-live-testnet"
+        RELAY_REGISTRY_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/relay-registry-address" ]]"
+        DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
+        REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/stage/address" ]]"
+        FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/sepolia/stage/address" ]]"
+        TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/sepolia/stage/address" ]]"
+        {{- range service "validator-stage-mongo" }}
+          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-stage-testnet"
         {{- end }}
-        {{- range service "validator-live-redis" }}
+        {{- range service "validator-stage-redis" }}
           REDIS_HOSTNAME="{{ .Address }}"
           REDIS_PORT="{{ .Port }}"
         {{- end }}
-        {{- range service "onionoo-war-live" }}
+        {{- range service "onionoo-war-stage" }}
           ONIONOO_DETAILS_URI="http://{{ .Address }}:{{ .Port }}/details"
         {{- end }}
         EOH
@@ -63,25 +70,37 @@ job "valid-ator-live" {
         ONIONOO_REQUEST_TIMEOUT=60000
         ONIONOO_REQUEST_MAX_REDIRECTS=3
         IRYS_NODE="https://node2.irys.xyz"
-        RELAY_REGISTRY_OPERATOR_MIN_BALANCE=0
+        RELAY_REGISTRY_OPERATOR_MIN_BALANCE=1000000
         RELAY_REGISTRY_UPLOADER_MIN_BALANCE=1000000
-        DISTRIBUTION_OPERATOR_MIN_BALANCE=0
+        DISTRIBUTION_OPERATOR_MIN_BALANCE=1000000
         FACILITY_OPERATOR_MIN_BALANCE=1000000
         FACILITY_TOKEN_MIN_BALANCE=1000000
         CPU_COUNT="1"
+        GEODATADIR="/geo-ip-db/data"
+        GEOTMPDIR="/geo-ip-db/tmp"
       }
 
+      volume_mount {
+        volume      = "geo-ip-db"
+        destination = "/geo-ip-db"
+        read_only   = false
+      }
+      
       resources {
         cpu    = 4096
         memory = 8192
       }
 
       service {
-        name = "valid-ator-live"
+        name = "valid-ator-stage"
         port = "validator"
         
+        tags = [
+          "logging",
+        ]
+        
         check {
-          name     = "valid-ator health check"
+          name     = "Stage valid-ator health check"
           type     = "http"
           path     = "/health"
           interval = "5s"

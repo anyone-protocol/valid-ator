@@ -14,6 +14,9 @@ export class RelayData {
     @Prop({ type: String, required: true })
     ator_address: string
 
+    @Prop({ type: String, required: false })
+    primary_address_hex: string
+
     @Prop({ type: Boolean, required: false, default: false })
     running: boolean
 

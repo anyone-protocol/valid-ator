@@ -12,6 +12,8 @@ import { ethers } from 'ethers'
 import { ConfigService } from '@nestjs/config'
 import { ValidationData } from './schemas/validation-data'
 import { ValidatedRelay } from './schemas/validated-relay'
+import { latLngToCell } from 'h3-js'
+import * as geoip from 'geoip-lite'
 
 @Injectable()
 export class ValidationService {
@@ -28,7 +30,9 @@ export class ValidationService {
         private readonly relayDataModel: Model<RelayData>,
         @InjectModel(ValidationData.name)
         private readonly validationDataModel: Model<ValidationData>,
-    ) {}
+    ) {
+        geoip.startWatchingDataUpdate()
+    }
 
     public async fetchNewRelays(): Promise<RelayInfo[]> {
         this.logger.debug(
@@ -159,6 +163,7 @@ export class ValidationService {
                 fingerprint: info.fingerprint,
                 contact: info.contact !== undefined ? info.contact : '', // other case should not happen as its filtered out while creating validations array
                 consensus_weight: info.consensus_weight,
+                primary_address_hex: this.ipToGeoHex(info.or_addresses[0]),
 
                 running: info.running,
                 consensus_measured: info.measured ?? false,
@@ -174,6 +179,16 @@ export class ValidationService {
         )
 
         return relayData.filter((data, index, array) => data.contact.length > 0)
+    }
+
+   private ipToGeoHex(ip: string): string {
+        let portIndex = ip.indexOf(':')
+        let cleanIp = ip.substring(0, portIndex)
+        let lookupRes = geoip.lookup(cleanIp)?.ll
+        if (lookupRes != undefined) {
+            let [lat, lng] = lookupRes
+            return latLngToCell(lat, lng, 4) // resolution 4 - avg hex area 1,770 km^2
+        } else return '?'
     }
 
     public async validateRelays(
@@ -195,7 +210,9 @@ export class ValidationService {
                     consensus_weight_fraction: relay.consensus_weight_fraction,
                     observed_bandwidth: relay.observed_bandwidth,
                     running: relay.running,
-                    family: relay.effective_family
+                    family: relay.effective_family,
+                    consensus_measured: relay.consensus_measured,
+                    primary_address_hex: relay.primary_address_hex
                 }))
                 .filter((relay, index, array) => relay.ator_address.length > 0)
 
@@ -229,6 +246,7 @@ export class ValidationService {
                             validated_at: validationStamp,
                             fingerprint: relay.fingerprint,
                             ator_address: relay.ator_address,
+                            primary_address_hex: relay.primary_address_hex,
                             consensus_weight: relayData.consensus_weight,
 
                             running: relayData.running,

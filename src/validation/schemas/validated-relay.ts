@@ -25,6 +25,12 @@ export class ValidatedRelay {
 
     @Prop({ type: [String], required: false, default: [] })
     family: string[]
+
+    @Prop({ type: Boolean, required: false, default: false })
+    consensus_measured: boolean
+
+    @Prop({ type: String, required: true })
+    primary_address_hex: string
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

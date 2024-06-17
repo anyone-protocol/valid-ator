@@ -1,6 +1,7 @@
 export class RelayDataDto {
     readonly fingerprint: string
     readonly contact: string
+    readonly primary_address_hex: string
 
     readonly running: boolean
     readonly consensus_weight: number
