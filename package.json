@@ -57,7 +57,6 @@
     "@types/geoip-lite": "^1.4.4",
     "@types/jest": "29.5.1",
     "@types/node": "18.16.0",
-    "@types/secp256k1": "^4.0.6",
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^5.59.1",
     "@typescript-eslint/parser": "^5.59.1",
