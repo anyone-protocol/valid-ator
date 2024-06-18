@@ -49,6 +49,30 @@ export class RelayData {
 
     @Prop({ type: [String], required: false, default: [] })
     family: string[]
+
+    @Prop({ type: Object, required: false })
+    hardware_info?: {
+        id?: string
+        company?: string
+        format?: string
+        wallet?: string
+        fingerprint?: string
+        nftid?: string
+        build?: string
+        flags?: string
+        serNums?: {
+            type?: string
+            number?: string
+        }[]
+        pubKeys?: {
+            type?: string
+            number?: string
+        }[]
+        certs?: {
+            type?: string
+            signature?: string
+        }[]
+    }
 }
 
 export const RelayDataSchema = SchemaFactory.createForClass(RelayData)

@@ -38,7 +38,7 @@ describe('VerificationService', () => {
 
     fit('should validate hardware serial proofs', async () => {
         const nodeId = 'relay'
-        const nftId = '0'
+        const nftId = 0
         const deviceSerial = 'c2eeefaa42a50073'
         const atecSerial = '01237da6e721fcee01'
         const fingerprint = '6CF7AA4F7C8DABCF523DC1484020906C0E0F7A9C'

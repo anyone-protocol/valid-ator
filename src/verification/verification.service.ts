@@ -658,6 +658,104 @@ export class VerificationService {
                 return 'AlreadyRegistered'
             }
 
+            let isHardwareProofValid = false
+            if (relay.hardware_info) {
+                const { nftid, serNums, pubKeys, certs } = relay.hardware_info
+
+                if (!nftid) {
+                    this.logger.debug(
+                        `Missing NFT ID in hardware info for relay [${relay.fingerprint}]`
+                    )
+
+                    return 'HardwareProofFailed'
+                }
+
+                const parsedNftId = Number.parseInt(nftid)
+                // TODO -> check id is within range of IDs in contract(s)?
+                const isNftIdValid = Number.isInteger(parsedNftId)
+                if (!isNftIdValid) {
+                    this.logger.debug(
+                        `Invalid NFT ID in hardware info for relay [${relay.fingerprint}]`
+                    )
+                }
+
+                // TODO -> check if nft id has been mapped already
+                // TODO -> check if address owns nft id
+
+                const deviceSerial = serNums
+                    ?.find(s => s.type === 'DEVICE')
+                    ?.number
+
+                if (!deviceSerial) {
+                    this.logger.debug(
+                        `Missing Device Serial in hardware info for relay [${relay.fingerprint}]`
+                    )
+
+                    return 'HardwareProofFailed'
+                }
+
+                // TODO -> check device serial has not been claimed/mapped
+
+                const atecSerial = serNums
+                    ?.find(s => s.type === 'ATEC')
+                    ?.number
+
+                if (!atecSerial) {
+                    this.logger.debug(
+                        `Missing ATEC Serial in hardware info for relay [${relay.fingerprint}]`
+                    )
+
+                    return 'HardwareProofFailed'
+                }
+
+                // TODO -> check atec serial has not been claimed/mapped
+
+                const publicKey = pubKeys
+                    ?.find(p => p.type === 'DEVICE')
+                    ?.number
+
+                if (!publicKey) {
+                    this.logger.debug(
+                        `Missing Public Key in hardware info for relay [${relay.fingerprint}]`
+                    )
+
+                    return 'HardwareProofFailed'
+                }
+
+                const signature = certs
+                    ?.find(c => c.type === 'DEVICE')
+                    ?.signature
+
+                if (!signature) {
+                    this.logger.debug(
+                        `Missing Signature in hardware info for relay [${relay.fingerprint}]`
+                    )
+
+                    return 'HardwareProofFailed'
+                }
+
+                isHardwareProofValid = await this.verifyRelaySerial(
+                    'relay',
+                    parsedNftId,
+                    deviceSerial,
+                    atecSerial,
+                    relay.fingerprint,
+                    relay.ator_address,
+                    publicKey,
+                    signature
+                )
+
+                if (!isHardwareProofValid) {
+                    this.logger.debug(
+                        `Hardware info proof failed verification for relay [${relay.fingerprint}]`
+                    )
+
+                    return 'HardwareProofFailed'
+                }
+
+                // TODO -> update hardware <-> nft mapping as valid, claimed, etc
+            }
+
             if (this.isLive === 'true') {
                 try {
                     const evmSig = await buildEvmSignature(this.operator.signer)
@@ -670,6 +768,7 @@ export class VerificationService {
                             function: 'addClaimable',
                             fingerprint: relay.fingerprint,
                             address: relay.ator_address,
+                            // TODO -> add hardware valid here
                         })
 
                     this.logger.log(
@@ -699,7 +798,7 @@ export class VerificationService {
 
     public async verifyRelaySerial(
         nodeId: string,
-        nftId: string,
+        nftId: number,
         deviceSerial: string,
         atecSerial: string,
         fingerprint: string,
@@ -719,20 +818,8 @@ export class VerificationService {
             return false
         }
 
-        // TODO -> validate nodeId (what is a valid node id???)
         const nodeIdHex = bytesToHex(toUtf8Bytes(nodeId))
 
-        const parsedNftId = Number.parseInt(nftId)
-        // TODO -> check if nft id has been mapped already
-        // TODO -> check if address owns nft id
-        const isNftIdValid = true // TODO ^
-        if (!isNftIdValid) {
-            this.logger.error('Invalid NFT ID', nftId)
-
-            return false
-        }
-
-        // TODO -> check device serial has not been claimed/mapped
         const isDeviceSerialValid = deviceSerial.length === 16
             && isHexStringValid(deviceSerial)
         if (!isDeviceSerialValid) {
@@ -741,7 +828,6 @@ export class VerificationService {
             return false
         }
 
-        // TODO -> check atec serial has not been claimed/mapped
         const isAtecSerialValid = atecSerial.length === 18
             && isHexStringValid(atecSerial)
         if (!isAtecSerialValid) {
@@ -758,7 +844,7 @@ export class VerificationService {
             return false
         }
 
-        const nftIdHex = parsedNftId.toString(16).padStart(4, '0')
+        const nftIdHex = nftId.toString(16).padStart(4, '0')
         const nftIdHexLsb = [
             nftIdHex[2],
             nftIdHex[3],
@@ -785,8 +871,6 @@ export class VerificationService {
             publicKeyBytes.slice(0, publicKeyBytes.length / 2),
             publicKeyBytes.slice(publicKeyBytes.length / 2)
         )
-
-        // TODO -> update mapping as valid, claimed, etc
 
         return p256.verify(signature, messageHash, publicKeyCompressed)
     }
