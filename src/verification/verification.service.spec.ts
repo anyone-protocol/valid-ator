@@ -6,8 +6,6 @@ import {
     VerificationData,
     VerificationDataSchema,
 } from './schemas/verification-data'
-import { p256, hashToCurve } from '@noble/curves/p256'
-import { ethers } from 'ethers'
 
 describe('VerificationService', () => {
     let service: VerificationService

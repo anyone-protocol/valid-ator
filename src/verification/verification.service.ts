@@ -9,7 +9,7 @@ import {
     SetFamily,
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
-import { Wallet, isAddress, isHexString, toUtf8Bytes } from 'ethers'
+import { Wallet, toUtf8Bytes } from 'ethers'
 import {
     buildEvmSignature,
     EvmSignatureVerificationServerPlugin,
