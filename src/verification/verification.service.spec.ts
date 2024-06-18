@@ -34,7 +34,7 @@ describe('VerificationService', () => {
         expect(service).toBeDefined()
     })
 
-    fit('should validate hardware serial proofs', async () => {
+    it('should validate hardware serial proofs', async () => {
         const nodeId = 'relay'
         const nftId = 0
         const deviceSerial = 'c2eeefaa42a50073'
