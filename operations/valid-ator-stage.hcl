@@ -96,7 +96,7 @@ job "valid-ator-stage" {
         port = "validator"
         
         tags = [
-          "logging",
+          
         ]
         
         check {
