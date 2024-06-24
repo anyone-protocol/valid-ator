@@ -216,12 +216,15 @@ export class VerificationService {
 
     public async getFamily(fingerprint: string): Promise<string[]> {
         await this.refreshDreState()
-
-        // const {
-        //     cachedValue: { state }
-        // } = await this.relayRegistryContract.readState()
-
-        return (this.dreState?.families || {})[fingerprint] || []
+        if (this.dreState != undefined) {
+            return (this.dreState?.families || {})[fingerprint] || []
+        } else {
+            const {
+                cachedValue: { state }
+            } = await this.relayRegistryContract.readState()
+            return (state.families || {})[fingerprint] || []
+        }
+        
     }
 
     async storeRelayHexMap(data: VerificationResults) {
