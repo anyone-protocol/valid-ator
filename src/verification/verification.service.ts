@@ -215,11 +215,13 @@ export class VerificationService {
     }
 
     public async getFamily(fingerprint: string): Promise<string[]> {
-        const {
-            cachedValue: { state }
-        } = await this.relayRegistryContract.readState()
+        await this.refreshDreState()
 
-        return (state.families || {})[fingerprint] || []
+        // const {
+        //     cachedValue: { state }
+        // } = await this.relayRegistryContract.readState()
+
+        return (this.dreState?.families || {})[fingerprint] || []
     }
 
     async storeRelayHexMap(data: VerificationResults) {
@@ -645,7 +647,7 @@ export class VerificationService {
             } catch (e) {
                 this.logger.error('Exception when fetching relay registry dre cache', e.stack)
             }
-        } else this.logger.debug('DRE cache warm, skipping refresh', this.dreStateStamp)
+        } else this.logger.debug(`DRE cache warm ${now - this.dreStateStamp}, skipping refresh`)
     }
 
     private async getStatus(fingerprint: string, address: string): Promise<RelayStatus> {
