@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { firstValueFrom, catchError } from 'rxjs'
 import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
@@ -23,6 +24,9 @@ import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import Bundlr from '@bundlr-network/client'
 import { RelayValidationStatsDto } from './dto/relay-validation-stats'
+import { HttpService } from '@nestjs/axios'
+import { AxiosError } from 'axios'
+import { DreRelayRegistryResponse } from './interfaces/dre-relay-registry-response'
 
 @Injectable()
 export class VerificationService {
@@ -36,6 +40,10 @@ export class VerificationService {
     private relayRegistryWarp: Warp
     private relayRegistryContract: Contract<RelayRegistryState>
 
+    private relayRegistryDreUri: string
+    private dreState: RelayRegistryState | undefined
+    private dreStateStamp: number | undefined
+
     constructor(
         private readonly config: ConfigService<{
             RELAY_REGISTRY_OPERATOR_KEY: string
@@ -48,6 +56,7 @@ export class VerificationService {
         }>,
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
+        private readonly httpService: HttpService,
     ) {
         LoggerFactory.INST.logLevel('error')
 
@@ -122,6 +131,8 @@ export class VerificationService {
                     infer: true,
                 })
 
+                this.relayRegistryDreUri = `${dreHostname}?id=${registryTxId}`
+
                 this.relayRegistryContract = this.relayRegistryWarp
                     .contract<RelayRegistryState>(registryTxId)
                     .setEvaluationOptions({
@@ -187,7 +198,7 @@ export class VerificationService {
         return interactionResult?.result??false
     }
 
-    public async isClaimable(
+    private async isClaimable(
         fingerprint: string,
         address: string,
     ): Promise<boolean> {
@@ -607,6 +618,53 @@ export class VerificationService {
         return 'OK'
     }
 
+    private async refreshDreState() {
+        const now = Date.now()
+        if (this.dreStateStamp == undefined || now > (this.dreStateStamp + 60_000)) {
+            try {
+                const { headers, status, data } = await firstValueFrom(
+                    this.httpService
+                        .get<DreRelayRegistryResponse>(this.relayRegistryDreUri)
+                        .pipe(
+                            catchError((error: AxiosError) => {
+                                this.logger.error(
+                                    `Fetching dre state of relay registry from ${this.relayRegistryDreUri} failed with ${error.response?.status}, ${error}`,
+                                )
+                                throw 'Failed to fetch relay registry contract cache from dre'
+                            }),
+                        ),
+                )
+
+                if (status === 200) {
+                    this.dreState = data.state
+                    this.dreStateStamp = Date.now()
+                    this.logger.debug(
+                        `Refreshed relay registry dre state at ${this.dreStateStamp}`,
+                    )
+                }
+            } catch (e) {
+                this.logger.error('Exception when fetching relay registry dre cache', e.stack)
+            }
+        } else this.logger.debug('DRE cache warm, skipping refresh', this.dreStateStamp)
+    }
+
+    private async getStatus(fingerprint: string, address: string): Promise<RelayStatus> {
+        var claimable = false
+        var verified = false
+        
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            claimable = Object.keys(this.dreState.claimable).includes(fingerprint)
+                            && this.dreState.claimable[fingerprint] === address
+            verified = Object.keys(this.dreState.verified).includes(fingerprint)
+        } else {
+            claimable = await this.isClaimable(fingerprint, address)
+            verified = await this.isVerified(fingerprint)
+        }
+        
+        return { claimable, verified }
+    }
+
     public async verifyRelay(
         relay: ValidatedRelay,
     ): Promise<RelayVerificationResult> {
@@ -614,11 +672,7 @@ export class VerificationService {
             this.relayRegistryContract !== undefined &&
             this.operator !== undefined
         ) {
-            const verified: boolean = await this.isVerified(relay.fingerprint)
-            const claimable: boolean = await this.isClaimable(
-                relay.fingerprint,
-                relay.ator_address,
-            )
+            const { claimable, verified } = await this.getStatus(relay.fingerprint, relay.ator_address)
 
             this.logger.debug(
                 `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Claimable: ${claimable} Verified: ${verified}`,
