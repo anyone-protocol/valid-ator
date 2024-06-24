@@ -11,10 +11,14 @@ import { ConfigService } from '@nestjs/config'
 import { Wallet, ethers } from 'ethers'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import {
-    buildEvmSignature,
-    EvmSignatureVerificationServerPlugin,
+    EthereumSigner,
     // @ts-ignore
 } from 'warp-contracts-plugin-signature/server'
+// import {
+//     buildEvmSignature,
+//     EvmSignatureVerificationServerPlugin,
+//     // @ts-ignore
+// } from 'warp-contracts-plugin-signature/server'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
 import Bundlr from '@bundlr-network/client'
 import { Distribute } from './interfaces/distribution'
@@ -85,11 +89,10 @@ export class DistributionService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new Wallet(distributionOperatorKey)
+            const signer = new EthereumSigner(distributionOperatorKey)
 
             this.operator = {
                 address: signer.address,
-                key: distributionOperatorKey,
                 signer: signer,
             }
 
@@ -114,7 +117,7 @@ export class DistributionService {
                     dbLocation: '-distribution',
                 })
                     .use(new EthersExtension())
-                    .use(new EvmSignatureVerificationServerPlugin())
+                    
                 this.distributionWarp.use(
                     new StateUpdatePlugin(
                         distributionContractTxId,
@@ -132,6 +135,7 @@ export class DistributionService {
                         remoteStateSyncEnabled: true,
                         remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
                     })
+                    .connect(this.operator.signer)
             } else this.logger.error('Missing distribution contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
@@ -140,13 +144,8 @@ export class DistributionService {
         address: string,
     ): Promise<RewardAllocationData | undefined> {
         if (this.operator != undefined) {
-            const evmSig = await buildEvmSignature(this.operator.signer)
             try {
                 const response = await this.distributionContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
                     .viewState<Claimable, string>({
                         function: 'claimable',
                         address: address,
@@ -213,13 +212,8 @@ export class DistributionService {
     public async addScores(stamp: number, scores: Score[]): Promise<boolean> {
         if (this.operator != undefined) {
             if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.operator.signer)
                 try {
                     const response = await this.distributionContract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
                         .writeInteraction<AddScores>({
                             function: 'addScores',
                             timestamp: stamp.toString(),
@@ -265,13 +259,8 @@ export class DistributionService {
             return false
         }
 
-        const evmSig = await buildEvmSignature(this.operator.signer)
         try {
             const response = await this.distributionContract
-                .connect({
-                    signer: evmSig,
-                    type: 'ethereum',
-                })
                 .writeInteraction<Distribute>({
                     function: 'distribute',
                     timestamp: stamp.toString(),

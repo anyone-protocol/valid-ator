@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
+import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
     AddRegistrationCredit,
@@ -9,10 +9,8 @@ import {
     SetFamily,
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
-import { AddressLike, Wallet } from 'ethers'
 import {
-    buildEvmSignature,
-    EvmSignatureVerificationServerPlugin,
+    EthereumSigner,
     // @ts-ignore
 } from 'warp-contracts-plugin-signature/server'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
@@ -90,11 +88,10 @@ export class VerificationService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new Wallet(relayRegistryOperatorKey)
+            const signer = new EthereumSigner(relayRegistryOperatorKey)
 
             this.operator = {
                 address: signer.address,
-                key: relayRegistryOperatorKey,
                 signer: signer,
             }
 
@@ -117,7 +114,6 @@ export class VerificationService {
                     dbLocation: '-relay-registry-testnet',
                 })
                     .use(new EthersExtension())
-                    .use(new EvmSignatureVerificationServerPlugin())
                 this.relayRegistryWarp.use(
                     new StateUpdatePlugin(registryTxId, this.relayRegistryWarp),
                 )
@@ -132,6 +128,7 @@ export class VerificationService {
                         remoteStateSyncEnabled: true,
                         remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
                     })
+                    .connect(this.operator.signer)
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
@@ -145,17 +142,12 @@ export class VerificationService {
                 try {
                     // TODO: make use of fingerprint
 
-                    const evmSig = await buildEvmSignature(this.operator.signer)
                     const response = await this.relayRegistryContract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
                         .writeInteraction<AddRegistrationCredit>({
                             function: 'addRegistrationCredit',
                             address: address,
                         }, {
-                            tags: [{name: 'EVM-TX', value: tx}]
+                            tags: [new Tag('EVM-TX', tx)]
                         })
 
                     this.logger.log(
@@ -192,7 +184,7 @@ export class VerificationService {
             fingerprint: fingerprint,
         })
 
-        return interactionResult.result
+        return interactionResult?.result??false
     }
 
     public async isClaimable(
@@ -208,7 +200,7 @@ export class VerificationService {
             address: address,
         })
 
-        return interactionResult.result
+        return interactionResult?.result??false
     }
 
     public async getFamily(fingerprint: string): Promise<string[]> {
@@ -588,12 +580,7 @@ export class VerificationService {
                 this.logger.debug(
                     `Starting to set relay family for [${relay.fingerprint}]`,
                 )
-                const evmSig = await buildEvmSignature(this.operator.signer)
                 const response = await this.relayRegistryContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
                     .writeInteraction<SetFamily>({
                         function: 'setFamily',
                         fingerprint: relay.fingerprint,
@@ -653,12 +640,7 @@ export class VerificationService {
 
             if (this.isLive === 'true') {
                 try {
-                    const evmSig = await buildEvmSignature(this.operator.signer)
                     const response = await this.relayRegistryContract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
                         .writeInteraction<AddClaimable>({
                             function: 'addClaimable',
                             fingerprint: relay.fingerprint,
