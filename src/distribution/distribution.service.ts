@@ -214,7 +214,7 @@ export class DistributionService {
         if (this.operator != undefined) {
             if (this.isLive === 'true') {
                 try {
-                    await setTimeout(2000)
+                    await setTimeout(4000)
                     const response = await this.distributionContract
                         .writeInteraction<AddScores>({
                             function: 'addScores',
@@ -262,7 +262,7 @@ export class DistributionService {
         }
 
         try {
-            await setTimeout(2000)
+            await setTimeout(4000)
             const response = await this.distributionContract
                 .writeInteraction<Distribute>({
                     function: 'distribute',
