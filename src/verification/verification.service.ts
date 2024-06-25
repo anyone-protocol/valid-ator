@@ -624,9 +624,9 @@ export class VerificationService {
         return 'OK'
     }
 
-    private async refreshDreState() {
+    private async refreshDreState(forced: boolean = false) {
         const now = Date.now()
-        if (this.dreStateStamp == undefined || now > (this.dreStateStamp + 60_000)) {
+        if (forced || this.dreStateStamp == undefined || now > (this.dreStateStamp + 60_000)) {
             try {
                 const { headers, status, data } = await firstValueFrom(
                     this.httpService

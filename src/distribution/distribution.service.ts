@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { firstValueFrom, catchError } from 'rxjs'
 import { DistributionData } from './schemas/distribution-data'
 import { ScoreData } from './schemas/score-data'
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddScores,
     DistributionState,
+    PreviousDistributionSummary,
     Score,
 } from 'src/distribution/interfaces/distribution'
 import { ConfigService } from '@nestjs/config'
@@ -26,6 +28,9 @@ import { RewardAllocationData } from './dto/reward-allocation-data'
 import { Claimable } from 'src/verification/interfaces/relay-registry'
 import { DistributionCompletedResults } from './dto/distribution-completed-result'
 import { setTimeout } from 'node:timers/promises'
+import { AxiosError } from 'axios'
+import { DreDistributionResponse } from './interfaces/dre-relay-registry-response'
+import { HttpService } from '@nestjs/axios'
 
 @Injectable()
 export class DistributionService {
@@ -40,6 +45,11 @@ export class DistributionService {
     private distributionWarp: Warp
     private distributionContract: Contract<DistributionState>
 
+    private distributionDreUri: string
+    private dreState: DistributionState | undefined
+    private dreStateStamp: number | undefined
+    private dreRefreshDelay: number = 2_000
+
     private bundlr
 
     constructor(
@@ -51,6 +61,7 @@ export class DistributionService {
             IRYS_NODE: string
             IRYS_NETWORK: string
         }>,
+        private readonly httpService: HttpService,
     ) {
         LoggerFactory.INST.logLevel('error')
 
@@ -129,6 +140,8 @@ export class DistributionService {
                 const dreHostname = this.config.get<string>('DRE_HOSTNAME', {
                     infer: true,
                 })
+
+                this.distributionDreUri = `${dreHostname}?id=${distributionContractTxId}`
 
                 this.distributionContract = this.distributionWarp
                     .contract<DistributionState>(distributionContractTxId)
@@ -285,14 +298,63 @@ export class DistributionService {
         }
     }
 
+    private async refreshDreState(forced: boolean = false) {
+        const now = Date.now()
+        if (forced || this.dreStateStamp == undefined || now > (this.dreStateStamp + this.dreRefreshDelay)) {
+            try {
+                const { headers, status, data } = await firstValueFrom(
+                    this.httpService
+                        .get<DreDistributionResponse>(this.distributionDreUri)
+                        .pipe(
+                            catchError((error: AxiosError) => {
+                                this.logger.error(
+                                    `Fetching dre state of distribution from ${this.distributionDreUri} failed with ${error.response?.status}, ${error}`,
+                                )
+                                throw 'Failed to fetch distribution contract cache from dre'
+                            }),
+                        ),
+                )
+
+                if (status === 200) {
+                    this.dreState = data.state
+                    this.dreStateStamp = Date.now()
+                    this.logger.debug(
+                        `Refreshed distribution dre state at ${this.dreStateStamp}`,
+                    )
+                }
+            } catch (e) {
+                this.logger.error('Exception when fetching relay registry dre cache', e.stack)
+            }
+        } else this.logger.debug(`DRE cache warm ${now - this.dreStateStamp}, skipping refresh`)
+    }
+
+    private async fetchDistribution(stamp: number): Promise<PreviousDistributionSummary | undefined> {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            var result = this.dreState.previousDistributions[stamp]
+            var tries = 0
+            while (result == undefined && tries < 3) {
+                await setTimeout(this.dreRefreshDelay * 1.1)
+                await this.refreshDreState()
+                result = this.dreState.previousDistributions[stamp]
+                tries++
+            }
+
+            return result
+        } else {
+            const {
+                cachedValue: { state: { previousDistributions } }
+            } = await this.distributionContract.readState()
+            return previousDistributions[stamp]
+        }
+    }
+
     public async persistDistribution(stamp: number): Promise<
         Pick<DistributionData, 'summary' | 'summary_tx'>
     > {
         try {
-            const {
-                cachedValue: { state: { previousDistributions } }
-            } = await this.distributionContract.readState()
-            const summary = previousDistributions[stamp]
+            const summary = await this.fetchDistribution(stamp)
+            
 
             if (!this.bundlr) {
                 this.logger.error(
