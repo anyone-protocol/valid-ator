@@ -27,6 +27,7 @@ import { RelayValidationStatsDto } from './dto/relay-validation-stats'
 import { HttpService } from '@nestjs/axios'
 import { AxiosError } from 'axios'
 import { DreRelayRegistryResponse } from './interfaces/dre-relay-registry-response'
+import { setTimeout } from 'node:timers/promises'
 
 @Injectable()
 export class VerificationService {
@@ -152,7 +153,6 @@ export class VerificationService {
             if (this.isLive === 'true') {
                 try {
                     // TODO: make use of fingerprint
-
                     const response = await this.relayRegistryContract
                         .writeInteraction<AddRegistrationCredit>({
                             function: 'addRegistrationCredit',
@@ -593,6 +593,7 @@ export class VerificationService {
 
         if (this.isLive === 'true') {
             try {
+                await setTimeout(2000)
                 this.logger.debug(
                     `Starting to set relay family for [${relay.fingerprint}]`,
                 )
@@ -699,6 +700,7 @@ export class VerificationService {
 
             if (this.isLive === 'true') {
                 try {
+                    await setTimeout(2000)
                     const response = await this.relayRegistryContract
                         .writeInteraction<AddClaimable>({
                             function: 'addClaimable',

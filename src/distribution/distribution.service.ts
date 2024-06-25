@@ -25,6 +25,7 @@ import { Distribute } from './interfaces/distribution'
 import { RewardAllocationData } from './dto/reward-allocation-data'
 import { Claimable } from 'src/verification/interfaces/relay-registry'
 import { DistributionCompletedResults } from './dto/distribution-completed-result'
+import { setTimeout } from 'node:timers/promises'
 
 @Injectable()
 export class DistributionService {
@@ -213,6 +214,7 @@ export class DistributionService {
         if (this.operator != undefined) {
             if (this.isLive === 'true') {
                 try {
+                    await setTimeout(2000)
                     const response = await this.distributionContract
                         .writeInteraction<AddScores>({
                             function: 'addScores',
@@ -260,6 +262,7 @@ export class DistributionService {
         }
 
         try {
+            await setTimeout(2000)
             const response = await this.distributionContract
                 .writeInteraction<Distribute>({
                     function: 'distribute',
