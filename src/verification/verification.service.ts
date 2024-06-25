@@ -593,7 +593,7 @@ export class VerificationService {
 
         if (this.isLive === 'true') {
             try {
-                await setTimeout(4000)
+                await setTimeout(5000)
                 this.logger.debug(
                     `Starting to set relay family for [${relay.fingerprint}]`,
                 )
@@ -700,7 +700,7 @@ export class VerificationService {
 
             if (this.isLive === 'true') {
                 try {
-                    await setTimeout(4000)
+                    await setTimeout(5000)
                     const response = await this.relayRegistryContract
                         .writeInteraction<AddClaimable>({
                             function: 'addClaimable',

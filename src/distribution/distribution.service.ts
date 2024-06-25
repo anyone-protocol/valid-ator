@@ -48,7 +48,7 @@ export class DistributionService {
     private distributionDreUri: string
     private dreState: DistributionState | undefined
     private dreStateStamp: number | undefined
-    private dreRefreshDelay: number = 2_000
+    private dreRefreshDelay: number = 2_500
 
     private bundlr
 
@@ -227,7 +227,7 @@ export class DistributionService {
         if (this.operator != undefined) {
             if (this.isLive === 'true') {
                 try {
-                    await setTimeout(4000)
+                    await setTimeout(5000)
                     const response = await this.distributionContract
                         .writeInteraction<AddScores>({
                             function: 'addScores',
@@ -275,7 +275,7 @@ export class DistributionService {
         }
 
         try {
-            await setTimeout(4000)
+            await setTimeout(5000)
             const response = await this.distributionContract
                 .writeInteraction<Distribute>({
                     function: 'distribute',
@@ -334,7 +334,7 @@ export class DistributionService {
             var result = this.dreState.previousDistributions[stamp]
             var tries = 0
             while (result == undefined && tries < 3) {
-                await setTimeout(this.dreRefreshDelay * 1.1)
+                await setTimeout(this.dreRefreshDelay * 2)
                 await this.refreshDreState()
                 result = this.dreState.previousDistributions[stamp]
                 tries++
