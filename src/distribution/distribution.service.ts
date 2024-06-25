@@ -5,8 +5,8 @@ import { ScoreData } from './schemas/score-data'
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddScores,
+    DistributionResult,
     DistributionState,
-    PreviousDistributionSummary,
     Score,
 } from 'src/distribution/interfaces/distribution'
 import { ConfigService } from '@nestjs/config'
@@ -328,7 +328,7 @@ export class DistributionService {
         } else this.logger.debug(`DRE cache warm ${now - this.dreStateStamp}, skipping refresh`)
     }
 
-    private async fetchDistribution(stamp: number): Promise<PreviousDistributionSummary | undefined> {
+    private async fetchDistribution(stamp: number): Promise<DistributionResult | undefined> {
         await this.refreshDreState()
         if (this.dreState != undefined) {
             var result = this.dreState.previousDistributions[stamp]
@@ -392,10 +392,10 @@ export class DistributionService {
                     value: 'application/json',
                 },
                 { name: 'Entity-Type', value: 'distribution/summary' },
-                { name: 'Total-Score', value: summary.totalScore },
+                { name: 'Total-Score', value: summary.totalNetworkScore },
                 {
                     name: 'Total-Distributed',
-                    value: summary.totalDistributed
+                    value: summary.totalDistributedTokens
                 },
                 { name: 'Time-Elapsed', value: summary.timeElapsed },
                 {
@@ -404,8 +404,8 @@ export class DistributionService {
                 }
             ]
 
-            if (summary.bonusTokens) {
-                tags.push({ name: 'Bonus-Tokens', value: summary.bonusTokens })
+            if (summary.bonuses && summary.bonuses.hardware) {
+                tags.push({ name: 'Bonus-Tokens', value: summary.bonuses.hardware.distributedTokens })
             }
 
             const { id: summary_tx } = await this.bundlr.upload(

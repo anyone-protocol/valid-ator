@@ -3,7 +3,7 @@ import { firstValueFrom, catchError } from 'rxjs'
 import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
-    AddRegistrationCredit,
+    AddRegistrationCredits,
     IsClaimable,
     IsVerified,
     RelayRegistryState,
@@ -154,15 +154,15 @@ export class VerificationService {
                 try {
                     // TODO: make use of fingerprint
                     const response = await this.relayRegistryContract
-                        .writeInteraction<AddRegistrationCredit>({
-                            function: 'addRegistrationCredit',
-                            address: address,
+                        .writeInteraction<AddRegistrationCredits>({
+                            function: 'addRegistrationCredits',
+                            credits: [{ address, fingerprint }]
                         }, {
                             tags: [new Tag('EVM-TX', tx)]
                         })
 
                     this.logger.log(
-                        `Added registration credit to [${address}]: ${response?.originalTxId}`,
+                        `Added registration credit to [${address}|${fingerprint}]: ${response?.originalTxId}`,
                     )
                 } catch (error) {
                     this.logger.error(

@@ -11,27 +11,47 @@ export type Score = {
     fingerprint: string
 }
 
-export class PreviousDistributionSummary {
-    totalScore: string
-    totalDistributed: string
+export class DistributionResult {
     timeElapsed: string
     tokensDistributedPerSecond: string
-    bonusTokens?: string
-}
-
-export type DistributionState = OwnableState &
-    EvolvableState & {
-        distributionAmount: string
-        pendingDistributions: {
-            [timestamp: string]: Score[]
-        }
-        claimable: {
-            [address: string]: string
-        }
-        previousDistributions: {
-            [timestamp: string]: PreviousDistributionSummary
-        }
+    baseNetworkScore: string
+    baseDistributedTokens: string
+    bonuses: {
+      hardware: {
+        enabled: boolean
+        tokensDistributedPerSecond: string
+        networkScore: string
+        distributedTokens: string
+      }
     }
+    totalTokensDistributedPerSecond: string
+    totalNetworkScore: string
+    totalDistributedTokens: string
+  }
+
+export type DistributionState = OwnableState & EvolvableState & {
+    tokensDistributedPerSecond: string
+    bonuses: {
+      hardware: {
+        enabled: boolean
+        tokensDistributedPerSecond: string
+        fingerprints: Fingerprint[]
+      }
+    }
+    multipliers: {
+      [fingerprint: Fingerprint]: string
+    }
+    pendingDistributions: {
+      [timestamp: string]: { scores: Score[] }
+    }
+    claimable: {
+      [address: EvmAddress]: string
+    }
+    previousDistributions: {
+      [timestamp: string]: DistributionResult
+    }
+    previousDistributionsTrackingLimit: number
+  }
 
 export interface SetDistributionAmount extends ContractFunctionInput {
     function: 'setDistributionAmount'

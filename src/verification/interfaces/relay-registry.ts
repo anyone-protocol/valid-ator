@@ -7,26 +7,36 @@ export type EvmAddress = string
 export type PublicKey = string
 
 export type RelayRegistryState = OwnableState & EvolvableState & {
-    claimable: { [fingerprint in Fingerprint as string]: EvmAddress }
-    verified: { [fingerprint in Fingerprint as string]: EvmAddress }
-    registrationCredits: { [address in EvmAddress as string]: number }
-    blockedAddresses: EvmAddress[]
-    families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
-    registrationCreditsRequired: boolean
-    encryptionPublicKey: string
-    serials: {
-      [fingerprint in Fingerprint as string]: {
-        serial?: string
-        verified?: boolean
-      }
-    }
-    familyRequired: boolean
+  claimable: { [fingerprint in Fingerprint as string]: EvmAddress }
+  verified: { [fingerprint in Fingerprint as string]: EvmAddress }
+  registrationCredits: {
+    [address in EvmAddress as string]: Fingerprint[]
   }
+  blockedAddresses: EvmAddress[]
+  families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
+  registrationCreditsRequired: boolean
+  encryptionPublicKey: string
+  verifiedHardware: Set<Fingerprint>
+  familyRequired: boolean
+  nicknames: { [fingerprint in Fingerprint as string]: string }
+}
 
 export interface AddClaimable extends ContractFunctionInput {
-    function: 'addClaimable'
+  function: 'addClaimable'
+  fingerprint: Fingerprint
+  address: EvmAddress
+  hardwareVerified?: boolean
+  nickname?: string
+}
+
+export interface AddClaimableBatched extends ContractFunctionInput {
+  function: 'addClaimableBatched'
+  relays: {
     fingerprint: Fingerprint
     address: EvmAddress
+    hardwareVerified?: boolean
+    nickname?: string
+  }[]
 }
 
 export interface RemoveClaimable extends ContractFunctionInput {
@@ -70,9 +80,9 @@ export interface IsVerified extends ContractFunctionInput {
     fingerprint: Fingerprint
 }
 
-export interface AddRegistrationCredit extends ContractFunctionInput {
-    function: 'addRegistrationCredit'
-    address: EvmAddress
+export interface AddRegistrationCredits extends ContractFunctionInput {
+  function: 'addRegistrationCredits'
+  credits: { address: EvmAddress, fingerprint: Fingerprint }[]
 }
 
 export interface BlockAddress extends ContractFunctionInput {
@@ -120,10 +130,4 @@ export interface GetVerifiedRelays extends ContractFunctionInput {
 export interface ToggleFamilyRequirement extends ContractFunctionInput {
   function: 'toggleFamilyRequirement'
   enabled: boolean
-}
-
-export interface RegisterSerial extends ContractFunctionInput {
-  function: 'registerSerial'
-  fingerprint: string
-  serial: string
 }
