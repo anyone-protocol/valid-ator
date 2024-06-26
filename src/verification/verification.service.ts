@@ -158,7 +158,7 @@ export class VerificationService {
                             function: 'addRegistrationCredits',
                             credits: [{ address, fingerprint }]
                         }, {
-                            tags: [new Tag('EVM-TX', tx)]
+                            tags:  [new Tag('EVM-TX', tx)]
                         })
 
                     this.logger.log(
@@ -167,7 +167,7 @@ export class VerificationService {
                 } catch (error) {
                     this.logger.error(
                         `Exception when adding registration credit [${address}]`,
-                        error,
+                        error.stack,
                     )
                     return false
                 }
@@ -272,7 +272,7 @@ export class VerificationService {
                     return response.id
                 } catch (error) {
                     this.logger.warn(
-                        `Exception when storing relay hex map: ${error}`,
+                        `Exception when storing relay hex map: ${error}`, error.stack
                     )
                 }
             } else {
