@@ -162,7 +162,7 @@ export class VerificationService {
                         })
 
                     this.logger.log(
-                        `Added registration credit to [${address}|${fingerprint}]: ${response?.originalTxId}`,
+                        `Added registration credit to [${address}|${fingerprint}]: ${response?.originalTxId??"no-tx-id"}`,
                     )
                 } catch (error) {
                     this.logger.error(

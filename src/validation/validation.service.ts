@@ -63,7 +63,7 @@ export class ValidationService {
                         .pipe(
                             catchError((error: AxiosError) => {
                                 this.logger.error(
-                                    `Fetching relays from ${detailsUri} failed with ${error.response?.status}, ${error}`,
+                                    `Fetching relays from ${detailsUri} failed with ${error.response?.status??"?"}, ${error}`,
                                 )
                                 throw 'Failed to fetch relay details'
                             }),
