@@ -6,6 +6,10 @@ import {
     VerificationData,
     VerificationDataSchema,
 } from './schemas/verification-data'
+import {
+    VerifiedHardware,
+    VerifiedHardwareSchema
+} from './schemas/verified-hardware'
 
 describe('VerificationService', () => {
     let service: VerificationService
@@ -21,6 +25,10 @@ describe('VerificationService', () => {
                     {
                         name: VerificationData.name,
                         schema: VerificationDataSchema,
+                    },
+                    {
+                        name: VerifiedHardware.name,
+                        schema: VerifiedHardwareSchema
                     },
                 ]),
             ],

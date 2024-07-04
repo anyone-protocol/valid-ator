@@ -6,12 +6,17 @@ import {
     VerificationData,
     VerificationDataSchema,
 } from './schemas/verification-data'
+import {
+    VerifiedHardware,
+    VerifiedHardwareSchema
+} from './schemas/verified-hardware'
 
 @Module({
     imports: [
         ConfigModule,
         MongooseModule.forFeature([
             { name: VerificationData.name, schema: VerificationDataSchema },
+            { name: VerifiedHardware.name, schema: VerifiedHardwareSchema },
         ]),
     ],
     providers: [VerificationService],

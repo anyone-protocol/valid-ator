@@ -121,9 +121,3 @@ export interface ToggleFamilyRequirement extends ContractFunctionInput {
   function: 'toggleFamilyRequirement'
   enabled: boolean
 }
-
-export interface RegisterSerial extends ContractFunctionInput {
-  function: 'registerSerial'
-  fingerprint: string
-  serial: string
-}
