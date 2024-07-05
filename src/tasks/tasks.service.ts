@@ -102,12 +102,12 @@ export class TasksService implements OnApplicationBootstrap {
                             data: validation.validated_at,
                             opts: TasksService.jobOpts,
                             children: [
-                                ...validation.relays.map(relay => ({
-                                    name: 'verify-relay',
+                                {
+                                    name: 'verify-relays',
                                     queueName: 'verification-queue',
                                     opts: TasksService.jobOpts,
-                                    data: relay
-                                })),
+                                    data: validation.relays
+                                },
                                 {
                                     name: 'set-relay-families',
                                     queueName: 'verification-queue',

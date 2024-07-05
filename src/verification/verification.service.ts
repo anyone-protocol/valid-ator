@@ -3,6 +3,7 @@ import { firstValueFrom, catchError } from 'rxjs'
 import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
+    AddClaimableBatched,
     AddRegistrationCredits,
     IsClaimable,
     IsVerified,
@@ -186,33 +187,33 @@ export class VerificationService {
         }
     }
 
-    private async isVerified(fingerprint: string): Promise<boolean> {
-        const interactionResult = await this.relayRegistryContract.viewState<
-            IsVerified,
-            boolean
-        >({
-            function: 'isVerified',
-            fingerprint: fingerprint,
-        })
+    // private async isVerified(fingerprint: string): Promise<boolean> {
+    //     const interactionResult = await this.relayRegistryContract.viewState<
+    //         IsVerified,
+    //         boolean
+    //     >({
+    //         function: 'isVerified',
+    //         fingerprint: fingerprint,
+    //     })
 
-        return interactionResult?.result??false
-    }
+    //     return interactionResult?.result??false
+    // }
 
-    private async isClaimable(
-        fingerprint: string,
-        address: string,
-    ): Promise<boolean> {
-        const interactionResult = await this.relayRegistryContract.viewState<
-            IsClaimable,
-            boolean
-        >({
-            function: 'isClaimable',
-            fingerprint: fingerprint,
-            address: address,
-        })
+    // private async isClaimable(
+    //     fingerprint: string,
+    //     address: string,
+    // ): Promise<boolean> {
+    //     const interactionResult = await this.relayRegistryContract.viewState<
+    //         IsClaimable,
+    //         boolean
+    //     >({
+    //         function: 'isClaimable',
+    //         fingerprint: fingerprint,
+    //         address: address,
+    //     })
 
-        return interactionResult?.result??false
-    }
+    //     return interactionResult?.result ?? false
+    // }
 
     public async getFamilies(): Promise<RelayRegistryState['families']> {
         await this.refreshDreState()
@@ -577,25 +578,40 @@ export class VerificationService {
 
     public async setRelayFamilies(
         relays: ValidatedRelay[]
-    ): Promise<RelayVerificationResult> {
+    ): Promise<VerificationResults> {
+        const results: VerificationResults = []
+
         if (!this.relayRegistryContract) {
             this.logger.error('Relay registry contract not initialized')
 
-            return 'Failed'
+            return relays.map(relay => ({ relay, result: 'Failed' }))
         }
 
         if (!this.operator) {
             this.logger.error('Relay registry operator not defined')
 
-            return 'Failed'
+            return relays.map(relay => ({ relay, result: 'Failed' }))
         }
 
         // NB: Only update relay families that need to be updated
         const families = await this.getFamilies()
-        const relaysWithFamilyUpdates = relays.filter(
-            r => r.family.slice().sort().join('')
-                !== families[r.fingerprint].slice().sort().join('')
-        )
+        const relaysWithFamilyUpdates: ValidatedRelay[] = []
+        for (const relay of relays) {
+            const incomingFamilyHash = relay.family.slice().sort().join('')
+            const contractFamilyHash = families[relay.fingerprint]
+                .slice()
+                .sort()
+                .join('')
+            
+            if (incomingFamilyHash !== contractFamilyHash) {
+                relaysWithFamilyUpdates.push(relay)
+            } else {
+                results.push({
+                    relay,
+                    result: 'AlreadyVerified' // TODO -> 'AlreadySetFamily' ?
+                })
+            }
+        }
 
         if (this.isLive === 'true') {
             try {
@@ -621,7 +637,9 @@ export class VerificationService {
                     error.stack,
                 )
 
-                return 'Failed'
+                return results.concat(
+                    relays.map(relay => ({ relay, result: 'Failed' }))
+                )
             }
         } else {
             this.logger.warn(
@@ -629,7 +647,9 @@ export class VerificationService {
             )
         }
 
-        return 'OK'
+        return results.concat(
+            relaysWithFamilyUpdates.map(relay => ({ relay, result: 'OK' }))
+        )
     }
 
     private async refreshDreState(forced: boolean = false) {
@@ -662,83 +682,117 @@ export class VerificationService {
         } else this.logger.debug(`DRE cache warm ${now - this.dreStateStamp}, skipping refresh`)
     }
 
-    private async getStatus(fingerprint: string, address: string): Promise<RelayStatus> {
-        var claimable = false
-        var verified = false
-        
+    private async getRelayRegistryStatuses(): Promise<
+        Pick<RelayRegistryState, 'claimable' | 'verified'>
+    > {
         await this.refreshDreState()
         if (this.dreState != undefined) {
-            claimable = Object.keys(this.dreState.claimable).includes(fingerprint)
-                            && this.dreState.claimable[fingerprint] === address
-            verified = Object.keys(this.dreState.verified).includes(fingerprint)
+            const { claimable, verified } = this.dreState
+
+            return { claimable, verified }
         } else {
-            claimable = await this.isClaimable(fingerprint, address)
-            verified = await this.isVerified(fingerprint)
+            const {
+                cachedValue: { state: { claimable, verified } }
+            } = await this.relayRegistryContract.readState()
+
+            return { claimable, verified }
         }
-        
-        return { claimable, verified }
     }
 
-    public async verifyRelay(
-        relay: ValidatedRelay,
-    ): Promise<RelayVerificationResult> {
-        if (
-            this.relayRegistryContract !== undefined &&
-            this.operator !== undefined
-        ) {
-            const { claimable, verified } = await this.getStatus(relay.fingerprint, relay.ator_address)
+    public async verifyRelays(
+        relays: ValidatedRelay[]
+    ): Promise<VerificationResults> {
+        const results: VerificationResults = []
 
-            this.logger.debug(
-                `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Claimable: ${claimable} Verified: ${verified}`,
+        if (!this.relayRegistryContract) {
+            this.logger.error('Relay registry contract not initialized')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        if (!this.operator) {
+            this.logger.error('Relay registry operator not defined')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        // NB: Filter out already claimed or verified relays
+        const {
+            claimable,
+            verified
+        } = await this.getRelayRegistryStatuses()
+        const alreadyClaimableFingerprints = Object.keys(claimable)
+        const alreadyVerifiedFingerprints = Object.keys(verified)
+        const relaysToAddAsClaimable = []
+        for (const relay of relays) {
+            const isAlreadyClaimable = alreadyClaimableFingerprints.includes(
+                relay.fingerprint
+            )
+            const isAlreadyVerified = alreadyVerifiedFingerprints.includes(
+                relay.fingerprint
             )
 
-            if (verified) {
-                this.logger.debug(
-                    `Already verified relay [${relay.fingerprint}]`,
-                )
-                return 'AlreadyVerified'
-            }
+            this.logger.debug(
+                `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Claimable: ${isAlreadyClaimable} Verified: ${isAlreadyVerified}`,
+            )
 
-            if (claimable) {
+            if (isAlreadyClaimable) {
                 this.logger.debug(
                     `Already registered (can be claimed) relay [${relay.fingerprint}]`,
                 )
-                return 'AlreadyRegistered'
-            }
-
-            if (this.isLive === 'true') {
-                try {
-                    await setTimeout(5000)
-                    const response = await this.relayRegistryContract
-                        .writeInteraction<AddClaimable>({
-                            function: 'addClaimable',
-                            fingerprint: relay.fingerprint,
-                            address: relay.ator_address,
-                            nickname: relay.nickname
-                        })
-
-                    this.logger.log(
-                        `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
-                    )
-                } catch (error) {
-                    this.logger.error(
-                        `Exception when verifying relay [${relay.fingerprint}]`,
-                        error.stack,
-                    )
-                    return 'Failed'
-                }
+                results.push({ relay, result: 'AlreadyRegistered' })
+            } else if (isAlreadyVerified) {
+                this.logger.debug(
+                    `Already verified relay [${relay.fingerprint}]`,
+                )
+                results.push({ relay, result: 'AlreadyVerified' })
             } else {
-                this.logger.warn(
-                    `NOT LIVE - skipped contract call to add a claimable relay [${relay.fingerprint}]`,
+                relaysToAddAsClaimable.push(relay)
+            }
+        }
+
+        if (this.isLive === 'true') {
+            try {
+                await setTimeout(5000)
+                const response = await this.relayRegistryContract
+                    .writeInteraction<AddClaimableBatched>({
+                        function: 'addClaimableBatched',
+                        relays: relaysToAddAsClaimable.map(
+                            ({
+                                fingerprint,
+                                ator_address,
+                                nickname
+                            }) => ({
+                                fingerprint,
+                                address: ator_address,
+                                nickname
+                            })
+                        )
+                    })
+
+                this.logger.log(
+                    `Added ${relaysToAddAsClaimable.length} claimable relays: ${response?.originalTxId}`,
+                )
+            } catch (error) {
+                this.logger.error(
+                    `Exception when verifying relays [${relaysToAddAsClaimable.map(r => r.fingerprint)}]`,
+                    error.stack,
+                )
+
+                return results.concat(
+                    relaysToAddAsClaimable.map(
+                        relay => ({ relay, result: 'Failed' })
+                    )
                 )
             }
-
-            return 'OK'
         } else {
-            this.logger.error(
-                'Contract not initialized or validator key not defined',
+            this.logger.warn(
+                `NOT LIVE - skipped contract call to add ${relaysToAddAsClaimable.length} claimable relays`,
             )
-            return 'Failed'
         }
+
+        return results.concat(
+            relaysToAddAsClaimable.map(relay => ({ relay, result: 'OK' }))
+        )
     }
 }
