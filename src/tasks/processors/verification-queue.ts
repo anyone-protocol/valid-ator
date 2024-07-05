@@ -23,7 +23,7 @@ export class VerificationQueue extends WorkerHost {
     public static readonly JOB_PERSIST_VERIFICATION = 'persist-verification'
     public static readonly JOB_RECOVER_PERSIST_VERIFICATION =
         'recover-persist-verification'
-    public static readonly JOB_SET_RELAY_FAMILY = 'set-relay-family'
+    public static readonly JOB_SET_RELAY_FAMILIES = 'set-relay-families'
 
     constructor(
         private readonly tasks: TasksService,
@@ -68,23 +68,17 @@ export class VerificationQueue extends WorkerHost {
 
                 return [verifiedRelay]
 
-            case VerificationQueue.JOB_SET_RELAY_FAMILY:
+            case VerificationQueue.JOB_SET_RELAY_FAMILIES:
                 let result: RelayVerificationResult = 'Failed'
-                const relay = job.data as ValidatedRelay
+                const relays = job.data as ValidatedRelay[]
                 try {
-                    if (!relay || !relay.fingerprint || !relay.family) {
-                        this.logger.log(
-                            `Incorrect family [${relay.fingerprint}]`
-                        )
-                        return []
-                    }
+                    result = await this.verification.setRelayFamilies(relays)
 
-                    result = await this.verification.setRelayFamily(relay)
-
-                    return [{ relay, result }]
+                    // return [{ relay, result }]
+                    return relays.map(relay => ({ relay, result }))
                 } catch (error) {
                     this.logger.error(
-                        `Exception while setting relay family for [${relay.fingerprint}]`,
+                        `Exception while setting relay families for [${relays.map(r => r.fingerprint)}]`,
                         error.stack
                     )
                 }

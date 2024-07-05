@@ -7,7 +7,7 @@ import {
     IsClaimable,
     IsVerified,
     RelayRegistryState,
-    SetFamily,
+    SetFamilies
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
 import {
@@ -214,6 +214,18 @@ export class VerificationService {
         return interactionResult?.result??false
     }
 
+    public async getFamilies(): Promise<RelayRegistryState['families']> {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            return this.dreState?.families || {}
+        } else {
+            const {
+                cachedValue: { state }
+            } = await this.relayRegistryContract.readState()
+            return state.families || {}
+        }
+    }
+
     public async getFamily(fingerprint: string): Promise<string[]> {
         await this.refreshDreState()
         if (this.dreState != undefined) {
@@ -224,7 +236,6 @@ export class VerificationService {
             } = await this.relayRegistryContract.readState()
             return (state.families || {})[fingerprint] || []
         }
-        
     }
 
     async storeRelayHexMap(data: VerificationResults) {
@@ -564,8 +575,8 @@ export class VerificationService {
         this.logger.log(`Total verified relays: ${verifiedRelays.length}`)
     }
 
-    public async setRelayFamily(
-        relay: ValidatedRelay
+    public async setRelayFamilies(
+        relays: ValidatedRelay[]
     ): Promise<RelayVerificationResult> {
         if (!this.relayRegistryContract) {
             this.logger.error('Relay registry contract not initialized')
@@ -579,37 +590,34 @@ export class VerificationService {
             return 'Failed'
         }
 
-        // NB: check if family needs to be updated
-        const family: string[] = await this.getFamily(relay.fingerprint)
-        if (
-            relay.family.slice().sort().join() === family.slice().sort().join()
-        ) {
-            this.logger.debug(
-                `Already set family for relay [${relay.fingerprint}]`
-            )
-
-            return 'OK'
-        }
+        // NB: Only update relay families that need to be updated
+        const families = await this.getFamilies()
+        const relaysWithFamilyUpdates = relays.filter(
+            r => r.family.slice().sort().join('')
+                !== families[r.fingerprint].slice().sort().join('')
+        )
 
         if (this.isLive === 'true') {
             try {
                 await setTimeout(5000)
                 this.logger.debug(
-                    `Starting to set relay family for [${relay.fingerprint}]`,
+                    `Starting to set relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
                 )
                 const response = await this.relayRegistryContract
-                    .writeInteraction<SetFamily>({
-                        function: 'setFamily',
-                        fingerprint: relay.fingerprint,
-                        family: relay.family
+                    .writeInteraction<SetFamilies>({
+                        function: 'setFamilies',
+                        families: relaysWithFamilyUpdates.map(
+                            ({ fingerprint, family }) =>
+                                ({ fingerprint, family })
+                        )
                     })
 
                 this.logger.log(
-                    `Set relay family [${relay.fingerprint}]: ${response?.originalTxId}`,
+                    `Set relay families for ${relaysWithFamilyUpdates.length} relays: ${response?.originalTxId}`,
                 )
             } catch (error) {
                 this.logger.error(
-                    `Exception setting relay family [${relay.fingerprint}]`,
+                    `Exception setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
                     error.stack,
                 )
 
@@ -617,7 +625,7 @@ export class VerificationService {
             }
         } else {
             this.logger.warn(
-                `NOT LIVE - skipped setting relay family [${relay.fingerprint}]`
+                `NOT LIVE - skipped setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`
             )
         }
 

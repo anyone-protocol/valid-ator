@@ -138,10 +138,3 @@ export interface ToggleFamilyRequirement extends ContractFunctionInput {
   function: 'toggleFamilyRequirement'
   enabled: boolean
 }
-
-// TODO -> Remove this
-export interface SetFamily extends ContractFunctionInput {
-  function: 'setFamily',
-  fingerprint: Fingerprint,
-  family: Fingerprint[]
-}
