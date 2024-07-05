@@ -8,6 +8,7 @@ import {
     DistributionResult,
     DistributionState,
     Score,
+    SetFamilies,
 } from 'src/distribution/interfaces/distribution'
 import { ConfigService } from '@nestjs/config'
 import { Wallet, ethers } from 'ethers'
@@ -31,6 +32,8 @@ import { setTimeout } from 'node:timers/promises'
 import { AxiosError } from 'axios'
 import { DreDistributionResponse } from './interfaces/dre-relay-registry-response'
 import { HttpService } from '@nestjs/axios'
+import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
+import { VerificationResults } from 'src/verification/dto/verification-result-dto'
 
 @Injectable()
 export class DistributionService {
@@ -473,5 +476,93 @@ export class DistributionService {
         }
 
         return {}
+    }
+
+    public async getFamilies(): Promise<DistributionState['families']> {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            return this.dreState?.families || {}
+        } else {
+            const {
+                cachedValue: { state }
+            } = await this.distributionContract.readState()
+            return state.families || {}
+        }
+    }
+
+    public async setRelayFamilies(
+        relays: ValidatedRelay[]
+    ): Promise<VerificationResults> {
+        const results: VerificationResults = []
+
+        if (!this.distributionContract) {
+            this.logger.error('Distribution contract not initialized')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        if (!this.operator) {
+            this.logger.error('Distribution operator not defined')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        // NB: Only update relay families that need to be updated
+        const families = await this.getFamilies()
+        const relaysWithFamilyUpdates: ValidatedRelay[] = []
+        for (const relay of relays) {
+            const incomingFamilyHash = relay.family.slice().sort().join('')
+            const contractFamilyHash = families[relay.fingerprint]
+                .slice()
+                .sort()
+                .join('')
+            
+            if (incomingFamilyHash !== contractFamilyHash) {
+                relaysWithFamilyUpdates.push(relay)
+            } else {
+                results.push({
+                    relay,
+                    result: 'AlreadyVerified' // TODO -> 'AlreadySetFamily' ?
+                })
+            }
+        }
+
+        if (this.isLive === 'true') {
+            try {
+                await setTimeout(5000)
+                this.logger.debug(
+                    `Starting to set relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
+                )
+                const response = await this.distributionContract
+                    .writeInteraction<SetFamilies>({
+                        function: 'setFamilies',
+                        families: relaysWithFamilyUpdates.map(
+                            ({ fingerprint, family }) =>
+                                ({ fingerprint, family })
+                        )
+                    })
+
+                this.logger.log(
+                    `Set relay families for ${relaysWithFamilyUpdates.length} relays: ${response?.originalTxId}`,
+                )
+            } catch (error) {
+                this.logger.error(
+                    `Exception setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
+                    error.stack,
+                )
+
+                return results.concat(
+                    relays.map(relay => ({ relay, result: 'Failed' }))
+                )
+            }
+        } else {
+            this.logger.warn(
+                `NOT LIVE - skipped setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`
+            )
+        }
+
+        return results.concat(
+            relaysWithFamilyUpdates.map(relay => ({ relay, result: 'OK' }))
+        )
     }
 }
