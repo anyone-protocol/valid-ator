@@ -109,7 +109,7 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
-* Entity-Type: `distribution/summary` - contains summary for a previous distribution round.  Each field is also exposed as a tag on the transaction, so downloading the json blob itself is not necessary.  These tags and their values are in the GQL results. [View live sample](...)
+* Entity-Type: `distribution/summary` - contains summary for a previous distribution round.  Most fields are also exposed as tags on the transaction, so downloading the json blob itself is not necessary unless per-fingerprint details are desired.  These tags and their values are in the GQL results. [View live sample](...)
 ```
 {
   timeElapsed: string
@@ -124,9 +124,30 @@ Entity-Type: <string with the type of entities stored in the datafile>
       distributedTokens: string
     }
   }
+  multipliers: {
+    family: {
+      enabled: boolean
+      familyMultiplierRate: string
+    }
+  }
+  families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
   totalTokensDistributedPerSecond: string
   totalNetworkScore: string
   totalDistributedTokens: string
+  details: {
+    [fingerprint: Fingerprint]: {
+      address: EvmAddress
+      score: string
+      distributedTokens: string
+      bonuses: {
+        hardware: string
+      }
+      multipliers: {
+        family: string
+        region: string
+      }
+    }
+  }
 }
 ```
 

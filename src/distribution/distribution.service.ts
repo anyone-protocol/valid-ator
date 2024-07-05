@@ -328,11 +328,13 @@ export class DistributionService {
         } else this.logger.debug(`DRE cache warm ${now - this.dreStateStamp}, skipping refresh`)
     }
 
-    private async fetchDistribution(stamp: number): Promise<DistributionResult | undefined> {
+    private async fetchDistribution(stamp: number): Promise<
+        DistributionResult | undefined
+    > {
         await this.refreshDreState()
         if (this.dreState != undefined) {
-            var result = this.dreState.previousDistributions[stamp]
-            var tries = 0
+            let result = this.dreState.previousDistributions[stamp]
+            let tries = 0
             while (result == undefined && tries < 3) {
                 await setTimeout(this.dreRefreshDelay * 2)
                 await this.refreshDreState()
@@ -354,7 +356,6 @@ export class DistributionService {
     > {
         try {
             const summary = await this.fetchDistribution(stamp)
-            
 
             if (!this.bundlr) {
                 this.logger.error(
@@ -372,7 +373,7 @@ export class DistributionService {
                 return { summary }
             }
 
-            if (summary == undefined) {
+            if (!summary) {
                 this.logger.warn(
                     `No distribution data found. Skipping storing of distribution/summary [${stamp}]`
                 )
@@ -392,21 +393,67 @@ export class DistributionService {
                     value: 'application/json',
                 },
                 { name: 'Entity-Type', value: 'distribution/summary' },
-                { name: 'Total-Score', value: summary.totalNetworkScore },
+                
+                // Base Summary
+                {
+                    name: 'Time-Elapsed',
+                    value: summary.timeElapsed
+                },
+                {
+                    name: 'Base-Distribution-Rate',
+                    value: summary.tokensDistributedPerSecond
+                },
+                {
+                    name: 'Base-Network-Score',
+                    value: summary.baseNetworkScore
+                },
+                {
+                    name: 'Base-Distributed-Tokens',
+                    value: summary.baseDistributedTokens
+                },
+
+                // Bonuses Summary
+                {
+                    name: 'HW-Bonus-Enabled',
+                    value: summary.bonuses.hardware.enabled.toString()
+                },
+                {
+                    name: 'HW-Bonus-Distribution-Rate',
+                    value: summary.bonuses.hardware.tokensDistributedPerSecond
+                },
+                {
+                    name: 'HW-Bonus-Network-Score',
+                    value: summary.bonuses.hardware.networkScore
+                },
+                {
+                    name: 'HW-Bonus-Distributed-Tokens',
+                    value: summary.bonuses.hardware.distributedTokens
+                },
+
+                // Multipliers Summary
+                {
+                    name: 'Family-Multiplier-Enabled',
+                    value: summary.multipliers.family.enabled.toString()
+                },
+                {
+                    name: 'Family-Multiplier-Rate',
+                    value: summary.multipliers.family.familyMultiplierRate
+                },
+
+                // Totals Summary
+                {
+                    name: 'Total-Distribution-Rate',
+                    value: summary.totalTokensDistributedPerSecond
+                },
+                {
+                    name: 'Total-Network-Score',
+                    value: summary.totalNetworkScore
+                },
                 {
                     name: 'Total-Distributed',
                     value: summary.totalDistributedTokens
                 },
-                { name: 'Time-Elapsed', value: summary.timeElapsed },
-                {
-                    name: 'Distribution-Rate',
-                    value: summary.tokensDistributedPerSecond
-                }
             ]
-
-            if (summary.bonuses && summary.bonuses.hardware) {
-                tags.push({ name: 'Bonus-Tokens', value: summary.bonuses.hardware.distributedTokens })
-            }
 
             const { id: summary_tx } = await this.bundlr.upload(
                 JSON.stringify({ [stamp]: summary }),
