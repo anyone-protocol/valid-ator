@@ -18,7 +18,7 @@ export class VerificationQueue extends WorkerHost {
 
     private maxUploadRetries = 3
 
-    public static readonly JOB_VERIFY_RELAY = 'verify-relay'
+    public static readonly JOB_VERIFY_RELAYS = 'verify-relays'
     public static readonly JOB_CONFIRM_VERIFICATION = 'confirm-verification'
     public static readonly JOB_PERSIST_VERIFICATION = 'persist-verification'
     public static readonly JOB_RECOVER_PERSIST_VERIFICATION =
@@ -38,22 +38,24 @@ export class VerificationQueue extends WorkerHost {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
-            case VerificationQueue.JOB_VERIFY_RELAY:
-                let verifyResult: RelayVerificationResult = 'Failed'
-                const validatedRelay = job.data as ValidatedRelay
+            case VerificationQueue.JOB_VERIFY_RELAYS:
+                const validatedRelays = job.data as ValidatedRelay[]
                 try {
-                    if (
-                        validatedRelay !== undefined &&
-                        validatedRelay.fingerprint.length === 40
-                    ) {
-                        verifyResult = await this.verification.verifyRelay(
-                            validatedRelay,
-                        )
-                    } else {
+                    const validFingerprintRelays = validatedRelays.filter(r => {
+                        if (!!r.fingerprint && r.fingerprint.length === 40) {
+                            return true
+                        }
+
                         this.logger.log(
-                            `Incorrect fingerprint [${job.data.fingerprint}]`,
+                            `Incorrect fingerprint [${r.fingerprint}]`,
                         )
-                    }
+
+                        return false
+                    })
+
+                    return await this.verification.verifyRelays(
+                        validFingerprintRelays
+                    )
                 } catch (error) {
                     this.logger.error(
                         'Exception while verifying validated relay:',
@@ -61,21 +63,12 @@ export class VerificationQueue extends WorkerHost {
                     )
                 }
 
-                const verifiedRelay: VerificationResultDto = {
-                    result: verifyResult,
-                    relay: validatedRelay,
-                }
-
-                return [verifiedRelay]
+                return []
 
             case VerificationQueue.JOB_SET_RELAY_FAMILIES:
-                let result: RelayVerificationResult = 'Failed'
                 const relays = job.data as ValidatedRelay[]
                 try {
-                    result = await this.verification.setRelayFamilies(relays)
-
-                    // return [{ relay, result }]
-                    return relays.map(relay => ({ relay, result }))
+                    return await this.verification.setRelayFamilies(relays)
                 } catch (error) {
                     this.logger.error(
                         `Exception while setting relay families for [${relays.map(r => r.fingerprint)}]`,
