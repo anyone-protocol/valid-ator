@@ -49,6 +49,9 @@ export class RelayData {
 
     @Prop({ type: [String], required: false, default: [] })
     family: string[]
+
+    @Prop({ type: String, required: false })
+    nickname?: string
 }
 
 export const RelayDataSchema = SchemaFactory.createForClass(RelayData)

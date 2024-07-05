@@ -164,6 +164,7 @@ export class ValidationService {
                 contact: info.contact !== undefined ? info.contact : '', // other case should not happen as its filtered out while creating validations array
                 consensus_weight: info.consensus_weight,
                 primary_address_hex: this.ipToGeoHex(info.or_addresses[0]),
+                nickname: info.nickname,
 
                 running: info.running,
                 consensus_measured: info.measured ?? false,
@@ -212,7 +213,8 @@ export class ValidationService {
                     running: relay.running,
                     family: relay.effective_family,
                     consensus_measured: relay.consensus_measured,
-                    primary_address_hex: relay.primary_address_hex
+                    primary_address_hex: relay.primary_address_hex,
+                    nickname: relay.nickname
                 }))
                 .filter((relay, index, array) => relay.ator_address.length > 0)
 
@@ -260,7 +262,8 @@ export class ValidationService {
                             observed_bandwidth: relayData.observed_bandwidth,
                             advertised_bandwidth:
                                 relayData.advertised_bandwidth,
-                            family: relayData.effective_family
+                            family: relayData.effective_family,
+                            nickname: relayData.nickname
                         })
                         .catch((error) => this.logger.error('Failed creating relay data model', error.stack))
                 }

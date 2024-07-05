@@ -40,44 +40,44 @@ export interface AddClaimableBatched extends ContractFunctionInput {
 }
 
 export interface RemoveClaimable extends ContractFunctionInput {
-    function: 'removeClaimable'
-    fingerprint: Fingerprint
-}
-
-export interface Claimable extends ContractFunctionInput {
-    function: 'claimable'
-    address?: EvmAddress
+  function: 'removeClaimable'
+  fingerprint: Fingerprint
 }
 
 export interface IsClaimable extends ContractFunctionInput {
-    function: 'isClaimable'
-    fingerprint: Fingerprint
-    address: EvmAddress
+  function: 'isClaimable'
+  fingerprint: Fingerprint
+  address: EvmAddress
+}
+
+export interface Claimable extends ContractFunctionInput {
+  function: 'claimable'
+  address?: EvmAddress
 }
 
 export interface Claim extends ContractFunctionInput {
-    function: 'claim'
-    fingerprint: Fingerprint
+  function: 'claim'
+  fingerprint: Fingerprint
 }
 
 export interface Renounce extends ContractFunctionInput {
-    function: 'renounce'
-    fingerprint: Fingerprint
+  function: 'renounce'
+  fingerprint: Fingerprint
 }
 
 export interface RemoveVerified extends ContractFunctionInput {
-    function: 'removeVerified'
-    fingerprint: Fingerprint
+  function: 'removeVerified'
+  fingerprint: Fingerprint
 }
 
 export interface Verified extends ContractFunctionInput {
-    function: 'verified'
-    address?: EvmAddress
+  function: 'verified'
+  address?: EvmAddress
 }
 
 export interface IsVerified extends ContractFunctionInput {
-    function: 'isVerified'
-    fingerprint: Fingerprint
+  function: 'isVerified'
+  fingerprint: Fingerprint
 }
 
 export interface AddRegistrationCredits extends ContractFunctionInput {
@@ -85,22 +85,29 @@ export interface AddRegistrationCredits extends ContractFunctionInput {
   credits: { address: EvmAddress, fingerprint: Fingerprint }[]
 }
 
+export interface RemoveRegistrationCredits extends ContractFunctionInput {
+  function: 'removeRegistrationCredits'
+  credits: { address: EvmAddress, fingerprint: Fingerprint }[]
+}
+
 export interface BlockAddress extends ContractFunctionInput {
-    function: 'blockAddress',
-    address: EvmAddress
+  function: 'blockAddress'
+  address: EvmAddress
 }
 
 export interface UnblockAddress extends ContractFunctionInput {
-    function: 'unblockAddress',
-    address: EvmAddress
+  function: 'unblockAddress'
+  address: EvmAddress
 }
 
-export interface SetFamily extends ContractFunctionInput {
-    function: 'setFamily',
-    fingerprint: Fingerprint,
+export interface SetFamilies extends ContractFunctionInput {
+  function: 'setFamilies'
+  families: {
+    fingerprint: Fingerprint
     family: Fingerprint[]
+  }[]
 }
-  
+
 export interface ToggleRegistrationCreditRequirement
   extends ContractFunctionInput
 {
@@ -130,4 +137,11 @@ export interface GetVerifiedRelays extends ContractFunctionInput {
 export interface ToggleFamilyRequirement extends ContractFunctionInput {
   function: 'toggleFamilyRequirement'
   enabled: boolean
+}
+
+// TODO -> Remove this
+export interface SetFamily extends ContractFunctionInput {
+  function: 'setFamily',
+  fingerprint: Fingerprint,
+  family: Fingerprint[]
 }

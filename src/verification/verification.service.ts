@@ -706,6 +706,7 @@ export class VerificationService {
                             function: 'addClaimable',
                             fingerprint: relay.fingerprint,
                             address: relay.ator_address,
+                            nickname: relay.nickname
                         })
 
                     this.logger.log(
