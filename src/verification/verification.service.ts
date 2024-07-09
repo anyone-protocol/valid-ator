@@ -569,8 +569,11 @@ export class VerificationService {
         const families = await this.getFamilies()
         const relaysWithFamilyUpdates: ValidatedRelay[] = []
         for (const relay of relays) {
-            const incomingFamilyHash = relay.family.slice().sort().join('')
-            const contractFamilyHash = families[relay.fingerprint]
+            const incomingFamilyHash = (relay.family || [])
+                .slice()
+                .sort()
+                .join('')
+            const contractFamilyHash = (families[relay.fingerprint] || [])
                 .slice()
                 .sort()
                 .join('')
