@@ -7,90 +7,107 @@ export type EvmAddress = string
 export type PublicKey = string
 
 export type RelayRegistryState = OwnableState & EvolvableState & {
-    claimable: { [fingerprint in Fingerprint as string]: EvmAddress }
-    verified: { [fingerprint in Fingerprint as string]: EvmAddress }
-    registrationCredits: { [address in EvmAddress as string]: number }
-    blockedAddresses: EvmAddress[]
-    families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
-    registrationCreditsRequired: boolean
-    encryptionPublicKey: string
-    serials: {
-      [fingerprint in Fingerprint as string]: {
-        serial?: string
-        verified?: boolean
-      }
-    }
-    familyRequired: boolean
+  claimable: { [fingerprint in Fingerprint as string]: EvmAddress }
+  verified: { [fingerprint in Fingerprint as string]: EvmAddress }
+  registrationCredits: {
+    [address in EvmAddress as string]: Fingerprint[]
   }
+  blockedAddresses: EvmAddress[]
+  families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
+  registrationCreditsRequired: boolean
+  encryptionPublicKey: string
+  verifiedHardware: Set<Fingerprint>
+  familyRequired: boolean
+  nicknames: { [fingerprint in Fingerprint as string]: string }
+}
 
 export interface AddClaimable extends ContractFunctionInput {
-    function: 'addClaimable'
+  function: 'addClaimable'
+  fingerprint: Fingerprint
+  address: EvmAddress
+  hardwareVerified?: boolean
+  nickname?: string
+}
+
+export interface AddClaimableBatched extends ContractFunctionInput {
+  function: 'addClaimableBatched'
+  relays: {
     fingerprint: Fingerprint
     address: EvmAddress
+    hardwareVerified?: boolean
+    nickname?: string
+  }[]
 }
 
 export interface RemoveClaimable extends ContractFunctionInput {
-    function: 'removeClaimable'
-    fingerprint: Fingerprint
-}
-
-export interface Claimable extends ContractFunctionInput {
-    function: 'claimable'
-    address?: EvmAddress
+  function: 'removeClaimable'
+  fingerprint: Fingerprint
 }
 
 export interface IsClaimable extends ContractFunctionInput {
-    function: 'isClaimable'
-    fingerprint: Fingerprint
-    address: EvmAddress
+  function: 'isClaimable'
+  fingerprint: Fingerprint
+  address: EvmAddress
+}
+
+export interface Claimable extends ContractFunctionInput {
+  function: 'claimable'
+  address?: EvmAddress
 }
 
 export interface Claim extends ContractFunctionInput {
-    function: 'claim'
-    fingerprint: Fingerprint
+  function: 'claim'
+  fingerprint: Fingerprint
 }
 
 export interface Renounce extends ContractFunctionInput {
-    function: 'renounce'
-    fingerprint: Fingerprint
+  function: 'renounce'
+  fingerprint: Fingerprint
 }
 
 export interface RemoveVerified extends ContractFunctionInput {
-    function: 'removeVerified'
-    fingerprint: Fingerprint
+  function: 'removeVerified'
+  fingerprint: Fingerprint
 }
 
 export interface Verified extends ContractFunctionInput {
-    function: 'verified'
-    address?: EvmAddress
+  function: 'verified'
+  address?: EvmAddress
 }
 
 export interface IsVerified extends ContractFunctionInput {
-    function: 'isVerified'
-    fingerprint: Fingerprint
+  function: 'isVerified'
+  fingerprint: Fingerprint
 }
 
-export interface AddRegistrationCredit extends ContractFunctionInput {
-    function: 'addRegistrationCredit'
-    address: EvmAddress
+export interface AddRegistrationCredits extends ContractFunctionInput {
+  function: 'addRegistrationCredits'
+  credits: { address: EvmAddress, fingerprint: Fingerprint }[]
+}
+
+export interface RemoveRegistrationCredits extends ContractFunctionInput {
+  function: 'removeRegistrationCredits'
+  credits: { address: EvmAddress, fingerprint: Fingerprint }[]
 }
 
 export interface BlockAddress extends ContractFunctionInput {
-    function: 'blockAddress',
-    address: EvmAddress
+  function: 'blockAddress'
+  address: EvmAddress
 }
 
 export interface UnblockAddress extends ContractFunctionInput {
-    function: 'unblockAddress',
-    address: EvmAddress
+  function: 'unblockAddress'
+  address: EvmAddress
 }
 
-export interface SetFamily extends ContractFunctionInput {
-    function: 'setFamily',
-    fingerprint: Fingerprint,
+export interface SetFamilies extends ContractFunctionInput {
+  function: 'setFamilies'
+  families: {
+    fingerprint: Fingerprint
     family: Fingerprint[]
+  }[]
 }
-  
+
 export interface ToggleRegistrationCreditRequirement
   extends ContractFunctionInput
 {

@@ -1,26 +1,39 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { firstValueFrom, catchError } from 'rxjs'
 import { DistributionData } from './schemas/distribution-data'
 import { ScoreData } from './schemas/score-data'
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddScores,
+    DistributionResult,
     DistributionState,
     Score,
+    SetFamilies,
 } from 'src/distribution/interfaces/distribution'
 import { ConfigService } from '@nestjs/config'
 import { Wallet, ethers } from 'ethers'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import {
-    buildEvmSignature,
-    EvmSignatureVerificationServerPlugin,
+    EthereumSigner,
     // @ts-ignore
 } from 'warp-contracts-plugin-signature/server'
+// import {
+//     buildEvmSignature,
+//     EvmSignatureVerificationServerPlugin,
+//     // @ts-ignore
+// } from 'warp-contracts-plugin-signature/server'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
 import Bundlr from '@bundlr-network/client'
 import { Distribute } from './interfaces/distribution'
 import { RewardAllocationData } from './dto/reward-allocation-data'
 import { Claimable } from 'src/verification/interfaces/relay-registry'
 import { DistributionCompletedResults } from './dto/distribution-completed-result'
+import { setTimeout } from 'node:timers/promises'
+import { AxiosError } from 'axios'
+import { DreDistributionResponse } from './interfaces/dre-relay-registry-response'
+import { HttpService } from '@nestjs/axios'
+import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
+import { VerificationResults } from 'src/verification/dto/verification-result-dto'
 
 @Injectable()
 export class DistributionService {
@@ -35,6 +48,11 @@ export class DistributionService {
     private distributionWarp: Warp
     private distributionContract: Contract<DistributionState>
 
+    private distributionDreUri: string
+    private dreState: DistributionState | undefined
+    private dreStateStamp: number | undefined
+    private dreRefreshDelay: number = 2_500
+
     private bundlr
 
     constructor(
@@ -46,6 +64,7 @@ export class DistributionService {
             IRYS_NODE: string
             IRYS_NETWORK: string
         }>,
+        private readonly httpService: HttpService,
     ) {
         LoggerFactory.INST.logLevel('error')
 
@@ -85,11 +104,10 @@ export class DistributionService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new Wallet(distributionOperatorKey)
+            const signer = new EthereumSigner(distributionOperatorKey)
 
             this.operator = {
                 address: signer.address,
-                key: distributionOperatorKey,
                 signer: signer,
             }
 
@@ -114,7 +132,7 @@ export class DistributionService {
                     dbLocation: '-distribution',
                 })
                     .use(new EthersExtension())
-                    .use(new EvmSignatureVerificationServerPlugin())
+                    
                 this.distributionWarp.use(
                     new StateUpdatePlugin(
                         distributionContractTxId,
@@ -126,12 +144,15 @@ export class DistributionService {
                     infer: true,
                 })
 
+                this.distributionDreUri = `${dreHostname}?id=${distributionContractTxId}`
+
                 this.distributionContract = this.distributionWarp
                     .contract<DistributionState>(distributionContractTxId)
                     .setEvaluationOptions({
                         remoteStateSyncEnabled: true,
                         remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
                     })
+                    .connect(this.operator.signer)
             } else this.logger.error('Missing distribution contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
@@ -140,13 +161,8 @@ export class DistributionService {
         address: string,
     ): Promise<RewardAllocationData | undefined> {
         if (this.operator != undefined) {
-            const evmSig = await buildEvmSignature(this.operator.signer)
             try {
                 const response = await this.distributionContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
                     .viewState<Claimable, string>({
                         function: 'claimable',
                         address: address,
@@ -213,13 +229,9 @@ export class DistributionService {
     public async addScores(stamp: number, scores: Score[]): Promise<boolean> {
         if (this.operator != undefined) {
             if (this.isLive === 'true') {
-                const evmSig = await buildEvmSignature(this.operator.signer)
                 try {
+                    await setTimeout(5000)
                     const response = await this.distributionContract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
                         .writeInteraction<AddScores>({
                             function: 'addScores',
                             timestamp: stamp.toString(),
@@ -265,13 +277,9 @@ export class DistributionService {
             return false
         }
 
-        const evmSig = await buildEvmSignature(this.operator.signer)
         try {
+            await setTimeout(5000)
             const response = await this.distributionContract
-                .connect({
-                    signer: evmSig,
-                    type: 'ethereum',
-                })
                 .writeInteraction<Distribute>({
                     function: 'distribute',
                     timestamp: stamp.toString(),
@@ -293,14 +301,64 @@ export class DistributionService {
         }
     }
 
+    private async refreshDreState(forced: boolean = false) {
+        const now = Date.now()
+        if (forced || this.dreStateStamp == undefined || now > (this.dreStateStamp + this.dreRefreshDelay)) {
+            try {
+                const { headers, status, data } = await firstValueFrom(
+                    this.httpService
+                        .get<DreDistributionResponse>(this.distributionDreUri)
+                        .pipe(
+                            catchError((error: AxiosError) => {
+                                this.logger.error(
+                                    `Fetching dre state of distribution from ${this.distributionDreUri} failed with ${error.response?.status}, ${error}`,
+                                )
+                                throw 'Failed to fetch distribution contract cache from dre'
+                            }),
+                        ),
+                )
+
+                if (status === 200) {
+                    this.dreState = data.state
+                    this.dreStateStamp = Date.now()
+                    this.logger.debug(
+                        `Refreshed distribution dre state at ${this.dreStateStamp}`,
+                    )
+                }
+            } catch (e) {
+                this.logger.error('Exception when fetching relay registry dre cache', e.stack)
+            }
+        } else this.logger.debug(`DRE cache warm ${now - this.dreStateStamp}, skipping refresh`)
+    }
+
+    private async fetchDistribution(stamp: number): Promise<
+        DistributionResult | undefined
+    > {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            let result = this.dreState.previousDistributions[stamp]
+            let tries = 0
+            while (result == undefined && tries < 3) {
+                await setTimeout(this.dreRefreshDelay * 2)
+                await this.refreshDreState()
+                result = this.dreState.previousDistributions[stamp]
+                tries++
+            }
+
+            return result
+        } else {
+            const {
+                cachedValue: { state: { previousDistributions } }
+            } = await this.distributionContract.readState()
+            return previousDistributions[stamp]
+        }
+    }
+
     public async persistDistribution(stamp: number): Promise<
         Pick<DistributionData, 'summary' | 'summary_tx'>
     > {
         try {
-            const {
-                cachedValue: { state: { previousDistributions } }
-            } = await this.distributionContract.readState()
-            const summary = previousDistributions[stamp]
+            const summary = await this.fetchDistribution(stamp)
 
             if (!this.bundlr) {
                 this.logger.error(
@@ -318,7 +376,7 @@ export class DistributionService {
                 return { summary }
             }
 
-            if (summary == undefined) {
+            if (!summary) {
                 this.logger.warn(
                     `No distribution data found. Skipping storing of distribution/summary [${stamp}]`
                 )
@@ -338,21 +396,67 @@ export class DistributionService {
                     value: 'application/json',
                 },
                 { name: 'Entity-Type', value: 'distribution/summary' },
-                { name: 'Total-Score', value: summary.totalScore },
+                
+                // Base Summary
+                {
+                    name: 'Time-Elapsed',
+                    value: summary.timeElapsed
+                },
+                {
+                    name: 'Base-Distribution-Rate',
+                    value: summary.tokensDistributedPerSecond
+                },
+                {
+                    name: 'Base-Network-Score',
+                    value: summary.baseNetworkScore
+                },
+                {
+                    name: 'Base-Distributed-Tokens',
+                    value: summary.baseDistributedTokens
+                },
+
+                // Bonuses Summary
+                {
+                    name: 'HW-Bonus-Enabled',
+                    value: summary.bonuses.hardware.enabled.toString()
+                },
+                {
+                    name: 'HW-Bonus-Distribution-Rate',
+                    value: summary.bonuses.hardware.tokensDistributedPerSecond
+                },
+                {
+                    name: 'HW-Bonus-Network-Score',
+                    value: summary.bonuses.hardware.networkScore
+                },
+                {
+                    name: 'HW-Bonus-Distributed-Tokens',
+                    value: summary.bonuses.hardware.distributedTokens
+                },
+
+                // Multipliers Summary
+                {
+                    name: 'Family-Multiplier-Enabled',
+                    value: summary.multipliers.family.enabled.toString()
+                },
+                {
+                    name: 'Family-Multiplier-Rate',
+                    value: summary.multipliers.family.familyMultiplierRate
+                },
+
+                // Totals Summary
+                {
+                    name: 'Total-Distribution-Rate',
+                    value: summary.totalTokensDistributedPerSecond
+                },
+                {
+                    name: 'Total-Network-Score',
+                    value: summary.totalNetworkScore
+                },
                 {
                     name: 'Total-Distributed',
-                    value: summary.totalDistributed
+                    value: summary.totalDistributedTokens
                 },
-                { name: 'Time-Elapsed', value: summary.timeElapsed },
-                {
-                    name: 'Distribution-Rate',
-                    value: summary.tokensDistributedPerSecond
-                }
             ]
-
-            if (summary.bonusTokens) {
-                tags.push({ name: 'Bonus-Tokens', value: summary.bonusTokens })
-            }
 
             const { id: summary_tx } = await this.bundlr.upload(
                 JSON.stringify({ [stamp]: summary }),
@@ -372,5 +476,96 @@ export class DistributionService {
         }
 
         return {}
+    }
+
+    public async getFamilies(): Promise<DistributionState['families']> {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            return this.dreState?.families || {}
+        } else {
+            const {
+                cachedValue: { state }
+            } = await this.distributionContract.readState()
+            return state.families || {}
+        }
+    }
+
+    public async setRelayFamilies(
+        relays: ValidatedRelay[]
+    ): Promise<VerificationResults> {
+        const results: VerificationResults = []
+
+        if (!this.distributionContract) {
+            this.logger.error('Distribution contract not initialized')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        if (!this.operator) {
+            this.logger.error('Distribution operator not defined')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        // NB: Only update relay families that need to be updated
+        const families = await this.getFamilies()
+        const relaysWithFamilyUpdates: ValidatedRelay[] = []
+        for (const relay of relays) {
+            const incomingFamilyHash = (relay.family || [])
+                .slice()
+                .sort()
+                .join('')
+            const contractFamilyHash = (families[relay.fingerprint] || [])
+                .slice()
+                .sort()
+                .join('')
+            
+            if (incomingFamilyHash !== contractFamilyHash) {
+                relaysWithFamilyUpdates.push(relay)
+            } else {
+                results.push({
+                    relay,
+                    result: 'AlreadyVerified' // TODO -> 'AlreadySetFamily' ?
+                })
+            }
+        }
+
+        if (this.isLive === 'true') {
+            try {
+                await setTimeout(5000)
+                this.logger.debug(
+                    `Starting to set relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
+                )
+                const response = await this.distributionContract
+                    .writeInteraction<SetFamilies>({
+                        function: 'setFamilies',
+                        families: relaysWithFamilyUpdates.map(
+                            ({ fingerprint, family }) =>
+                                ({ fingerprint, family })
+                        )
+                    })
+
+                this.logger.log(
+                    `Set relay families for ${relaysWithFamilyUpdates.length} relays: ${response?.originalTxId}`,
+                )
+            } catch (error) {
+                this.logger.error(
+                    `Exception setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
+                    error.stack,
+                )
+
+                return results.concat(
+                    relays.map(relay => ({ relay, result: 'Failed' }))
+                )
+            }
+        } else {
+            this.logger.warn(
+                `NOT LIVE - skipped setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`
+            )
+        }
+
+        return results.concat(
+            relaysWithFamilyUpdates.map(relay => ({ relay, result: 'OK' }))
+        )
     }
 }

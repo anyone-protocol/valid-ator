@@ -1,18 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { firstValueFrom, catchError } from 'rxjs'
 import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
     AddClaimable,
-    AddRegistrationCredit,
+    AddClaimableBatched,
+    AddRegistrationCredits,
     IsClaimable,
     IsVerified,
     RelayRegistryState,
-    SetFamily,
+    SetFamilies
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
 import { Wallet, toUtf8Bytes } from 'ethers'
 import {
-    buildEvmSignature,
-    EvmSignatureVerificationServerPlugin,
+    EthereumSigner,
     // @ts-ignore
 } from 'warp-contracts-plugin-signature/server'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
@@ -33,6 +34,10 @@ import { ECPointCompress } from '../util/ec-point-compress'
 import { isFingerprintValid } from '../util/fingerprint'
 import { isAddressValid } from '../util/address-evm'
 import { isHexStringValid } from '../util/hex-string'
+import { HttpService } from '@nestjs/axios'
+import { AxiosError } from 'axios'
+import { DreRelayRegistryResponse } from './interfaces/dre-relay-registry-response'
+import { setTimeout } from 'node:timers/promises'
 
 @Injectable()
 export class VerificationService {
@@ -45,6 +50,10 @@ export class VerificationService {
 
     private relayRegistryWarp: Warp
     private relayRegistryContract: Contract<RelayRegistryState>
+
+    private relayRegistryDreUri: string
+    private dreState: RelayRegistryState | undefined
+    private dreStateStamp: number | undefined
 
     constructor(
         private readonly config: ConfigService<{
@@ -59,7 +68,8 @@ export class VerificationService {
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
         @InjectModel(VerifiedHardware.name)
-        private readonly verifiedHardwareModel: Model<VerifiedHardware>
+        private readonly verifiedHardwareModel: Model<VerifiedHardware>,
+        private readonly httpService: HttpService
     ) {
         LoggerFactory.INST.logLevel('error')
 
@@ -100,11 +110,10 @@ export class VerificationService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new Wallet(relayRegistryOperatorKey)
+            const signer = new EthereumSigner(relayRegistryOperatorKey)
 
             this.operator = {
                 address: signer.address,
-                key: relayRegistryOperatorKey,
                 signer: signer,
             }
 
@@ -127,7 +136,6 @@ export class VerificationService {
                     dbLocation: '-relay-registry-testnet',
                 })
                     .use(new EthersExtension())
-                    .use(new EvmSignatureVerificationServerPlugin())
                 this.relayRegistryWarp.use(
                     new StateUpdatePlugin(registryTxId, this.relayRegistryWarp),
                 )
@@ -136,12 +144,15 @@ export class VerificationService {
                     infer: true,
                 })
 
+                this.relayRegistryDreUri = `${dreHostname}?id=${registryTxId}`
+
                 this.relayRegistryContract = this.relayRegistryWarp
                     .contract<RelayRegistryState>(registryTxId)
                     .setEvaluationOptions({
                         remoteStateSyncEnabled: true,
                         remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
                     })
+                    .connect(this.operator.signer)
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
     }
@@ -154,27 +165,21 @@ export class VerificationService {
             if (this.isLive === 'true') {
                 try {
                     // TODO: make use of fingerprint
-
-                    const evmSig = await buildEvmSignature(this.operator.signer)
                     const response = await this.relayRegistryContract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
-                        .writeInteraction<AddRegistrationCredit>({
-                            function: 'addRegistrationCredit',
-                            address: address,
+                        .writeInteraction<AddRegistrationCredits>({
+                            function: 'addRegistrationCredits',
+                            credits: [{ address, fingerprint }]
                         }, {
                             tags: [ new Tag('EVM-TX', tx) ]
                         })
 
                     this.logger.log(
-                        `Added registration credit to [${address}]: ${response?.originalTxId}`,
+                        `Added registration credit to [${address}|${fingerprint}]: ${response?.originalTxId??"no-tx-id"}`,
                     )
                 } catch (error) {
                     this.logger.error(
                         `Exception when adding registration credit [${address}]`,
-                        error,
+                        error.stack,
                     )
                     return false
                 }
@@ -193,40 +198,28 @@ export class VerificationService {
         }
     }
 
-    private async isVerified(fingerprint: string): Promise<boolean> {
-        const interactionResult = await this.relayRegistryContract.viewState<
-            IsVerified,
-            boolean
-        >({
-            function: 'isVerified',
-            fingerprint: fingerprint,
-        })
-
-        return interactionResult.result
-    }
-
-    public async isClaimable(
-        fingerprint: string,
-        address: string,
-    ): Promise<boolean> {
-        const interactionResult = await this.relayRegistryContract.viewState<
-            IsClaimable,
-            boolean
-        >({
-            function: 'isClaimable',
-            fingerprint: fingerprint,
-            address: address,
-        })
-
-        return interactionResult.result
+    public async getFamilies(): Promise<RelayRegistryState['families']> {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            return this.dreState?.families || {}
+        } else {
+            const {
+                cachedValue: { state }
+            } = await this.relayRegistryContract.readState()
+            return state.families || {}
+        }
     }
 
     public async getFamily(fingerprint: string): Promise<string[]> {
-        const {
-            cachedValue: { state }
-        } = await this.relayRegistryContract.readState()
-
-        return (state.families || {})[fingerprint] || []
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            return (this.dreState?.families || {})[fingerprint] || []
+        } else {
+            const {
+                cachedValue: { state }
+            } = await this.relayRegistryContract.readState()
+            return (state.families || {})[fingerprint] || []
+        }
     }
 
     async storeRelayHexMap(data: VerificationResults) {
@@ -274,7 +267,7 @@ export class VerificationService {
                     return response.id
                 } catch (error) {
                     this.logger.warn(
-                        `Exception when storing relay hex map: ${error}`,
+                        `Exception when storing relay hex map: ${error}`, error.stack
                     )
                 }
             } else {
@@ -566,266 +559,373 @@ export class VerificationService {
         this.logger.log(`Total verified relays: ${verifiedRelays.length}`)
     }
 
-    public async setRelayFamily(
-        relay: ValidatedRelay
-    ): Promise<RelayVerificationResult> {
+    public async setRelayFamilies(
+        relays: ValidatedRelay[]
+    ): Promise<VerificationResults> {
+        const results: VerificationResults = []
+
         if (!this.relayRegistryContract) {
             this.logger.error('Relay registry contract not initialized')
 
-            return 'Failed'
+            return relays.map(relay => ({ relay, result: 'Failed' }))
         }
 
         if (!this.operator) {
             this.logger.error('Relay registry operator not defined')
 
-            return 'Failed'
+            return relays.map(relay => ({ relay, result: 'Failed' }))
         }
 
-        // NB: check if family needs to be updated
-        const family: string[] = await this.getFamily(relay.fingerprint)
-        if (
-            relay.family.slice().sort().join() === family.slice().sort().join()
-        ) {
-            this.logger.debug(
-                `Already set family for relay [${relay.fingerprint}]`
-            )
-
-            return 'OK'
+        // NB: Only update relay families that need to be updated
+        const families = await this.getFamilies()
+        const relaysWithFamilyUpdates: ValidatedRelay[] = []
+        for (const relay of relays) {
+            const incomingFamilyHash = (relay.family || [])
+                .slice()
+                .sort()
+                .join('')
+            const contractFamilyHash = (families[relay.fingerprint] || [])
+                .slice()
+                .sort()
+                .join('')
+            
+            if (incomingFamilyHash !== contractFamilyHash) {
+                relaysWithFamilyUpdates.push(relay)
+            } else {
+                results.push({
+                    relay,
+                    result: 'AlreadyVerified' // TODO -> 'AlreadySetFamily' ?
+                })
+            }
         }
 
         if (this.isLive === 'true') {
             try {
+                await setTimeout(5000)
                 this.logger.debug(
-                    `Starting to set relay family for [${relay.fingerprint}]`,
+                    `Starting to set relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
                 )
-                const evmSig = await buildEvmSignature(this.operator.signer)
                 const response = await this.relayRegistryContract
-                    .connect({
-                        signer: evmSig,
-                        type: 'ethereum',
-                    })
-                    .writeInteraction<SetFamily>({
-                        function: 'setFamily',
-                        fingerprint: relay.fingerprint,
-                        family: relay.family
+                    .writeInteraction<SetFamilies>({
+                        function: 'setFamilies',
+                        families: relaysWithFamilyUpdates.map(
+                            ({ fingerprint, family }) =>
+                                ({ fingerprint, family })
+                        )
                     })
 
                 this.logger.log(
-                    `Set relay family [${relay.fingerprint}]: ${response?.originalTxId}`,
+                    `Set relay families for ${relaysWithFamilyUpdates.length} relays: ${response?.originalTxId}`,
                 )
             } catch (error) {
                 this.logger.error(
-                    `Exception setting relay family [${relay.fingerprint}]`,
+                    `Exception setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
                     error.stack,
                 )
 
-                return 'Failed'
+                return results.concat(
+                    relays.map(relay => ({ relay, result: 'Failed' }))
+                )
             }
         } else {
             this.logger.warn(
-                `NOT LIVE - skipped setting relay family [${relay.fingerprint}]`
+                `NOT LIVE - skipped setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`
             )
         }
 
-        return 'OK'
+        return results.concat(
+            relaysWithFamilyUpdates.map(relay => ({ relay, result: 'OK' }))
+        )
     }
 
-    public async verifyRelay(
-        relay: ValidatedRelay,
-    ): Promise<RelayVerificationResult> {
-        if (
-            this.relayRegistryContract !== undefined &&
-            this.operator !== undefined
-        ) {
-            const verified: boolean = await this.isVerified(relay.fingerprint)
-            const claimable: boolean = await this.isClaimable(
-                relay.fingerprint,
-                relay.ator_address,
+    private async refreshDreState(forced: boolean = false) {
+        const now = Date.now()
+        if (forced || this.dreStateStamp == undefined || now > (this.dreStateStamp + 60_000)) {
+            try {
+                const { headers, status, data } = await firstValueFrom(
+                    this.httpService
+                        .get<DreRelayRegistryResponse>(this.relayRegistryDreUri)
+                        .pipe(
+                            catchError((error: AxiosError) => {
+                                this.logger.error(
+                                    `Fetching dre state of relay registry from ${this.relayRegistryDreUri} failed with ${error.response?.status}, ${error}`,
+                                )
+                                throw 'Failed to fetch relay registry contract cache from dre'
+                            }),
+                        ),
+                )
+
+                if (status === 200) {
+                    this.dreState = data.state
+                    this.dreStateStamp = Date.now()
+                    this.logger.debug(
+                        `Refreshed relay registry dre state at ${this.dreStateStamp}`,
+                    )
+                }
+            } catch (e) {
+                this.logger.error('Exception when fetching relay registry dre cache', e.stack)
+            }
+        } else this.logger.debug(`DRE cache warm ${now - this.dreStateStamp}, skipping refresh`)
+    }
+
+    private async getRelayRegistryStatuses(): Promise<
+        Pick<RelayRegistryState, 'claimable' | 'verified'>
+    > {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            const { claimable, verified } = this.dreState
+
+            return { claimable, verified }
+        } else {
+            const {
+                cachedValue: { state: { claimable, verified } }
+            } = await this.relayRegistryContract.readState()
+
+            return { claimable, verified }
+        }
+    }
+
+    public async verifyRelays(
+        relays: ValidatedRelay[]
+    ): Promise<VerificationResults> {
+        const results: VerificationResults = []
+
+        if (!this.relayRegistryContract) {
+            this.logger.error('Relay registry contract not initialized')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        if (!this.operator) {
+            this.logger.error('Relay registry operator not defined')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        // NB: Filter out already claimed or verified relays
+        const {
+            claimable,
+            verified
+        } = await this.getRelayRegistryStatuses()
+        const alreadyClaimableFingerprints = Object.keys(claimable)
+        const alreadyVerifiedFingerprints = Object.keys(verified)
+        const relaysToAddAsClaimable: {
+            relay: ValidatedRelay,
+            isHardwareProofValid?: boolean
+        }[] = []
+        for (const relay of relays) {
+            const isAlreadyClaimable = alreadyClaimableFingerprints.includes(
+                relay.fingerprint
+            )
+            const isAlreadyVerified = alreadyVerifiedFingerprints.includes(
+                relay.fingerprint
             )
 
             this.logger.debug(
-                `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Claimable: ${claimable} Verified: ${verified}`,
+                `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Claimable: ${isAlreadyClaimable} Verified: ${isAlreadyVerified}`,
             )
 
-            if (verified) {
-                this.logger.debug(
-                    `Already verified relay [${relay.fingerprint}]`,
-                )
-                return 'AlreadyVerified'
-            }
-
-            if (claimable) {
+            if (isAlreadyClaimable) {
                 this.logger.debug(
                     `Already registered (can be claimed) relay [${relay.fingerprint}]`,
                 )
-                return 'AlreadyRegistered'
-            }
-
-            let isHardwareProofValid = false
-            if (relay.hardware_info) {
-                const { nftid, serNums, pubKeys, certs } = relay.hardware_info
-
-                if (!nftid) {
-                    this.logger.debug(
-                        `Missing NFT ID in hardware info for relay [${relay.fingerprint}]`
-                    )
-
-                    return 'HardwareProofFailed'
-                }
-                const parsedNftId = Number.parseInt(nftid)
-                // TODO -> check id is within range of IDs in contract(s)?
-                //         nftIds are not sequential :)
-                //         isNftIdValid should be false if failing this ^
-                const isNftIdValid = Number.isInteger(parsedNftId)
-                if (!isNftIdValid) {
-                    this.logger.debug(
-                        `Invalid NFT ID [${parsedNftId}] in hardware info for relay [${relay.fingerprint}]`
-                    )
-                }
-                // TODO -> check if address owns nft id
-                const existingVerifiedHardwareByNftId = await this
-                    .verifiedHardwareModel
-                    .exists({ nftId: parsedNftId })
-                    .exec()
-                if (existingVerifiedHardwareByNftId) {
-                    this.logger.debug(
-                        `NFT ID [${parsedNftId}] already verified in hardware info for relay [${relay.fingerprint}]`
-                    )
-
-                    return 'HardwareProofFailed'
-                }
-
-                const deviceSerial = serNums
-                    ?.find(s => s.type === 'DEVICE')
-                    ?.number
-                if (!deviceSerial) {
-                    this.logger.debug(
-                        `Missing Device Serial in hardware info for relay [${relay.fingerprint}]`
-                    )
-
-                    return 'HardwareProofFailed'
-                }
-                const existingVerifiedHardwareByDeviceSerial = await this
-                    .verifiedHardwareModel
-                    .exists({ deviceSerial })
-                    .exec()
-                if (existingVerifiedHardwareByDeviceSerial) {
-                    this.logger.debug(`Device Serial [${deviceSerial}] already verified for relay [${relay.fingerprint}]`)
-
-                    return 'HardwareProofFailed'
-                }
-
-                const atecSerial = serNums
-                    ?.find(s => s.type === 'ATEC')
-                    ?.number
-                if (!atecSerial) {
-                    this.logger.debug(
-                        `Missing ATEC Serial in hardware info for relay [${relay.fingerprint}]`
-                    )
-
-                    return 'HardwareProofFailed'
-                }
-                const existingVerifiedHardwareByAtecSerial = await this
-                    .verifiedHardwareModel
-                    .exists({ atecSerial })
-                    .exec()
-                if (existingVerifiedHardwareByAtecSerial) {
-                    this.logger.debug(`ATEC Serial [${atecSerial}] already verified for relay [${relay.fingerprint}]`)
-
-                    return 'HardwareProofFailed'
-                }
-
-                const publicKey = pubKeys
-                    ?.find(p => p.type === 'DEVICE')
-                    ?.number
-                if (!publicKey) {
-                    this.logger.debug(
-                        `Missing Public Key in hardware info for relay [${relay.fingerprint}]`
-                    )
-
-                    return 'HardwareProofFailed'
-                }
-
-                const signature = certs
-                    ?.find(c => c.type === 'DEVICE')
-                    ?.signature
-                if (!signature) {
-                    this.logger.debug(
-                        `Missing Signature in hardware info for relay [${relay.fingerprint}]`
-                    )
-
-                    return 'HardwareProofFailed'
-                }
-
-                isHardwareProofValid = await this.verifyRelaySerial(
-                    'relay',
-                    parsedNftId,
-                    deviceSerial,
-                    atecSerial,
-                    relay.fingerprint,
-                    relay.ator_address,
-                    publicKey,
-                    signature
+                results.push({ relay, result: 'AlreadyRegistered' })
+            } else if (isAlreadyVerified) {
+                this.logger.debug(
+                    `Already verified relay [${relay.fingerprint}]`,
                 )
-
-                if (!isHardwareProofValid) {
-                    this.logger.debug(
-                        `Hardware info proof failed verification for relay [${relay.fingerprint}]`
-                    )
-
-                    return 'HardwareProofFailed'
-                }
-
-                await this.verifiedHardwareModel.create({
-                    verified_at: Date.now(),
-                    deviceSerial,
-                    atecSerial,
-                    fingerprint: relay.fingerprint,
-                    address: relay.ator_address,
-                    publicKey,
-                    signature,
-                    nftId: nftid ? parsedNftId : undefined
-                })
-            }
-
-            if (this.isLive === 'true') {
-                try {
-                    const evmSig = await buildEvmSignature(this.operator.signer)
-                    const response = await this.relayRegistryContract
-                        .connect({
-                            signer: evmSig,
-                            type: 'ethereum',
-                        })
-                        .writeInteraction<AddClaimable>({
-                            function: 'addClaimable',
-                            fingerprint: relay.fingerprint,
-                            address: relay.ator_address,
-                            // TODO -> add hardware valid here
-                        })
-
-                    this.logger.log(
-                        `Added a claimable relay [${relay.fingerprint}]: ${response?.originalTxId}`,
-                    )
-                } catch (error) {
-                    this.logger.error(
-                        `Exception when verifying relay [${relay.fingerprint}]`,
-                        error.stack,
-                    )
-                    return 'Failed'
-                }
+                results.push({ relay, result: 'AlreadyVerified' })
+            } else if (!relay.hardware_info) {
+                relaysToAddAsClaimable.push({ relay })
             } else {
-                this.logger.warn(
-                    `NOT LIVE - skipped contract call to add a claimable relay [${relay.fingerprint}]`,
+                const isHardwareProofValid = await this
+                    .isHardwareProofValid(relay)
+                if (isHardwareProofValid) {
+                    relaysToAddAsClaimable.push({relay, isHardwareProofValid })
+                } else {
+                    results.push({ relay, result: 'HardwareProofFailed' })
+                }
+            }
+        }
+
+        if (this.isLive === 'true') {
+            try {
+                await setTimeout(5000)
+                const response = await this.relayRegistryContract
+                    .writeInteraction<AddClaimableBatched>({
+                        function: 'addClaimableBatched',
+                        relays: relaysToAddAsClaimable.map(
+                            ({
+                                relay: {
+                                    fingerprint,
+                                    ator_address,
+                                    nickname
+                                }
+                            }) => ({
+                                fingerprint,
+                                address: ator_address,
+                                nickname
+                            })
+                        )
+                    })
+
+                this.logger.log(
+                    `Added ${relaysToAddAsClaimable.length} claimable relays: ${response?.originalTxId}`,
+                )
+            } catch (error) {
+                this.logger.error(
+                    `Exception when verifying relays [${relaysToAddAsClaimable.map(({ relay }) => relay.fingerprint)}]`,
+                    error.stack,
+                )
+
+                return results.concat(
+                    relaysToAddAsClaimable.map(
+                        ({ relay }) => ({ relay, result: 'Failed' })
+                    )
                 )
             }
-
-            return 'OK'
         } else {
-            this.logger.error(
-                'Contract not initialized or validator key not defined',
+            this.logger.warn(
+                `NOT LIVE - skipped contract call to add ${relaysToAddAsClaimable.length} claimable relays`,
             )
-            return 'Failed'
         }
+
+        return results.concat(
+            relaysToAddAsClaimable.map(({ relay }) => ({ relay, result: 'OK' }))
+        )
+    }
+
+    private async isHardwareProofValid(
+        relay: ValidatedRelay
+    ): Promise<boolean> {
+        if (!relay.hardware_info) { return false }
+
+        const { nftid, serNums, pubKeys, certs } = relay.hardware_info
+
+        if (!nftid) {
+            this.logger.debug(
+                `Missing NFT ID in hardware info for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+        const parsedNftId = Number.parseInt(nftid)
+        // TODO -> check id is within range of IDs in contract(s)?
+        //         nftIds are not sequential :)
+        //         isNftIdValid should be false if failing this ^
+        const isNftIdValid = Number.isInteger(parsedNftId)
+        if (!isNftIdValid) {
+            this.logger.debug(
+                `Invalid NFT ID [${parsedNftId}] in hardware info for relay [${relay.fingerprint}]`
+            )
+        }
+        // TODO -> check if address owns nft id
+        const existingVerifiedHardwareByNftId = await this
+            .verifiedHardwareModel
+            .exists({ nftId: parsedNftId })
+            .exec()
+        if (existingVerifiedHardwareByNftId) {
+            this.logger.debug(
+                `NFT ID [${parsedNftId}] already verified in hardware info for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+
+        const deviceSerial = serNums
+            ?.find(s => s.type === 'DEVICE')
+            ?.number
+        if (!deviceSerial) {
+            this.logger.debug(
+                `Missing Device Serial in hardware info for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+        const existingVerifiedHardwareByDeviceSerial = await this
+            .verifiedHardwareModel
+            .exists({ deviceSerial })
+            .exec()
+        if (existingVerifiedHardwareByDeviceSerial) {
+            this.logger.debug(`Device Serial [${deviceSerial}] already verified for relay [${relay.fingerprint}]`)
+
+            return false
+        }
+
+        const atecSerial = serNums
+            ?.find(s => s.type === 'ATEC')
+            ?.number
+        if (!atecSerial) {
+            this.logger.debug(
+                `Missing ATEC Serial in hardware info for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+
+        const existingVerifiedHardwareByAtecSerial = await this
+            .verifiedHardwareModel
+            .exists({ atecSerial })
+            .exec()
+        if (existingVerifiedHardwareByAtecSerial) {
+            this.logger.debug(`ATEC Serial [${atecSerial}] already verified for relay [${relay.fingerprint}]`)
+
+            return false
+        }
+
+        const publicKey = pubKeys
+            ?.find(p => p.type === 'DEVICE')
+            ?.number
+        if (!publicKey) {
+            this.logger.debug(
+                `Missing Public Key in hardware info for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+
+        const signature = certs
+            ?.find(c => c.type === 'DEVICE')
+            ?.signature
+        if (!signature) {
+            this.logger.debug(
+                `Missing Signature in hardware info for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+
+        const isHardwareProofValid = await this.verifyRelaySerial(
+            'relay',
+            parsedNftId,
+            deviceSerial,
+            atecSerial,
+            relay.fingerprint,
+            relay.ator_address,
+            publicKey,
+            signature
+        )
+
+        if (!isHardwareProofValid) {
+            this.logger.debug(
+                `Hardware info proof failed verification for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+
+        await this.verifiedHardwareModel.create({
+            verified_at: Date.now(),
+            deviceSerial,
+            atecSerial,
+            fingerprint: relay.fingerprint,
+            address: relay.ator_address,
+            publicKey,
+            signature,
+            nftId: nftid ? parsedNftId : undefined
+        })
+
+        return true
     }
 
     public async verifyRelaySerial(

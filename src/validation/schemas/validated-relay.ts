@@ -32,6 +32,9 @@ export class ValidatedRelay {
     @Prop({ type: String, required: true })
     primary_address_hex: string
 
+    @Prop({ type: String, required: false })
+    nickname?: string
+
     @Prop({ type: Object, required: false })
     hardware_info?: {
         id?: string

@@ -48,7 +48,7 @@ query {
 ### Tags
 ```
 Protocol: 'ator'
-Protocol-Version: '0.1'
+Protocol-Version: '0.2'
 Content-Type: 'application/json'
 Content-Timestamp: <string number of milliseconds elapsed since midnight, January 1, 1970 UTC>
 Entity-Type: <string with the type of entities stored in the datafile>
@@ -109,14 +109,45 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
-* Entity-Type: `distribution/summary` - contains summary for a previous distribution round.  Each field is also exposed as a tag on the transaction, so downloading the json blob itself is not necessary.  These tags and their values are in the GQL results. [View live sample](http://arweave.net/yVrttNPdI3bFCFNRCgqFSlA5L-91bJKloC2zFQdHiNM)
+* Entity-Type: `distribution/summary` - contains summary for a previous distribution round.  Most fields are also exposed as tags on the transaction, so downloading the json blob itself is not necessary unless per-fingerprint details are desired.  These tags and their values are in the GQL results. [View live sample](...)
 ```
 {
-    totalScore: string
-    totalDistributed: string
-    timeElapsed: string
-    tokensDistributedPerSecond: string
-    bonusTokens?: string
+  timeElapsed: string
+  tokensDistributedPerSecond: string
+  baseNetworkScore: string
+  baseDistributedTokens: string
+  bonuses: {
+    hardware: {
+      enabled: boolean
+      tokensDistributedPerSecond: string
+      networkScore: string
+      distributedTokens: string
+    }
+  }
+  multipliers: {
+    family: {
+      enabled: boolean
+      familyMultiplierRate: string
+    }
+  }
+  families: { [fingerprint in Fingerprint as string]: Fingerprint[] }
+  totalTokensDistributedPerSecond: string
+  totalNetworkScore: string
+  totalDistributedTokens: string
+  details: {
+    [fingerprint: Fingerprint]: {
+      address: EvmAddress
+      score: string
+      distributedTokens: string
+      bonuses: {
+        hardware: string
+      }
+      multipliers: {
+        family: string
+        region: string
+      }
+    }
+  }
 }
 ```
 

@@ -77,6 +77,8 @@ job "valid-ator-live" {
         CPU_COUNT="1"
         GEODATADIR="/geo-ip-db/data"
         GEOTMPDIR="/geo-ip-db/tmp"
+        DRE_REQUEST_TIMEOUT=60000
+        DRE_REQUEST_MAX_REDIRECTS=3
       }
 
       volume_mount {

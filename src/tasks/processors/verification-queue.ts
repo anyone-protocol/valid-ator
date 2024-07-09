@@ -11,6 +11,7 @@ import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 import { VerificationData } from 'src/verification/schemas/verification-data'
 import { TasksService } from '../tasks.service'
 import { VerificationRecovery } from 'src/verification/dto/verification-recovery'
+import { DistributionService } from 'src/distribution/distribution.service'
 
 @Processor('verification-queue')
 export class VerificationQueue extends WorkerHost {
@@ -18,16 +19,17 @@ export class VerificationQueue extends WorkerHost {
 
     private maxUploadRetries = 3
 
-    public static readonly JOB_VERIFY_RELAY = 'verify-relay'
+    public static readonly JOB_VERIFY_RELAYS = 'verify-relays'
     public static readonly JOB_CONFIRM_VERIFICATION = 'confirm-verification'
     public static readonly JOB_PERSIST_VERIFICATION = 'persist-verification'
     public static readonly JOB_RECOVER_PERSIST_VERIFICATION =
         'recover-persist-verification'
-    public static readonly JOB_SET_RELAY_FAMILY = 'set-relay-family'
+    public static readonly JOB_SET_RELAY_FAMILIES = 'set-relay-families'
 
     constructor(
         private readonly tasks: TasksService,
         private readonly verification: VerificationService,
+        private readonly distribution: DistributionService,
     ) {
         super()
     }
@@ -38,22 +40,24 @@ export class VerificationQueue extends WorkerHost {
         this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
 
         switch (job.name) {
-            case VerificationQueue.JOB_VERIFY_RELAY:
-                let verifyResult: RelayVerificationResult = 'Failed'
-                const validatedRelay = job.data as ValidatedRelay
+            case VerificationQueue.JOB_VERIFY_RELAYS:
+                const validatedRelays = job.data as ValidatedRelay[]
                 try {
-                    if (
-                        validatedRelay !== undefined &&
-                        validatedRelay.fingerprint.length === 40
-                    ) {
-                        verifyResult = await this.verification.verifyRelay(
-                            validatedRelay,
-                        )
-                    } else {
+                    const validFingerprintRelays = validatedRelays.filter(r => {
+                        if (!!r.fingerprint && r.fingerprint.length === 40) {
+                            return true
+                        }
+
                         this.logger.log(
-                            `Incorrect fingerprint [${job.data.fingerprint}]`,
+                            `Incorrect fingerprint [${r.fingerprint}]`,
                         )
-                    }
+
+                        return false
+                    })
+
+                    return await this.verification.verifyRelays(
+                        validFingerprintRelays
+                    )
                 } catch (error) {
                     this.logger.error(
                         'Exception while verifying validated relay:',
@@ -61,30 +65,23 @@ export class VerificationQueue extends WorkerHost {
                     )
                 }
 
-                const verifiedRelay: VerificationResultDto = {
-                    result: verifyResult,
-                    relay: validatedRelay,
-                }
+                return []
 
-                return [verifiedRelay]
-
-            case VerificationQueue.JOB_SET_RELAY_FAMILY:
-                let result: RelayVerificationResult = 'Failed'
-                const relay = job.data as ValidatedRelay
+            case VerificationQueue.JOB_SET_RELAY_FAMILIES:
+                const relays = job.data as ValidatedRelay[]
                 try {
-                    if (!relay || !relay.fingerprint || !relay.family) {
-                        this.logger.log(
-                            `Incorrect family [${relay.fingerprint}]`
-                        )
-                        return []
-                    }
+                    const registryResults = await this
+                        .verification
+                        .setRelayFamilies(relays)
 
-                    result = await this.verification.setRelayFamily(relay)
+                    const distributionResults = await this
+                        .distribution
+                        .setRelayFamilies(relays)
 
-                    return [{ relay, result }]
+                    return registryResults.concat(distributionResults)
                 } catch (error) {
                     this.logger.error(
-                        `Exception while setting relay family for [${relay.fingerprint}]`,
+                        `Exception while setting relay families for [${relays.map(r => r.fingerprint)}]`,
                         error.stack
                     )
                 }

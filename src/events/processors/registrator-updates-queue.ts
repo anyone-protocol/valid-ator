@@ -1,7 +1,6 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
-import { EventsService } from 'src/events/events.service'
 import { VerificationService } from 'src/verification/verification.service'
 import { AddRegistrationCreditEventData } from '../dto/add-registration-credit-event-data'
 
@@ -12,8 +11,7 @@ export class RegistratorUpdatesQueue extends WorkerHost {
     public static readonly JOB_ADD_REGISTRATION_CREDIT = 'add-registration-credit'
 
     constructor(
-        private readonly verification: VerificationService,
-        private readonly events: EventsService,
+        private readonly verification: VerificationService
     ) {
         super()
     }
@@ -21,19 +19,19 @@ export class RegistratorUpdatesQueue extends WorkerHost {
     async process(
         job: Job<any, any, string>,
     ): Promise<boolean | undefined> {
-        this.logger.debug(`Dequeueing ${job.name} [${job.id}]`)
+        this.logger.debug(`Dequeueing ${job.name} [${job.id}] - ${job.data}`)
 
         switch (job.name) {
             case RegistratorUpdatesQueue.JOB_ADD_REGISTRATION_CREDIT:
                 try {
-                    const data = job.data as AddRegistrationCreditEventData
+                    const data: AddRegistrationCreditEventData = job.data as AddRegistrationCreditEventData
                     if (data != undefined) {
                         this.logger.log(
                             `Adding registration credit for ${data.address} seen at ${data.tx}`,
                         )
                         return await this.verification.addRegistrationCredit(data.address, data.tx, data.fingerprint)
                     } else {
-                        this.logger.error('Missing address in job data')
+                        this.logger.error('Missing job data')
                         return undefined
                     }
                 } catch (error) {

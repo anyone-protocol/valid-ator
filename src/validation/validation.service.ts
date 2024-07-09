@@ -63,7 +63,7 @@ export class ValidationService {
                         .pipe(
                             catchError((error: AxiosError) => {
                                 this.logger.error(
-                                    `Fetching relays from ${detailsUri} failed with ${error.response?.status}, ${error}`,
+                                    `Fetching relays from ${detailsUri} failed with ${error.response?.status??"?"}, ${error}`,
                                 )
                                 throw 'Failed to fetch relay details'
                             }),
@@ -164,6 +164,7 @@ export class ValidationService {
                 contact: info.contact !== undefined ? info.contact : '', // other case should not happen as its filtered out while creating validations array
                 consensus_weight: info.consensus_weight,
                 primary_address_hex: this.ipToGeoHex(info.or_addresses[0]),
+                nickname: info.nickname,
 
                 running: info.running,
                 consensus_measured: info.measured ?? false,
@@ -213,8 +214,7 @@ export class ValidationService {
                     running: relay.running,
                     family: relay.effective_family,
                     consensus_measured: relay.consensus_measured,
-                    primary_address_hex: relay.primary_address_hex,
-                    hardware_info: relay.hardware_info
+                    primary_address_hex: relay.primary_address_hex
                 }))
                 .filter((relay, index, array) => relay.ator_address.length > 0)
 
@@ -261,8 +261,7 @@ export class ValidationService {
                             observed_bandwidth: relayDto.observed_bandwidth,
                             advertised_bandwidth:
                                 relayDto.advertised_bandwidth,
-                            family: relayDto.effective_family,
-                            hardware_info: relayDto.hardware_info
+                            family: relayDto.effective_family
                         })
                         .catch(
                             (error) => this.logger.error('Failed creating relay data model', error.stack)

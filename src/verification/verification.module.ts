@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { VerificationService } from './verification.service'
-import { ConfigModule } from '@nestjs/config'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
 import {
     VerificationData,
@@ -10,6 +10,7 @@ import {
     VerifiedHardware,
     VerifiedHardwareSchema
 } from './schemas/verified-hardware'
+import { HttpModule } from '@nestjs/axios'
 
 @Module({
     imports: [
@@ -18,6 +19,23 @@ import {
             { name: VerificationData.name, schema: VerificationDataSchema },
             { name: VerifiedHardware.name, schema: VerifiedHardwareSchema },
         ]),
+        HttpModule.registerAsync({
+            inject: [ConfigService],
+            useFactory: (
+                config: ConfigService<{
+                    DRE_REQUEST_TIMEOUT: number
+                    DRE_REQUEST_MAX_REDIRECTS: number
+                }>,
+            ) => ({
+                timeout: config.get<number>('DRE_REQUEST_TIMEOUT', {
+                    infer: true,
+                }),
+                maxRedirects: config.get<number>(
+                    'DRE_REQUEST_MAX_REDIRECTS',
+                    { infer: true },
+                ),
+            }),
+        }),
     ],
     providers: [VerificationService],
     exports: [VerificationService],

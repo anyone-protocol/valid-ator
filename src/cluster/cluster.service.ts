@@ -83,7 +83,7 @@ export class ClusterService
 
                 // initiate node discovery
             } else {
-                this.logger.error(
+                this.logger.warn(
                     'Host/port of Consul not set, bootstrapping in single node mode...',
                 )
                 this.isLeader = true
