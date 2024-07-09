@@ -187,34 +187,6 @@ export class VerificationService {
         }
     }
 
-    // private async isVerified(fingerprint: string): Promise<boolean> {
-    //     const interactionResult = await this.relayRegistryContract.viewState<
-    //         IsVerified,
-    //         boolean
-    //     >({
-    //         function: 'isVerified',
-    //         fingerprint: fingerprint,
-    //     })
-
-    //     return interactionResult?.result??false
-    // }
-
-    // private async isClaimable(
-    //     fingerprint: string,
-    //     address: string,
-    // ): Promise<boolean> {
-    //     const interactionResult = await this.relayRegistryContract.viewState<
-    //         IsClaimable,
-    //         boolean
-    //     >({
-    //         function: 'isClaimable',
-    //         fingerprint: fingerprint,
-    //         address: address,
-    //     })
-
-    //     return interactionResult?.result ?? false
-    // }
-
     public async getFamilies(): Promise<RelayRegistryState['families']> {
         await this.refreshDreState()
         if (this.dreState != undefined) {
@@ -597,8 +569,11 @@ export class VerificationService {
         const families = await this.getFamilies()
         const relaysWithFamilyUpdates: ValidatedRelay[] = []
         for (const relay of relays) {
-            const incomingFamilyHash = relay.family.slice().sort().join('')
-            const contractFamilyHash = families[relay.fingerprint]
+            const incomingFamilyHash = (relay.family || [])
+                .slice()
+                .sort()
+                .join('')
+            const contractFamilyHash = (families[relay.fingerprint] || [])
                 .slice()
                 .sort()
                 .join('')

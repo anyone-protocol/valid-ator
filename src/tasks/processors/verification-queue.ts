@@ -11,6 +11,7 @@ import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 import { VerificationData } from 'src/verification/schemas/verification-data'
 import { TasksService } from '../tasks.service'
 import { VerificationRecovery } from 'src/verification/dto/verification-recovery'
+import { DistributionService } from 'src/distribution/distribution.service'
 
 @Processor('verification-queue')
 export class VerificationQueue extends WorkerHost {
@@ -28,6 +29,7 @@ export class VerificationQueue extends WorkerHost {
     constructor(
         private readonly tasks: TasksService,
         private readonly verification: VerificationService,
+        private readonly distribution: DistributionService,
     ) {
         super()
     }
@@ -68,7 +70,15 @@ export class VerificationQueue extends WorkerHost {
             case VerificationQueue.JOB_SET_RELAY_FAMILIES:
                 const relays = job.data as ValidatedRelay[]
                 try {
-                    return await this.verification.setRelayFamilies(relays)
+                    const registryResults = await this
+                        .verification
+                        .setRelayFamilies(relays)
+
+                    const distributionResults = await this
+                        .distribution
+                        .setRelayFamilies(relays)
+
+                    return registryResults.concat(distributionResults)
                 } catch (error) {
                     this.logger.error(
                         `Exception while setting relay families for [${relays.map(r => r.fingerprint)}]`,
