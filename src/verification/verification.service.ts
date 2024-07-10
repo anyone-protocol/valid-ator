@@ -803,6 +803,10 @@ export class VerificationService {
         const { nftid, serNums, pubKeys, certs } = relay.hardware_info
 
         if (!nftid) {
+            // TODO -> check if this hardware is associated with an NFT
+            //         - if it is, fail it
+            //         - if it isn't, continue
+
             this.logger.debug(
                 `Missing NFT ID in hardware info for relay [${relay.fingerprint}]`
             )
