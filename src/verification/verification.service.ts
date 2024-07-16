@@ -29,6 +29,7 @@ import { HttpService } from '@nestjs/axios'
 import { AxiosError } from 'axios'
 import { DreRelayRegistryResponse } from './interfaces/dre-relay-registry-response'
 import { setTimeout } from 'node:timers/promises'
+import _ from 'lodash'
 
 @Injectable()
 export class VerificationService {
@@ -38,6 +39,9 @@ export class VerificationService {
 
     private operator
     private bundlr
+
+    private static readonly familiesPerBatch = 4
+    private static readonly claimableRelaysPerBatch = 8
 
     private relayRegistryWarp: Warp
     private relayRegistryContract: Contract<RelayRegistryState>
@@ -590,22 +594,31 @@ export class VerificationService {
 
         if (this.isLive === 'true') {
             try {
-                await setTimeout(5000)
-                this.logger.debug(
-                    `Starting to set relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
-                )
-                const response = await this.relayRegistryContract
-                    .writeInteraction<SetFamilies>({
-                        function: 'setFamilies',
-                        families: relaysWithFamilyUpdates.map(
-                            ({ fingerprint, family }) =>
-                                ({ fingerprint, family })
-                        )
-                    })
+                if (relaysWithFamilyUpdates.length > 0) {
+                    const familyBatches = _.chunk(
+                        relaysWithFamilyUpdates,
+                        VerificationService.familiesPerBatch
+                    )
 
-                this.logger.log(
-                    `Set relay families for ${relaysWithFamilyUpdates.length} relays: ${response?.originalTxId}`,
-                )
+                    for (const familyBatch of familyBatches) {
+                        await setTimeout(5000)
+                        this.logger.debug(
+                            `Starting to set relay families for ${familyBatch.length} relays [${familyBatch.map(r => r.fingerprint)}]`,
+                        )
+                        const response = await this.relayRegistryContract
+                            .writeInteraction<SetFamilies>({
+                                function: 'setFamilies',
+                                families: familyBatch.map(
+                                    ({ fingerprint, family }) =>
+                                        ({ fingerprint, family })
+                                )
+                            })
+
+                        this.logger.log(
+                            `Set relay families for ${familyBatch.length} relays: ${response?.originalTxId}`,
+                        )
+                    }
+                }
             } catch (error) {
                 this.logger.error(
                     `Exception setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
@@ -728,26 +741,38 @@ export class VerificationService {
 
         if (this.isLive === 'true') {
             try {
-                await setTimeout(5000)
-                const response = await this.relayRegistryContract
-                    .writeInteraction<AddClaimableBatched>({
-                        function: 'addClaimableBatched',
-                        relays: relaysToAddAsClaimable.map(
-                            ({
-                                fingerprint,
-                                ator_address,
-                                nickname
-                            }) => ({
-                                fingerprint,
-                                address: ator_address,
-                                nickname
-                            })
-                        )
-                    })
+                if (relaysToAddAsClaimable.length > 0) {
+                    const relayBatches = _.chunk(
+                        relaysToAddAsClaimable,
+                        VerificationService.claimableRelaysPerBatch
+                    )
 
-                this.logger.log(
-                    `Added ${relaysToAddAsClaimable.length} claimable relays: ${response?.originalTxId}`,
-                )
+                    for (const relayBatch of relayBatches) {
+                        await setTimeout(5000)
+                        this.logger.debug(
+                            `Starting to add a batch of claimable relays for ${relayBatch} relays [${relayBatch.map(r => r.fingerprint)}]`
+                        )
+                        const response = await this.relayRegistryContract
+                            .writeInteraction<AddClaimableBatched>({
+                                function: 'addClaimableBatched',
+                                relays: relayBatch.map(
+                                    ({
+                                        fingerprint,
+                                        ator_address,
+                                        nickname
+                                    }) => ({
+                                        fingerprint,
+                                        address: ator_address,
+                                        nickname
+                                    })
+                                )
+                            })
+
+                        this.logger.log(
+                            `Added ${relayBatch.length} claimable relays: ${response?.originalTxId}`,
+                        )
+                    }
+                }
             } catch (error) {
                 this.logger.error(
                     `Exception when verifying relays [${relaysToAddAsClaimable.map(r => r.fingerprint)}]`,

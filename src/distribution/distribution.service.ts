@@ -34,6 +34,7 @@ import { DreDistributionResponse } from './interfaces/dre-relay-registry-respons
 import { HttpService } from '@nestjs/axios'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 import { VerificationResults } from 'src/verification/dto/verification-result-dto'
+import _ from 'lodash'
 
 @Injectable()
 export class DistributionService {
@@ -44,6 +45,7 @@ export class DistributionService {
 
     private static readonly scoresPerBatch = 8
     public static readonly maxDistributionRetries = 6
+    private static readonly familiesPerBatch = 4
 
     private distributionWarp: Warp
     private distributionContract: Contract<DistributionState>
@@ -532,22 +534,31 @@ export class DistributionService {
 
         if (this.isLive === 'true') {
             try {
-                await setTimeout(5000)
-                this.logger.debug(
-                    `Starting to set relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
-                )
-                const response = await this.distributionContract
-                    .writeInteraction<SetFamilies>({
-                        function: 'setFamilies',
-                        families: relaysWithFamilyUpdates.map(
-                            ({ fingerprint, family }) =>
-                                ({ fingerprint, family })
-                        )
-                    })
+                if (relaysWithFamilyUpdates.length > 0) {
+                    const familyBatches = _.chunk(
+                        relaysWithFamilyUpdates,
+                        DistributionService.familiesPerBatch
+                    )
 
-                this.logger.log(
-                    `Set relay families for ${relaysWithFamilyUpdates.length} relays: ${response?.originalTxId}`,
-                )
+                    for (const familyBatch of familyBatches) {
+                        await setTimeout(5000)
+                        this.logger.debug(
+                            `Starting to set relay families for ${familyBatch.length} relays [${familyBatch.map(r => r.fingerprint)}]`,
+                        )
+                        const response = await this.distributionContract
+                            .writeInteraction<SetFamilies>({
+                                function: 'setFamilies',
+                                families: familyBatch.map(
+                                    ({ fingerprint, family }) =>
+                                        ({ fingerprint, family })
+                                )
+                            })
+
+                        this.logger.log(
+                            `Set relay families for ${familyBatch.length} relays: ${response?.originalTxId}`,
+                        )
+                    }
+                }
             } catch (error) {
                 this.logger.error(
                     `Exception setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
