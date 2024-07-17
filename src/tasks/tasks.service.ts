@@ -24,7 +24,7 @@ export class TasksService implements OnApplicationBootstrap {
         removeOnComplete: TasksService.removeOnComplete,
         removeOnFail: TasksService.removeOnFail,
     }
-    
+
     public static CHECK_BALANCES_FLOW(stamp: number): FlowJob {
         return {
             name: 'publish-balance-checks',
