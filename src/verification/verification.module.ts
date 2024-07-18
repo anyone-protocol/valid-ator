@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common'
-import { VerificationService } from './verification.service'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
+import { HttpModule } from '@nestjs/axios'
+
+import { VerificationService } from './verification.service'
 import {
     VerificationData,
     VerificationDataSchema,
@@ -10,7 +12,7 @@ import {
     VerifiedHardware,
     VerifiedHardwareSchema
 } from './schemas/verified-hardware'
-import { HttpModule } from '@nestjs/axios'
+
 
 @Module({
     imports: [
@@ -35,7 +37,7 @@ import { HttpModule } from '@nestjs/axios'
                     { infer: true },
                 ),
             }),
-        }),
+        })
     ],
     providers: [VerificationService],
     exports: [VerificationService],

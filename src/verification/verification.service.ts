@@ -2,23 +2,23 @@ import { Injectable, Logger } from '@nestjs/common'
 import { firstValueFrom, catchError } from 'rxjs'
 import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
-    AddClaimable,
     AddClaimableBatched,
     AddRegistrationCredits,
-    IsClaimable,
-    IsVerified,
     RelayRegistryState,
     SetFamilies
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
-import { Wallet, toUtf8Bytes } from 'ethers'
+import {
+    Contract as EthersContract,
+    JsonRpcProvider,
+    toUtf8Bytes
+} from 'ethers'
 import {
     EthereumSigner,
     // @ts-ignore
 } from 'warp-contracts-plugin-signature/server'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
-import { RelayVerificationResult } from './dto/relay-verification-result'
 import { VerificationData } from './schemas/verification-data'
 import { VerifiedHardware } from './schemas/verified-hardware'
 import { VerificationResults } from './dto/verification-result-dto'
@@ -36,9 +36,12 @@ import { isAddressValid } from '../util/address-evm'
 import { isHexStringValid } from '../util/hex-string'
 import { HttpService } from '@nestjs/axios'
 import { AxiosError } from 'axios'
-import { DreRelayRegistryResponse } from './interfaces/dre-relay-registry-response'
+import {
+    DreRelayRegistryResponse
+} from './interfaces/dre-relay-registry-response'
 import { setTimeout } from 'node:timers/promises'
 import _ from 'lodash'
+import relayUpAbi from './interfaces/relay-up-abi'
 
 @Injectable()
 export class VerificationService {
@@ -59,6 +62,12 @@ export class VerificationService {
     private dreState: RelayRegistryState | undefined
     private dreStateStamp: number | undefined
 
+    private mainnetJsonRpc?: string
+    private mainnetProvider: JsonRpcProvider
+  
+    private relayupNftContractAddress?: string
+    private relayupNftContract?: EthersContract
+
     constructor(
         private readonly config: ConfigService<{
             RELAY_REGISTRY_OPERATOR_KEY: string
@@ -68,6 +77,8 @@ export class VerificationService {
             IRYS_NETWORK: string
             DISTRIBUTION_CONTRACT_TXID: string
             DRE_HOSTNAME: string
+            MAINNET_JSON_RPC: string,
+            RELAY_UP_NFT_CONTRACT_ADDRESS: string
         }>,
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
@@ -159,6 +170,32 @@ export class VerificationService {
                     .connect(this.operator.signer)
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
+
+        this.relayupNftContractAddress = this.config.get<string>(
+            'RELAY_UP_NFT_CONTRACT_ADDRESS', { infer: true }
+        )
+    
+        this.mainnetJsonRpc = this.config.get<string>(
+            'MAINNET_JSON_RPC',
+            { infer: true }
+        )
+    
+        if (!this.mainnetJsonRpc) {
+            this.logger.error('Missing MAINNET_JSON_RPC!')
+        } else if (!this.relayupNftContractAddress) {
+            this.logger.error('Missing RELAYUP NFT Contract address!')
+        } else {
+            this.mainnetProvider = new JsonRpcProvider(this.mainnetJsonRpc)
+            this.relayupNftContract = new EthersContract(
+                this.relayupNftContractAddress,
+                relayUpAbi,
+                this.mainnetProvider
+            )
+    
+            this.logger.log(
+                `Initialized user balance service for RELAYUP NFT Contract: ${this.relayupNftContractAddress}`
+            )
+        }
     }
 
     public async addRegistrationCredit(address: string, tx: string, fingerprint: string): Promise<boolean> {
@@ -829,6 +866,7 @@ export class VerificationService {
             // TODO -> check if this hardware is associated with an NFT
             //         - if it is, fail it
             //         - if it isn't, continue
+            // NB: handle nft id 0!!!!!!!!!!
 
             this.logger.debug(
                 `Missing NFT ID in hardware info for relay [${relay.fingerprint}]`
@@ -836,17 +874,15 @@ export class VerificationService {
 
             return false
         }
+
         const parsedNftId = Number.parseInt(nftid)
-        // TODO -> check id is within range of IDs in contract(s)?
-        //         nftIds are not sequential :)
-        //         isNftIdValid should be false if failing this ^
         const isNftIdValid = Number.isInteger(parsedNftId)
         if (!isNftIdValid) {
             this.logger.debug(
                 `Invalid NFT ID [${parsedNftId}] in hardware info for relay [${relay.fingerprint}]`
             )
         }
-        // TODO -> check if address owns nft id
+
         const existingVerifiedHardwareByNftId = await this
             .verifiedHardwareModel
             .exists({ nftId: parsedNftId })
@@ -854,6 +890,18 @@ export class VerificationService {
         if (existingVerifiedHardwareByNftId) {
             this.logger.debug(
                 `NFT ID [${parsedNftId}] already verified in hardware info for relay [${relay.fingerprint}]`
+            )
+
+            return false
+        }
+
+        const isAddressOwnerOfNftId = await this.isOwnerOfRelayupNft(
+            relay.ator_address,
+            BigInt(parsedNftId)
+        )
+        if (!isAddressOwnerOfNftId) {
+            this.logger.debug(
+                `NFT ID [${parsedNftId}] is not owned by ${relay.ator_address}!`
             )
 
             return false
@@ -1033,4 +1081,32 @@ export class VerificationService {
 
         return p256.verify(signature, messageHash, publicKeyCompressed)
     }
+
+    async isOwnerOfRelayupNft(
+        address: string,
+        nftId: bigint
+      ) {
+        if (!this.relayupNftContract) {
+          this.logger.error(
+            `Could not check owner of RELAYUP NFT #${nftId}: No Contract`
+          )
+    
+          return false
+        }
+
+        try {
+            const owner = await this.relayupNftContract.ownerOf(nftId)
+        
+            return address === owner
+        } catch (error) {
+            if (error.reason !== 'ERC721: invalid token ID') {
+                this.logger.error(
+                    `Error thrown checking owner of NFT ID #${nftId}`,
+                    error
+                )
+            }
+
+            return false
+        }
+      }
 }

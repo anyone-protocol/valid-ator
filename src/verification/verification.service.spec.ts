@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { VerificationService } from './verification.service'
 import { ConfigModule } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
+import { HttpModule } from '@nestjs/axios'
+
+import { VerificationService } from './verification.service'
 import {
     VerificationData,
     VerificationDataSchema,
@@ -12,12 +14,14 @@ import {
 } from './schemas/verified-hardware'
 
 describe('VerificationService', () => {
+    let module: TestingModule
     let service: VerificationService
 
-    beforeAll(async () => {
-        const module: TestingModule = await Test.createTestingModule({
+    beforeEach(async () => {
+        module = await Test.createTestingModule({
             imports: [
                 ConfigModule.forRoot(),
+                HttpModule,
                 MongooseModule.forRoot(
                     'mongodb://localhost/validator-validation-service-tests',
                 ),
@@ -29,7 +33,7 @@ describe('VerificationService', () => {
                     {
                         name: VerifiedHardware.name,
                         schema: VerifiedHardwareSchema
-                    },
+                    }
                 ]),
             ],
             providers: [VerificationService],
@@ -38,8 +42,36 @@ describe('VerificationService', () => {
         service = module.get<VerificationService>(VerificationService)
     })
 
+    afterEach(async () => {
+        await module.close()
+    })
+
     it('should be defined', () => {
         expect(service).toBeDefined()
+    })
+
+    it('should check owner of valid nft id', async () => {
+        const address = '0xe96caef5e3b4d6b3F810679637FFe95D21dEFa5B'
+        const nftId = BigInt(621)
+
+        const isOwnerOfRelayupNft = await service.isOwnerOfRelayupNft(
+            address,
+            nftId
+        )
+
+        expect(isOwnerOfRelayupNft).toBe(true)
+    })
+
+    it('should check owner of invalid nft id', async () => {
+        const address = '0xe96caef5e3b4d6b3F810679637FFe95D21dEFa5B'
+        const nftId = BigInt(999)
+
+        const isOwnerOfRelayupNft = await service.isOwnerOfRelayupNft(
+            address,
+            nftId
+        )
+
+        expect(isOwnerOfRelayupNft).toBe(false)
     })
 
     it('should validate hardware serial proofs', async () => {

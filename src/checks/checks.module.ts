@@ -3,7 +3,6 @@ import { MongooseModule } from '@nestjs/mongoose'
 
 import { BalancesService } from './balances.service'
 import { BalancesData, BalancesDataSchema } from './schemas/balances-data'
-import { UserBalancesService } from './user-balances.service'
 
 @Module({
     imports: [
@@ -15,12 +14,10 @@ import { UserBalancesService } from './user-balances.service'
         ]),
     ],
     providers: [
-        BalancesService,
-        UserBalancesService
+        BalancesService
     ],
     exports: [
-        BalancesService,
-        UserBalancesService
+        BalancesService
     ],
 })
 export class ChecksModule {}
