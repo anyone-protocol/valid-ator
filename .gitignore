@@ -41,3 +41,4 @@ lerna-debug.log*
 cache/*
 
 version.yml
+data

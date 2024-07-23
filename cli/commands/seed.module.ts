@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
 
 import { SeedCommand } from './seed.command'
+import { SeedLock, SeedLockSchema } from './seed-lock'
 import {
   RelaySaleData,
   RelaySaleDataSchema
@@ -12,7 +13,8 @@ import {
   imports: [
     ConfigModule,
     MongooseModule.forFeature([
-      { name: RelaySaleData.name, schema: RelaySaleDataSchema }
+      { name: RelaySaleData.name, schema: RelaySaleDataSchema },
+      { name: SeedLock.name, schema: SeedLockSchema }
     ])
   ],
   providers: [ ...SeedCommand.registerWithSubCommands() ],
