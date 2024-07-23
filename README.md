@@ -151,6 +151,19 @@ Entity-Type: <string with the type of entities stored in the datafile>
 }
 ```
 
+## CLI
+
+### Seeding Relay Sale Data
+
+- Seed Relay Sale Data
+```bash
+npm run cli -- seed relay-sale-data -d <path-to-relay-sale-data.csv>
+```
+
+- Remove Relay Sale Data
+```bash
+npm run cli -- seed relay-sale-data -d <path-to-relay-sale-data.csv> down
+```
 
 ## Development
 

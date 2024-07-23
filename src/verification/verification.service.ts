@@ -9,11 +9,6 @@ import {
 } from './interfaces/relay-registry'
 import { ConfigService } from '@nestjs/config'
 import {
-    Contract as EthersContract,
-    JsonRpcProvider,
-    toUtf8Bytes
-} from 'ethers'
-import {
     EthereumSigner,
     // @ts-ignore
 } from 'warp-contracts-plugin-signature/server'
@@ -27,13 +22,6 @@ import { Model } from 'mongoose'
 import { InjectModel } from '@nestjs/mongoose'
 import Bundlr from '@bundlr-network/client'
 import { RelayValidationStatsDto } from './dto/relay-validation-stats'
-import { p256 } from '@noble/curves/p256'
-import { bytesToHex } from '@noble/curves/abstract/utils'
-import { createHash } from 'crypto'
-import { ECPointCompress } from '../util/ec-point-compress'
-import { isFingerprintValid } from '../util/fingerprint'
-import { isAddressValid } from '../util/address-evm'
-import { isHexStringValid } from '../util/hex-string'
 import { HttpService } from '@nestjs/axios'
 import { AxiosError } from 'axios'
 import {
@@ -41,7 +29,7 @@ import {
 } from './interfaces/dre-relay-registry-response'
 import { setTimeout } from 'node:timers/promises'
 import _ from 'lodash'
-import relayUpAbi from './interfaces/relay-up-abi'
+import { HardwareVerificationService } from './hardware-verification.service'
 
 @Injectable()
 export class VerificationService {
@@ -62,12 +50,6 @@ export class VerificationService {
     private dreState: RelayRegistryState | undefined
     private dreStateStamp: number | undefined
 
-    private mainnetJsonRpc?: string
-    private mainnetProvider: JsonRpcProvider
-  
-    private relayupNftContractAddress?: string
-    private relayupNftContract?: EthersContract
-
     constructor(
         private readonly config: ConfigService<{
             RELAY_REGISTRY_OPERATOR_KEY: string
@@ -77,14 +59,12 @@ export class VerificationService {
             IRYS_NETWORK: string
             DISTRIBUTION_CONTRACT_TXID: string
             DRE_HOSTNAME: string
-            MAINNET_JSON_RPC: string,
-            RELAY_UP_NFT_CONTRACT_ADDRESS: string
         }>,
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
-        @InjectModel(VerifiedHardware.name)
-        private readonly verifiedHardwareModel: Model<VerifiedHardware>,
-        private readonly httpService: HttpService
+        private readonly httpService: HttpService,
+        private readonly hardwareVerificationService:
+            HardwareVerificationService
     ) {
         LoggerFactory.INST.logLevel('error')
 
@@ -170,32 +150,6 @@ export class VerificationService {
                     .connect(this.operator.signer)
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
-
-        this.relayupNftContractAddress = this.config.get<string>(
-            'RELAY_UP_NFT_CONTRACT_ADDRESS', { infer: true }
-        )
-    
-        this.mainnetJsonRpc = this.config.get<string>(
-            'MAINNET_JSON_RPC',
-            { infer: true }
-        )
-    
-        if (!this.mainnetJsonRpc) {
-            this.logger.error('Missing MAINNET_JSON_RPC!')
-        } else if (!this.relayupNftContractAddress) {
-            this.logger.error('Missing RELAYUP NFT Contract address!')
-        } else {
-            this.mainnetProvider = new JsonRpcProvider(this.mainnetJsonRpc)
-            this.relayupNftContract = new EthersContract(
-                this.relayupNftContractAddress,
-                relayUpAbi,
-                this.mainnetProvider
-            )
-    
-            this.logger.log(
-                `Initialized user balance service for RELAYUP NFT Contract: ${this.relayupNftContractAddress}`
-            )
-        }
     }
 
     public async addRegistrationCredit(address: string, tx: string, fingerprint: string): Promise<boolean> {
@@ -789,6 +743,7 @@ export class VerificationService {
                 relaysToAddAsClaimable.push({ relay })
             } else {
                 const isHardwareProofValid = await this
+                    .hardwareVerificationService
                     .isHardwareProofValid(relay)
                 if (isHardwareProofValid) {
                     relaysToAddAsClaimable.push({relay, isHardwareProofValid })
@@ -854,259 +809,4 @@ export class VerificationService {
             relaysToAddAsClaimable.map(({ relay }) => ({ relay, result: 'OK' }))
         )
     }
-
-    private async isHardwareProofValid(
-        relay: ValidatedRelay
-    ): Promise<boolean> {
-        if (!relay.hardware_info) { return false }
-
-        const { nftid, serNums, pubKeys, certs } = relay.hardware_info
-
-        if (!nftid) {
-            // TODO -> check if this hardware is associated with an NFT
-            //         - if it is, fail it
-            //         - if it isn't, continue
-            // NB: handle nft id 0!!!!!!!!!!
-
-            this.logger.debug(
-                `Missing NFT ID in hardware info for relay [${relay.fingerprint}]`
-            )
-
-            return false
-        }
-
-        const parsedNftId = Number.parseInt(nftid)
-        const isNftIdValid = Number.isInteger(parsedNftId)
-        if (!isNftIdValid) {
-            this.logger.debug(
-                `Invalid NFT ID [${parsedNftId}] in hardware info for relay [${relay.fingerprint}]`
-            )
-        }
-
-        const existingVerifiedHardwareByNftId = await this
-            .verifiedHardwareModel
-            .exists({ nftId: parsedNftId })
-            .exec()
-        if (existingVerifiedHardwareByNftId) {
-            this.logger.debug(
-                `NFT ID [${parsedNftId}] already verified in hardware info for relay [${relay.fingerprint}]`
-            )
-
-            return false
-        }
-
-        const isAddressOwnerOfNftId = await this.isOwnerOfRelayupNft(
-            relay.ator_address,
-            BigInt(parsedNftId)
-        )
-        if (!isAddressOwnerOfNftId) {
-            this.logger.debug(
-                `NFT ID [${parsedNftId}] is not owned by ${relay.ator_address}!`
-            )
-
-            return false
-        }
-
-        const deviceSerial = serNums
-            ?.find(s => s.type === 'DEVICE')
-            ?.number
-        if (!deviceSerial) {
-            this.logger.debug(
-                `Missing Device Serial in hardware info for relay [${relay.fingerprint}]`
-            )
-
-            return false
-        }
-        const existingVerifiedHardwareByDeviceSerial = await this
-            .verifiedHardwareModel
-            .exists({ deviceSerial })
-            .exec()
-        if (existingVerifiedHardwareByDeviceSerial) {
-            this.logger.debug(`Device Serial [${deviceSerial}] already verified for relay [${relay.fingerprint}]`)
-
-            return false
-        }
-
-        const atecSerial = serNums
-            ?.find(s => s.type === 'ATEC')
-            ?.number
-        if (!atecSerial) {
-            this.logger.debug(
-                `Missing ATEC Serial in hardware info for relay [${relay.fingerprint}]`
-            )
-
-            return false
-        }
-
-        const existingVerifiedHardwareByAtecSerial = await this
-            .verifiedHardwareModel
-            .exists({ atecSerial })
-            .exec()
-        if (existingVerifiedHardwareByAtecSerial) {
-            this.logger.debug(`ATEC Serial [${atecSerial}] already verified for relay [${relay.fingerprint}]`)
-
-            return false
-        }
-
-        const publicKey = pubKeys
-            ?.find(p => p.type === 'DEVICE')
-            ?.number
-        if (!publicKey) {
-            this.logger.debug(
-                `Missing Public Key in hardware info for relay [${relay.fingerprint}]`
-            )
-
-            return false
-        }
-
-        const signature = certs
-            ?.find(c => c.type === 'DEVICE')
-            ?.signature
-        if (!signature) {
-            this.logger.debug(
-                `Missing Signature in hardware info for relay [${relay.fingerprint}]`
-            )
-
-            return false
-        }
-
-        const isHardwareProofValid = await this.verifyRelaySerial(
-            'relay',
-            parsedNftId,
-            deviceSerial,
-            atecSerial,
-            relay.fingerprint,
-            relay.ator_address,
-            publicKey,
-            signature
-        )
-
-        if (!isHardwareProofValid) {
-            this.logger.debug(
-                `Hardware info proof failed verification for relay [${relay.fingerprint}]`
-            )
-
-            return false
-        }
-
-        await this.verifiedHardwareModel.create({
-            verified_at: Date.now(),
-            deviceSerial,
-            atecSerial,
-            fingerprint: relay.fingerprint,
-            address: relay.ator_address,
-            publicKey,
-            signature,
-            nftId: nftid ? parsedNftId : undefined
-        })
-
-        return true
-    }
-
-    public async verifyRelaySerial(
-        nodeId: string,
-        nftId: number,
-        deviceSerial: string,
-        atecSerial: string,
-        fingerprint: string,
-        address: string,
-        publicKey: string,
-        signature: string
-    ) {
-        if (!isFingerprintValid(fingerprint)) {
-            this.logger.error('Invalid fingerprint', fingerprint)
-
-            return false
-        }
-
-        if (!isAddressValid(address)) {
-            this.logger.error('Invalid address', address)
-
-            return false
-        }
-
-        const nodeIdHex = bytesToHex(toUtf8Bytes(nodeId))
-
-        const isDeviceSerialValid = deviceSerial.length === 16
-            && isHexStringValid(deviceSerial)
-        if (!isDeviceSerialValid) {
-            this.logger.error('Invalid device serial', deviceSerial)
-
-            return false
-        }
-
-        const isAtecSerialValid = atecSerial.length === 18
-            && isHexStringValid(atecSerial)
-        if (!isAtecSerialValid) {
-            this.logger.error('Invalid atec serial', atecSerial)
-
-            return false
-        }
-
-        const isSignatureFormatValid = signature.length === 128
-            && isHexStringValid(signature)
-        if (!isSignatureFormatValid) {
-            this.logger.error('Invalid signature', signature)
-
-            return false
-        }
-
-        const nftIdHex = nftId.toString(16).padStart(4, '0')
-        const nftIdHexLsb = [
-            nftIdHex[2],
-            nftIdHex[3],
-            nftIdHex[0],
-            nftIdHex[1]
-        ].join('')
-        const messageHexString = (
-            nodeIdHex
-            + nftIdHexLsb
-            + deviceSerial
-            + atecSerial
-            + fingerprint
-            + address
-        ).toLowerCase()
-        const message = Uint8Array.from(
-            (messageHexString.match(/.{1,2}/g) || [])
-                .map((byte) => parseInt(byte, 16))
-        )
-        const messageHash = createHash('sha256').update(message).digest('hex')
-        const publicKeyBytes = Uint8Array.from(
-            (publicKey.match(/.{1,2}/g) || []).map((byte) => parseInt(byte, 16))
-        )
-        const publicKeyCompressed = ECPointCompress(
-            publicKeyBytes.slice(0, publicKeyBytes.length / 2),
-            publicKeyBytes.slice(publicKeyBytes.length / 2)
-        )
-
-        return p256.verify(signature, messageHash, publicKeyCompressed)
-    }
-
-    async isOwnerOfRelayupNft(
-        address: string,
-        nftId: bigint
-      ) {
-        if (!this.relayupNftContract) {
-          this.logger.error(
-            `Could not check owner of RELAYUP NFT #${nftId}: No Contract`
-          )
-    
-          return false
-        }
-
-        try {
-            const owner = await this.relayupNftContract.ownerOf(nftId)
-        
-            return address === owner
-        } catch (error) {
-            if (error.reason !== 'ERC721: invalid token ID') {
-                this.logger.error(
-                    `Error thrown checking owner of NFT ID #${nftId}`,
-                    error
-                )
-            }
-
-            return false
-        }
-      }
 }

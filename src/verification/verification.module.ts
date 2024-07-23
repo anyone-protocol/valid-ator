@@ -12,6 +12,8 @@ import {
     VerifiedHardware,
     VerifiedHardwareSchema
 } from './schemas/verified-hardware'
+import { HardwareVerificationService } from './hardware-verification.service'
+import { RelaySaleData, RelaySaleDataSchema } from './schemas/relay-sale-data'
 
 
 @Module({
@@ -20,6 +22,7 @@ import {
         MongooseModule.forFeature([
             { name: VerificationData.name, schema: VerificationDataSchema },
             { name: VerifiedHardware.name, schema: VerifiedHardwareSchema },
+            { name: RelaySaleData.name, schema: RelaySaleDataSchema },
         ]),
         HttpModule.registerAsync({
             inject: [ConfigService],
@@ -39,7 +42,7 @@ import {
             }),
         })
     ],
-    providers: [VerificationService],
-    exports: [VerificationService],
+    providers: [VerificationService, HardwareVerificationService],
+    exports: [VerificationService, HardwareVerificationService],
 })
 export class VerificationModule {}
