@@ -65,6 +65,7 @@ job "valid-ator-stage" {
       }
 
       env {
+        BUMP="1"
         IS_LIVE="true"
         VALIDATOR_VERSION="[[.commit_sha]]"
         ONIONOO_REQUEST_TIMEOUT=60000
