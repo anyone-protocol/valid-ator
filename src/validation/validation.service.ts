@@ -175,7 +175,8 @@ export class ValidationService {
                 bandwidth_burst: info.bandwidth_burst ?? 0,
                 observed_bandwidth: info.observed_bandwidth ?? 0,
                 advertised_bandwidth: info.advertised_bandwidth ?? 0,
-                effective_family: info.effective_family ?? []
+                effective_family: info.effective_family ?? [],
+                hardware_info: info.hardware_info
             }),
         )
 
@@ -193,17 +194,17 @@ export class ValidationService {
     }
 
     public async validateRelays(
-        relays: RelayDataDto[],
+        relaysDto: RelayDataDto[],
     ): Promise<ValidationData> {
         const validationStamp = Date.now()
-        if (relays.length === 0) {
+        if (relaysDto.length === 0) {
             this.logger.debug(`No relays to validate at ${validationStamp}`)
             return {
                 validated_at: validationStamp,
                 relays: [],
             }
         } else {
-            const validatedRelays = relays
+            const validatedRelays = relaysDto
                 .map<ValidatedRelay>((relay, index, array) => ({
                     fingerprint: relay.fingerprint,
                     ator_address: this.extractAtorKey(relay.contact),
@@ -213,8 +214,7 @@ export class ValidationService {
                     running: relay.running,
                     family: relay.effective_family,
                     consensus_measured: relay.consensus_measured,
-                    primary_address_hex: relay.primary_address_hex,
-                    nickname: relay.nickname
+                    primary_address_hex: relay.primary_address_hex
                 }))
                 .filter((relay, index, array) => relay.ator_address.length > 0)
 
@@ -234,11 +234,10 @@ export class ValidationService {
                     `Storing validation ${validationStamp} of ${relay.fingerprint}`,
                 )
 
-                const relayData = relays.find(
-                    (value, index, array) =>
-                        value.fingerprint == relay.fingerprint,
+                const relayDto = relaysDto.find(
+                    ({ fingerprint }) => fingerprint == relay.fingerprint,
                 )
-                if (relayData == undefined) {
+                if (relayDto == undefined) {
                     this.logger.error(
                         `Failed to find relay data for validated relay [${relay.fingerprint}]`,
                     )
@@ -249,23 +248,24 @@ export class ValidationService {
                             fingerprint: relay.fingerprint,
                             ator_address: relay.ator_address,
                             primary_address_hex: relay.primary_address_hex,
-                            consensus_weight: relayData.consensus_weight,
+                            consensus_weight: relayDto.consensus_weight,
 
-                            running: relayData.running,
-                            consensus_measured: relayData.consensus_measured,
+                            running: relayDto.running,
+                            consensus_measured: relayDto.consensus_measured,
                             consensus_weight_fraction:
-                                relayData.consensus_weight_fraction,
-                            version: relayData.version,
-                            version_status: relayData.version_status,
-                            bandwidth_rate: relayData.bandwidth_rate,
-                            bandwidth_burst: relayData.bandwidth_burst,
-                            observed_bandwidth: relayData.observed_bandwidth,
+                                relayDto.consensus_weight_fraction,
+                            version: relayDto.version,
+                            version_status: relayDto.version_status,
+                            bandwidth_rate: relayDto.bandwidth_rate,
+                            bandwidth_burst: relayDto.bandwidth_burst,
+                            observed_bandwidth: relayDto.observed_bandwidth,
                             advertised_bandwidth:
-                                relayData.advertised_bandwidth,
-                            family: relayData.effective_family,
-                            nickname: relayData.nickname
+                                relayDto.advertised_bandwidth,
+                            family: relayDto.effective_family
                         })
-                        .catch((error) => this.logger.error('Failed creating relay data model', error.stack))
+                        .catch(
+                            (error) => this.logger.error('Failed creating relay data model', error.stack)
+                        )
                 }
             })
 

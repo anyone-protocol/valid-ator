@@ -44,4 +44,26 @@ export interface RelayInfo {
     exit_probability?: number // Probability of this relay to be selected for the exit position. This probability is calculated based on consensus weights, relay flags, and bandwidth weights in the consensus. Path selection depends on more factors, so that this probability can only be an approximation. Omitted if the relay is not running, or the consensus does not contain bandwidth weights.
     measured?: boolean // Boolean field saying whether the consensus weight of this relay is based on a threshold of 3 or more measurements by Tor bandwidth authorities. Omitted if the network status consensus containing this relay does not contain measurement information.
     unreachable_or_addresses?: string[] // Array of IPv4 or IPv6 addresses and TCP ports or port lists where the relay claims in its descriptor to accept onion-routing connections but that the directory authorities failed to confirm as reachable. Contains only additional addresses of a relay that are found unreachable and only as long as a minority of directory authorities performs reachability tests on these additional addresses. Relays with an unreachable primary address are not included in the network status consensus and excluded entirely. Likewise, relays with unreachable additional addresses tested by a majority of directory authorities are not included in the network status consensus and excluded here, too. If at any point network status votes will be added to the processing, relays with unreachable addresses will be included here. Addresses are in arbitrary order. IPv6 hex characters are all lower-case. Omitted if empty.
+    hardware_info?: {
+        id?: string
+        company?: string
+        format?: string
+        wallet?: string
+        fingerprint?: string
+        nftid?: string
+        build?: string
+        flags?: string
+        serNums?: {
+            type?: string
+            number?: string
+        }[]
+        pubKeys?: {
+            type?: string
+            number?: string
+        }[]
+        certs?: {
+            type?: string
+            signature?: string
+        }[]
+    }
 }

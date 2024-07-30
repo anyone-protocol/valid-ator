@@ -15,4 +15,27 @@ export class RelayDataDto {
     readonly observed_bandwidth: number
     readonly advertised_bandwidth: number
     readonly effective_family: string[]
+
+    readonly hardware_info?: {
+        id?: string
+        company?: string
+        format?: string
+        wallet?: string
+        fingerprint?: string
+        nftid?: string
+        build?: string
+        flags?: string
+        serNums?: {
+            type?: string
+            number?: string
+        }[]
+        pubKeys?: {
+            type?: string
+            number?: string
+        }[]
+        certs?: {
+            type?: string
+            signature?: string
+        }[]
+    }
 }

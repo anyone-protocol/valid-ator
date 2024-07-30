@@ -3,6 +3,29 @@ import { HydratedDocument } from 'mongoose'
 
 export type ValidatedRelayDocument = HydratedDocument<ValidatedRelay>
 
+export type RelayHardwareInfo = {
+    id?: string
+    company?: string
+    format?: string
+    wallet?: string
+    fingerprint?: string
+    nftid?: string
+    build?: string
+    flags?: string
+    serNums?: {
+        type?: string
+        number?: string
+    }[]
+    pubKeys?: {
+        type?: string
+        number?: string
+    }[]
+    certs?: {
+        type?: string
+        signature?: string
+    }[]
+}
+
 @Schema()
 export class ValidatedRelay {
     @Prop({ type: String, required: true })
@@ -34,6 +57,9 @@ export class ValidatedRelay {
 
     @Prop({ type: String, required: false })
     nickname?: string
+
+    @Prop({ type: Object, required: false })
+    hardware_info?: RelayHardwareInfo
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

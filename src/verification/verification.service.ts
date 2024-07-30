@@ -2,11 +2,8 @@ import { Injectable, Logger } from '@nestjs/common'
 import { firstValueFrom, catchError } from 'rxjs'
 import { Contract, LoggerFactory, Tag, Warp, WarpFactory } from 'warp-contracts'
 import {
-    AddClaimable,
     AddClaimableBatched,
     AddRegistrationCredits,
-    IsClaimable,
-    IsVerified,
     RelayRegistryState,
     SetFamilies
 } from './interfaces/relay-registry'
@@ -17,8 +14,8 @@ import {
 } from 'warp-contracts-plugin-signature/server'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import { StateUpdatePlugin } from 'warp-contracts-subscription-plugin'
-import { RelayVerificationResult } from './dto/relay-verification-result'
 import { VerificationData } from './schemas/verification-data'
+import { VerifiedHardware } from './schemas/verified-hardware'
 import { VerificationResults } from './dto/verification-result-dto'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
 import { Model } from 'mongoose'
@@ -27,9 +24,12 @@ import Bundlr from '@bundlr-network/client'
 import { RelayValidationStatsDto } from './dto/relay-validation-stats'
 import { HttpService } from '@nestjs/axios'
 import { AxiosError } from 'axios'
-import { DreRelayRegistryResponse } from './interfaces/dre-relay-registry-response'
+import {
+    DreRelayRegistryResponse
+} from './interfaces/dre-relay-registry-response'
 import { setTimeout } from 'node:timers/promises'
 import _ from 'lodash'
+import { HardwareVerificationService } from './hardware-verification.service'
 
 @Injectable()
 export class VerificationService {
@@ -63,6 +63,8 @@ export class VerificationService {
         @InjectModel(VerificationData.name)
         private readonly verificationDataModel: Model<VerificationData>,
         private readonly httpService: HttpService,
+        private readonly hardwareVerificationService:
+            HardwareVerificationService
     ) {
         LoggerFactory.INST.logLevel('error')
 
@@ -163,7 +165,7 @@ export class VerificationService {
                             function: 'addRegistrationCredits',
                             credits: [{ address, fingerprint }]
                         }, {
-                            tags:  [new Tag('EVM-TX', tx)]
+                            tags: [ new Tag('EVM-TX', tx) ]
                         })
 
                     this.logger.log(
@@ -711,7 +713,10 @@ export class VerificationService {
         } = await this.getRelayRegistryStatuses()
         const alreadyClaimableFingerprints = Object.keys(claimable)
         const alreadyVerifiedFingerprints = Object.keys(verified)
-        const relaysToAddAsClaimable = []
+        const relaysToAddAsClaimable: {
+            relay: ValidatedRelay,
+            isHardwareProofValid?: boolean
+        }[] = []
         for (const relay of relays) {
             const isAlreadyClaimable = alreadyClaimableFingerprints.includes(
                 relay.fingerprint
@@ -734,8 +739,17 @@ export class VerificationService {
                     `Already verified relay [${relay.fingerprint}]`,
                 )
                 results.push({ relay, result: 'AlreadyVerified' })
+            } else if (!relay.hardware_info) {
+                relaysToAddAsClaimable.push({ relay })
             } else {
-                relaysToAddAsClaimable.push(relay)
+                const isHardwareProofValid = await this
+                    .hardwareVerificationService
+                    .isHardwareProofValid(relay)
+                if (isHardwareProofValid) {
+                    relaysToAddAsClaimable.push({relay, isHardwareProofValid })
+                } else {
+                    results.push({ relay, result: 'HardwareProofFailed' })
+                }
             }
         }
 
@@ -750,20 +764,25 @@ export class VerificationService {
                     for (const relayBatch of relayBatches) {
                         await setTimeout(5000)
                         this.logger.debug(
-                            `Starting to add a batch of claimable relays for ${relayBatch} relays [${relayBatch.map(r => r.fingerprint)}]`
+                            `Starting to add a batch of claimable relays for ${relayBatch} relays [${relayBatch.map(r => r.relay.fingerprint)}]`
                         )
                         const response = await this.relayRegistryContract
                             .writeInteraction<AddClaimableBatched>({
                                 function: 'addClaimableBatched',
                                 relays: relayBatch.map(
                                     ({
-                                        fingerprint,
-                                        ator_address,
-                                        nickname
+                                        relay: {
+                                            fingerprint,
+                                            ator_address,
+                                            nickname
+                                        },
+                                        isHardwareProofValid
                                     }) => ({
                                         fingerprint,
                                         address: ator_address,
-                                        nickname
+                                        nickname,
+                                        hardwareVerified:
+                                            isHardwareProofValid || undefined
                                     })
                                 )
                             })
@@ -775,13 +794,13 @@ export class VerificationService {
                 }
             } catch (error) {
                 this.logger.error(
-                    `Exception when verifying relays [${relaysToAddAsClaimable.map(r => r.fingerprint)}]`,
+                    `Exception when verifying relays [${relaysToAddAsClaimable.map(({ relay }) => relay.fingerprint)}]`,
                     error.stack,
                 )
 
                 return results.concat(
                     relaysToAddAsClaimable.map(
-                        relay => ({ relay, result: 'Failed' })
+                        ({ relay }) => ({ relay, result: 'Failed' })
                     )
                 )
             }
@@ -792,7 +811,7 @@ export class VerificationService {
         }
 
         return results.concat(
-            relaysToAddAsClaimable.map(relay => ({ relay, result: 'OK' }))
+            relaysToAddAsClaimable.map(({ relay }) => ({ relay, result: 'OK' }))
         )
     }
 }

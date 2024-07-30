@@ -1,19 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { VerificationService } from './verification.service'
 import { ConfigModule } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
+import { HttpModule } from '@nestjs/axios'
+
+import { VerificationService } from './verification.service'
 import {
     VerificationData,
     VerificationDataSchema,
 } from './schemas/verification-data'
+import {
+    VerifiedHardware,
+    VerifiedHardwareSchema
+} from './schemas/verified-hardware'
 
 describe('VerificationService', () => {
+    let module: TestingModule
     let service: VerificationService
 
-    beforeAll(async () => {
-        const module: TestingModule = await Test.createTestingModule({
+    beforeEach(async () => {
+        module = await Test.createTestingModule({
             imports: [
                 ConfigModule.forRoot(),
+                HttpModule,
                 MongooseModule.forRoot(
                     'mongodb://localhost/validator-validation-service-tests',
                 ),
@@ -22,12 +30,20 @@ describe('VerificationService', () => {
                         name: VerificationData.name,
                         schema: VerificationDataSchema,
                     },
+                    {
+                        name: VerifiedHardware.name,
+                        schema: VerifiedHardwareSchema
+                    }
                 ]),
             ],
             providers: [VerificationService],
         }).compile()
 
         service = module.get<VerificationService>(VerificationService)
+    })
+
+    afterEach(async () => {
+        await module.close()
     })
 
     it('should be defined', () => {

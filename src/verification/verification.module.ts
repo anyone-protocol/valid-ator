@@ -1,18 +1,28 @@
 import { Module } from '@nestjs/common'
-import { VerificationService } from './verification.service'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
+import { HttpModule } from '@nestjs/axios'
+
+import { VerificationService } from './verification.service'
 import {
     VerificationData,
     VerificationDataSchema,
 } from './schemas/verification-data'
-import { HttpModule } from '@nestjs/axios'
+import {
+    VerifiedHardware,
+    VerifiedHardwareSchema
+} from './schemas/verified-hardware'
+import { HardwareVerificationService } from './hardware-verification.service'
+import { RelaySaleData, RelaySaleDataSchema } from './schemas/relay-sale-data'
+
 
 @Module({
     imports: [
         ConfigModule,
         MongooseModule.forFeature([
             { name: VerificationData.name, schema: VerificationDataSchema },
+            { name: VerifiedHardware.name, schema: VerifiedHardwareSchema },
+            { name: RelaySaleData.name, schema: RelaySaleDataSchema },
         ]),
         HttpModule.registerAsync({
             inject: [ConfigService],
@@ -30,9 +40,9 @@ import { HttpModule } from '@nestjs/axios'
                     { infer: true },
                 ),
             }),
-        }),
+        })
     ],
-    providers: [VerificationService],
-    exports: [VerificationService],
+    providers: [VerificationService, HardwareVerificationService],
+    exports: [VerificationService, HardwareVerificationService],
 })
 export class VerificationModule {}
