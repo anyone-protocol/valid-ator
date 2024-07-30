@@ -770,14 +770,19 @@ export class VerificationService {
                             .writeInteraction<AddClaimableBatched>({
                                 function: 'addClaimableBatched',
                                 relays: relayBatch.map(
-                                    ({ relay: {
-                                        fingerprint,
-                                        ator_address,
-                                        nickname
-                                    }}) => ({
+                                    ({
+                                        relay: {
+                                            fingerprint,
+                                            ator_address,
+                                            nickname
+                                        },
+                                        isHardwareProofValid
+                                    }) => ({
                                         fingerprint,
                                         address: ator_address,
-                                        nickname
+                                        nickname,
+                                        hardwareVerified:
+                                            isHardwareProofValid || undefined
                                     })
                                 )
                             })
