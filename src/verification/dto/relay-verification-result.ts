@@ -4,3 +4,4 @@ export type RelayVerificationResult =
     | 'AlreadyRegistered'
     | 'HardwareProofFailed'
     | 'Failed'
+    | 'AlreadySetFamily'
