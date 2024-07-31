@@ -130,7 +130,8 @@ export interface SetFamilies extends ContractFunctionInput {
   function: 'setFamilies'
   families: {
     fingerprint: Fingerprint
-    family: Fingerprint[]
+    add?: Fingerprint[]
+    remove?: Fingerprint[]
   }[]
 }
 
