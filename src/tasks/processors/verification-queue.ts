@@ -25,6 +25,8 @@ export class VerificationQueue extends WorkerHost {
     public static readonly JOB_RECOVER_PERSIST_VERIFICATION =
         'recover-persist-verification'
     public static readonly JOB_SET_RELAY_FAMILIES = 'set-relay-families'
+    public static readonly JOB_SET_HARDWARE_BONUS_RELAYS =
+        'set-hardware-bonus-relays'
 
     constructor(
         private readonly tasks: TasksService,
@@ -83,6 +85,26 @@ export class VerificationQueue extends WorkerHost {
                     this.logger.error(
                         `Exception while setting relay families for [${relays.map(r => r.fingerprint)}]`,
                         error.stack
+                    )
+                }
+
+                return []
+
+            case VerificationQueue.JOB_SET_HARDWARE_BONUS_RELAYS:
+                try {
+                    const {
+                        ['verify-relays']: verificationResults
+                    } = await job.getChildrenValues<VerificationResults>()
+
+                    // TODO -> set hardware bonus in distribution contract
+                    const result = await this.distribution
+                        .setHardwareBonusRelays()
+
+                    return [] // TODO -> return what from job ?
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while setting hardware bonus relays`,
+                        error
                     )
                 }
 

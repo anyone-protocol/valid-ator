@@ -579,4 +579,8 @@ export class DistributionService {
             relaysWithFamilyUpdates.map(relay => ({ relay, result: 'OK' }))
         )
     }
+
+    public async setHardwareBonusRelays() {
+        // TODO
+    }
 }
