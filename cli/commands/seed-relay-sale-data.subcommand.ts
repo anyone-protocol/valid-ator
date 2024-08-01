@@ -103,7 +103,9 @@ export class RelaySaleDataSubCommand extends CommandRunner {
 
   private async down(existingLock: SeedLockDocument | null) {
     if (!existingLock) {
-      this.logger.log(`No seed lock found for ${this.seedName}, nothing to remove`)
+      this.logger.log(
+        `No seed lock found for ${this.seedName}, nothing to remove`
+      )
 
       return
     }
