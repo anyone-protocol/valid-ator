@@ -214,7 +214,8 @@ export class ValidationService {
                     running: relay.running,
                     family: relay.effective_family,
                     consensus_measured: relay.consensus_measured,
-                    primary_address_hex: relay.primary_address_hex
+                    primary_address_hex: relay.primary_address_hex,
+                    hardware_info: relay.hardware_info
                 }))
                 .filter((relay, index, array) => relay.ator_address.length > 0)
 
@@ -261,7 +262,8 @@ export class ValidationService {
                             observed_bandwidth: relayDto.observed_bandwidth,
                             advertised_bandwidth:
                                 relayDto.advertised_bandwidth,
-                            family: relayDto.effective_family
+                            family: relayDto.effective_family,
+                            hardware_info: relayDto.hardware_info
                         })
                         .catch(
                             (error) => this.logger.error('Failed creating relay data model', error.stack)
