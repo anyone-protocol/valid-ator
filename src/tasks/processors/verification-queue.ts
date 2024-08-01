@@ -96,11 +96,12 @@ export class VerificationQueue extends WorkerHost {
                         ['verify-relays']: verificationResults
                     } = await job.getChildrenValues<VerificationResults>()
 
-                    // TODO -> set hardware bonus in distribution contract
-                    const result = await this.distribution
-                        .setHardwareBonusRelays()
+                    const validatedHardwareRelays = verificationResults
+                        .filter(({ relay }) => relay.hardware_validated)
+                        .map(({ relay }) => relay)
 
-                    return [] // TODO -> return what from job ?
+                    return await this.distribution
+                        .setHardwareBonusRelays(validatedHardwareRelays)
                 } catch (error) {
                     this.logger.error(
                         `Exception while setting hardware bonus relays`,
@@ -112,11 +113,9 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
                 try {
-                    const verificationResults: VerificationResults =
-                        Object.values(await job.getChildrenValues()).reduce(
-                            (prev, curr) => (prev as []).concat(curr as []),
-                            [],
-                        )
+                    const {
+                        ['verify-relays']: verificationResults
+                    } = await job.getChildrenValues<VerificationResults>()
 
                     if (verificationResults.length > 0) {
                         this.logger.debug(`Finalizing verification ${job.data}`)
@@ -137,11 +136,9 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_PERSIST_VERIFICATION:
                 try {
-                    const verificationResults: VerificationResults =
-                        Object.values(await job.getChildrenValues()).reduce(
-                            (prev, curr) => (prev as []).concat(curr as []),
-                            [],
-                        )
+                    const {
+                        ['verify-relays']: verificationResults
+                    } = await job.getChildrenValues<VerificationResults>()
 
                     if (verificationResults.length > 0) {
                         this.logger.log(

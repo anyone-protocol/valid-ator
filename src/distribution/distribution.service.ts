@@ -4,6 +4,7 @@ import { DistributionData } from './schemas/distribution-data'
 import { ScoreData } from './schemas/score-data'
 import { Contract, LoggerFactory, Warp, WarpFactory } from 'warp-contracts'
 import {
+    AddFingerprintsToBonus,
     AddScores,
     DistributionResult,
     DistributionState,
@@ -46,6 +47,7 @@ export class DistributionService {
     private static readonly scoresPerBatch = 8
     public static readonly maxDistributionRetries = 6
     private static readonly familiesPerBatch = 4
+    private static readonly fingerprintsPerBatch = 50
 
     private distributionWarp: Warp
     private distributionContract: Contract<DistributionState>
@@ -592,7 +594,59 @@ export class DistributionService {
         )
     }
 
-    public async setHardwareBonusRelays() {
-        // TODO
+    public async setHardwareBonusRelays(
+        relays: ValidatedRelay[]
+    ): Promise<VerificationResults> {
+        const results: VerificationResults = []
+
+        if (!this.distributionContract) {
+            this.logger.error('Distribution contract not initialized')
+
+            return relays.map(relay => ({ relay, result: 'Failed' }))
+        }
+
+        if (!this.operator) {
+            this.logger.error('Distribution operator not defined')
+        }
+
+        if (this.isLive === 'true') {
+            try {
+                const batches = _.chunk(
+                    relays,
+                    DistributionService.fingerprintsPerBatch
+                )
+
+                for (const batch of batches) {
+                    await setTimeout(5000)
+                    this.logger.debug(
+                        `Starting to set hardware bonus relays for ${batch.length} relays [${batch.map(r => r.fingerprint)}]`
+                    )
+                    const response = await this.distributionContract
+                        .writeInteraction<AddFingerprintsToBonus>({
+                            function: 'addFingerprintsToBonus',
+                            bonusName: 'hardware',
+                            fingerprints: batch.map(r => r.fingerprint)
+                        })
+                    this.logger.log(
+                        `Set hardware bonus relays for ${batch.length} relays: ${response?.originalTxId}`
+                    )
+                }
+            } catch (error) {
+                this.logger.error(
+                    `Exception setting relay families for ${relays.length} relays [${relays.map(r => r.fingerprint)}]`,
+                    error.stack,
+                )
+
+                return results.concat(
+                    relays.map(relay => ({ relay, result: 'Failed' }))
+                )
+            }
+        } else {
+            this.logger.warn(
+                `NOT LIVE - skipped setting hardware bonus relays for ${relays.length} relays [${relays.map(r => r.fingerprint)}]`
+            )
+        }
+
+        return results.concat(relays.map(relay => ({ relay, result: 'OK' })))
     }
 }
