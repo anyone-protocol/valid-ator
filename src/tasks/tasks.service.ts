@@ -103,16 +103,23 @@ export class TasksService implements OnApplicationBootstrap {
                             opts: TasksService.jobOpts,
                             children: [
                                 {
-                                    name: 'verify-relays',
+                                    name: 'set-hardware-bonus-relays',
                                     queueName: 'verification-queue',
-                                    opts: TasksService.jobOpts,
-                                    data: validation.relays
-                                },
-                                {
-                                    name: 'set-relay-families',
-                                    queueName: 'verification-queue',
-                                    opts: TasksService.jobOpts,
-                                    data: validation.relays
+                                    data: validation.relays,
+                                    children: [
+                                        {
+                                            name: 'verify-relays',
+                                            queueName: 'verification-queue',
+                                            opts: TasksService.jobOpts,
+                                            data: validation.relays
+                                        },
+                                        {
+                                            name: 'set-relay-families',
+                                            queueName: 'verification-queue',
+                                            opts: TasksService.jobOpts,
+                                            data: validation.relays
+                                        }
+                                    ]
                                 }
                             ]
                         },
@@ -121,7 +128,6 @@ export class TasksService implements OnApplicationBootstrap {
             ]
         }
     }
-
 
     public static DISTRIBUTION_FLOW(
         stamp: number,

@@ -25,6 +25,8 @@ export class VerificationQueue extends WorkerHost {
     public static readonly JOB_RECOVER_PERSIST_VERIFICATION =
         'recover-persist-verification'
     public static readonly JOB_SET_RELAY_FAMILIES = 'set-relay-families'
+    public static readonly JOB_SET_HARDWARE_BONUS_RELAYS =
+        'set-hardware-bonus-relays'
 
     constructor(
         private readonly tasks: TasksService,
@@ -88,13 +90,32 @@ export class VerificationQueue extends WorkerHost {
 
                 return []
 
+            case VerificationQueue.JOB_SET_HARDWARE_BONUS_RELAYS:
+                try {
+                    const {
+                        ['verify-relays']: verificationResults
+                    } = await job.getChildrenValues<VerificationResults>()
+
+                    const validatedHardwareRelays = verificationResults
+                        .filter(({ relay }) => relay.hardware_validated)
+                        .map(({ relay }) => relay)
+
+                    return await this.distribution
+                        .setHardwareBonusRelays(validatedHardwareRelays)
+                } catch (error) {
+                    this.logger.error(
+                        `Exception while setting hardware bonus relays`,
+                        error
+                    )
+                }
+
+                return []
+
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
                 try {
-                    const verificationResults: VerificationResults =
-                        Object.values(await job.getChildrenValues()).reduce(
-                            (prev, curr) => (prev as []).concat(curr as []),
-                            [],
-                        )
+                    const {
+                        ['verify-relays']: verificationResults
+                    } = await job.getChildrenValues<VerificationResults>()
 
                     if (verificationResults.length > 0) {
                         this.logger.debug(`Finalizing verification ${job.data}`)
@@ -115,11 +136,9 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_PERSIST_VERIFICATION:
                 try {
-                    const verificationResults: VerificationResults =
-                        Object.values(await job.getChildrenValues()).reduce(
-                            (prev, curr) => (prev as []).concat(curr as []),
-                            [],
-                        )
+                    const {
+                        ['verify-relays']: verificationResults
+                    } = await job.getChildrenValues<VerificationResults>()
 
                     if (verificationResults.length > 0) {
                         this.logger.log(

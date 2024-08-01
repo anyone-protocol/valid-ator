@@ -60,6 +60,12 @@ export class ValidatedRelay {
 
     @Prop({ type: Object, required: false })
     hardware_info?: RelayHardwareInfo
+
+    @Prop({ type: Boolean, required: false, default: false })
+    hardware_validated?: boolean
+
+    @Prop({ type: Number, required: false })
+    hardware_validated_at?: number
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

@@ -758,6 +758,8 @@ export class VerificationService {
                     .hardwareVerificationService
                     .isHardwareProofValid(relay)
                 if (isHardwareProofValid) {
+                    relay.hardware_validated = true
+                    relay.hardware_validated_at = Date.now()
                     relaysToAddAsClaimable.push({relay, isHardwareProofValid })
                 } else {
                     results.push({ relay, result: 'HardwareProofFailed' })
