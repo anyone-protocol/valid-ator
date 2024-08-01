@@ -510,14 +510,16 @@ export class DistributionService {
         }
 
         // NB: Only update relay families that need to be updated
-        const families = await this.getFamilies()
+        const currentFamilies = await this.getFamilies()
         const relaysWithFamilyUpdates: ValidatedRelay[] = []
         for (const relay of relays) {
             const incomingFamilyHash = (relay.family || [])
                 .slice()
                 .sort()
                 .join('')
-            const contractFamilyHash = (families[relay.fingerprint] || [])
+            const contractFamilyHash = (
+                currentFamilies[relay.fingerprint] || []
+            )
                 .slice()
                 .sort()
                 .join('')
@@ -527,7 +529,7 @@ export class DistributionService {
             } else {
                 results.push({
                     relay,
-                    result: 'AlreadyVerified' // TODO -> 'AlreadySetFamily' ?
+                    result: 'AlreadySetFamily'
                 })
             }
         }
@@ -535,8 +537,21 @@ export class DistributionService {
         if (this.isLive === 'true') {
             try {
                 if (relaysWithFamilyUpdates.length > 0) {
+                    const addRemoveFamilies = relaysWithFamilyUpdates.map(
+                        ({ fingerprint, family }) => ({
+                            fingerprint,
+                            add: _.difference(
+                                family,
+                                currentFamilies[fingerprint]
+                            ),
+                            remove: _.difference(
+                                currentFamilies[fingerprint],
+                                family
+                            )
+                        })
+                    )
                     const familyBatches = _.chunk(
-                        relaysWithFamilyUpdates,
+                        addRemoveFamilies,
                         DistributionService.familiesPerBatch
                     )
 
@@ -548,10 +563,7 @@ export class DistributionService {
                         const response = await this.distributionContract
                             .writeInteraction<SetFamilies>({
                                 function: 'setFamilies',
-                                families: familyBatch.map(
-                                    ({ fingerprint, family }) =>
-                                        ({ fingerprint, family })
-                                )
+                                families: familyBatch
                             })
 
                         this.logger.log(
