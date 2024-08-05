@@ -46,6 +46,9 @@ export class ValidatedRelay {
     @Prop({ type: Boolean, required: false, default: false })
     running: boolean
 
+    @Prop({ type: Number, required: false })
+    last_seen?: number
+
     @Prop({ type: [String], required: false, default: [] })
     family: string[]
 
