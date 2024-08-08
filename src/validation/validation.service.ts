@@ -225,11 +225,6 @@ export class ValidationService {
                 continue
             }
 
-            const parsedLastSeen = Date.parse(relay.last_seen)
-            const last_seen = Number.isNaN(parsedLastSeen)
-                ? undefined
-                : parsedLastSeen
-
             const uptime = await this.relayUptimeModel.findOne({
                 fingerprint: relay.fingerprint,
                 validation_date
