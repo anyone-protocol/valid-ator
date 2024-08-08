@@ -66,6 +66,9 @@ export class ValidatedRelay {
 
     @Prop({ type: Number, required: false })
     hardware_validated_at?: number
+
+    @Prop({ type: Number, required: true, default: 0 })
+    uptime_days: number
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

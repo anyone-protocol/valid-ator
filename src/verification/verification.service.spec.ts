@@ -12,6 +12,8 @@ import {
     VerifiedHardware,
     VerifiedHardwareSchema
 } from './schemas/verified-hardware'
+import { RelaySaleData, RelaySaleDataSchema } from './schemas/relay-sale-data'
+import { HardwareVerificationService } from './hardware-verification.service'
 
 describe('VerificationService', () => {
     let module: TestingModule
@@ -33,17 +35,20 @@ describe('VerificationService', () => {
                     {
                         name: VerifiedHardware.name,
                         schema: VerifiedHardwareSchema
-                    }
+                    },
+                    { name: RelaySaleData.name, schema: RelaySaleDataSchema },
                 ]),
             ],
-            providers: [VerificationService],
+            providers: [VerificationService, HardwareVerificationService],
         }).compile()
 
         service = module.get<VerificationService>(VerificationService)
     })
 
     afterEach(async () => {
-        await module.close()
+        if (module) {
+            await module.close()
+        }
     })
 
     it('should be defined', () => {

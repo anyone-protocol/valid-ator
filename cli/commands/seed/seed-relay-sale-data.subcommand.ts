@@ -5,7 +5,9 @@ import { Model } from 'mongoose'
 import { CommandRunner, Option, SubCommand } from 'nest-commander'
 
 import { SeedLock, SeedLockDocument } from './seed-lock'
-import { RelaySaleData } from '../../src/verification/schemas/relay-sale-data'
+import {
+  RelaySaleData
+} from '../../../src/verification/schemas/relay-sale-data'
 
 
 @SubCommand({ name: 'relay-sale-data' })

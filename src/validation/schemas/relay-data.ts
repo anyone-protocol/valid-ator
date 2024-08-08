@@ -1,8 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 
-export type RelayDataDocument = HydratedDocument<RelayData>
-
 @Schema()
 export class RelayData {
     @Prop({ type: String, required: true })
@@ -19,6 +17,9 @@ export class RelayData {
 
     @Prop({ type: Boolean, required: false, default: false })
     running: boolean
+
+    @Prop({ type: Number, required: true, default: 0 })
+    uptime_days: number
 
     @Prop({ type: Number, required: false, default: 0 })
     consensus_weight: number
@@ -78,4 +79,7 @@ export class RelayData {
     }
 }
 
-export const RelayDataSchema = SchemaFactory.createForClass(RelayData)
+export type RelayDataDocument = HydratedDocument<RelayData>
+export const RelayDataSchema = SchemaFactory
+    .createForClass(RelayData)
+    .index({ fingerprint: 1, validated_at: -1 })
