@@ -46,9 +46,6 @@ export class ValidatedRelay {
     @Prop({ type: Boolean, required: false, default: false })
     running: boolean
 
-    @Prop({ type: Number, required: false })
-    last_seen?: number
-
     @Prop({ type: [String], required: false, default: [] })
     family: string[]
 
@@ -69,6 +66,9 @@ export class ValidatedRelay {
 
     @Prop({ type: Number, required: false })
     hardware_validated_at?: number
+
+    @Prop({ type: Number, required: true, default: 0 })
+    uptime_days: number
 }
 
 export const ValidatedRelaySchema = SchemaFactory.createForClass(ValidatedRelay)

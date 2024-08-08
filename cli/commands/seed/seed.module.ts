@@ -7,7 +7,7 @@ import { SeedLock, SeedLockSchema } from './seed-lock'
 import {
   RelaySaleData,
   RelaySaleDataSchema
-} from '../../src/verification/schemas/relay-sale-data'
+} from '../../../src/verification/schemas/relay-sale-data'
 
 @Module({
   imports: [

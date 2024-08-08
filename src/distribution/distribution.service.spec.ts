@@ -1,19 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { DistributionService } from './distribution.service'
 import { ConfigModule } from '@nestjs/config'
-import { MongooseModule } from '@nestjs/mongoose'
+import { HttpModule } from '@nestjs/axios'
 
 describe('DistributionService', () => {
     let service: DistributionService
-    let testModule: TestingModule
+    let module: TestingModule
 
-    beforeAll(async () => {
-        testModule = await Test.createTestingModule({
-            imports: [ConfigModule.forRoot()],
-            providers: [DistributionService],
+    beforeEach(async () => {
+        module = await Test.createTestingModule({
+            imports: [ ConfigModule.forRoot(), HttpModule ],
+            providers: [ DistributionService ],
         }).compile()
 
-        service = testModule.get<DistributionService>(DistributionService)
+        service = module.get<DistributionService>(DistributionService)
+    })
+
+    afterEach(async () => {
+        if (module) {
+            await module.close()
+        }
     })
 
     it('should be defined', () => {

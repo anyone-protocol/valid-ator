@@ -5,7 +5,7 @@ import { firstValueFrom, catchError } from 'rxjs'
 import { DetailsResponse } from './interfaces/8_3/details-response'
 import { RelayInfo } from './interfaces/8_3/relay-info'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model, Types } from 'mongoose'
+import { Model } from 'mongoose'
 import { RelayData } from './schemas/relay-data'
 import { RelayDataDto } from './dto/relay-data-dto'
 import { ethers } from 'ethers'
@@ -14,22 +14,31 @@ import { ValidationData } from './schemas/validation-data'
 import { ValidatedRelay } from './schemas/validated-relay'
 import { latLngToCell } from 'h3-js'
 import * as geoip from 'geoip-lite'
+import extractIsodate from '../util/extract-isodate'
+import { RelayUptime } from './schemas/relay-uptime'
 
 @Injectable()
 export class ValidationService {
     private readonly logger = new Logger(ValidationService.name)
     private lastSeen: String = ''
 
-    private readonly atorKeyPattern = '@anon:' // this pattern should be lowercase
+    // this pattern should be lowercase
+    private readonly atorKeyPattern = '@anon:'
+
     private readonly keyLength = 42
 
     constructor(
         private readonly httpService: HttpService,
-        private readonly config: ConfigService<{ ONIONOO_DETAILS_URI: string, DETAILS_URI_AUTH: string }>,
+        private readonly config: ConfigService<{
+            ONIONOO_DETAILS_URI: string,
+            DETAILS_URI_AUTH: string
+        }>,
         @InjectModel(RelayData.name)
         private readonly relayDataModel: Model<RelayData>,
         @InjectModel(ValidationData.name)
         private readonly validationDataModel: Model<ValidationData>,
+        @InjectModel(RelayUptime.name)
+        private readonly relayUptimeModel: Model<RelayUptime>
     ) {
         geoip.startWatchingDataUpdate()
     }
@@ -147,41 +156,43 @@ export class ValidationService {
     public async filterRelays(relays: RelayInfo[]): Promise<RelayDataDto[]> {
         this.logger.debug(`Filtering ${relays.length} relays`)
 
-        const matchingRelays = relays.filter(
-            (value, index, array) =>
-                value.contact !== undefined &&
-                value.contact.toLowerCase().includes(this.atorKeyPattern),
+        const matchingRelays = relays.filter(relay =>
+            relay.contact !== undefined
+                && relay.contact.toLowerCase().includes(this.atorKeyPattern)
         )
 
-        if (matchingRelays.length > 0)
+        if (matchingRelays.length > 0) {
             this.logger.log(`Filtered ${matchingRelays.length} relays`)
-        else if (relays.length > 0)
+        } else if (relays.length > 0) {
             this.logger.log('No new interesting relays found')
+        }
 
-        const relayData = matchingRelays.map<RelayDataDto>(
-            (info, index, array) => ({
-                fingerprint: info.fingerprint,
-                contact: info.contact !== undefined ? info.contact : '', // other case should not happen as its filtered out while creating validations array
-                consensus_weight: info.consensus_weight,
-                primary_address_hex: this.ipToGeoHex(info.or_addresses[0]),
-                nickname: info.nickname,
+        const relayData = matchingRelays.map<RelayDataDto>(info => ({
+            fingerprint: info.fingerprint,
 
-                running: info.running,
-                last_seen: info.last_seen,
-                consensus_measured: info.measured ?? false,
-                consensus_weight_fraction: info.consensus_weight_fraction ?? 0,
-                version: info.version ?? '?',
-                version_status: info.version_status ?? '',
-                bandwidth_rate: info.bandwidth_rate ?? 0,
-                bandwidth_burst: info.bandwidth_burst ?? 0,
-                observed_bandwidth: info.observed_bandwidth ?? 0,
-                advertised_bandwidth: info.advertised_bandwidth ?? 0,
-                effective_family: info.effective_family ?? [],
-                hardware_info: info.hardware_info
-            }),
-        )
+            // NB: Other case should not happen as its filtered out while
+            //     creating validations array
+            contact: info.contact !== undefined ? info.contact : '', 
 
-        return relayData.filter((data, index, array) => data.contact.length > 0)
+            consensus_weight: info.consensus_weight,
+            primary_address_hex: this.ipToGeoHex(info.or_addresses[0]),
+            nickname: info.nickname,
+
+            running: info.running,
+            last_seen: info.last_seen,
+            consensus_measured: info.measured ?? false,
+            consensus_weight_fraction: info.consensus_weight_fraction ?? 0,
+            version: info.version ?? '?',
+            version_status: info.version_status ?? '',
+            bandwidth_rate: info.bandwidth_rate ?? 0,
+            bandwidth_burst: info.bandwidth_burst ?? 0,
+            observed_bandwidth: info.observed_bandwidth ?? 0,
+            advertised_bandwidth: info.advertised_bandwidth ?? 0,
+            effective_family: info.effective_family ?? [],
+            hardware_info: info.hardware_info
+        }))
+
+        return relayData.filter(relay => relay.contact.length > 0)
     }
 
     private ipToGeoHex(ip: string): string {
@@ -203,83 +214,85 @@ export class ValidationService {
             this.logger.debug(`No relays to validate at ${validated_at}`)
 
             return { validated_at, relays: [] }
-        } else {
-            const validatedRelays = relaysDto
-                .map<ValidatedRelay>(relay => {
-                    const parsedLastSeen = Date.parse(relay.last_seen)
+        }
 
-                    return {
-                        fingerprint: relay.fingerprint,
-                        ator_address: this.extractAtorKey(relay.contact),
-                        consensus_weight: relay.consensus_weight,
-                        consensus_weight_fraction:
-                            relay.consensus_weight_fraction,
-                        observed_bandwidth: relay.observed_bandwidth,
-                        running: relay.running,
-                        last_seen: Number.isNaN(parsedLastSeen)
-                            ? undefined
-                            : parsedLastSeen,
-                        family: relay.effective_family,
-                        consensus_measured: relay.consensus_measured,
-                        primary_address_hex: relay.primary_address_hex,
-                        hardware_info: relay.hardware_info
-                    }
-                })
-                .filter(relay => relay.ator_address.length > 0)
+        const validation_date = extractIsodate(validated_at)
+        const validatedRelays: ValidatedRelay[] = []
+        const relayDatas: RelayData[] = []
+        for (const relay of relaysDto) {
+            const ator_address = this.extractAtorKey(relay.contact)
+            if (ator_address.length < 1) {
+                continue
+            }
 
-            this.logger.log(
-                `Storing validation ${validated_at} with ${validatedRelays.length} relays`
-            )
+            const parsedLastSeen = Date.parse(relay.last_seen)
+            const last_seen = Number.isNaN(parsedLastSeen)
+                ? undefined
+                : parsedLastSeen
 
-            const validationData = { validated_at, relays: validatedRelays }
-            this.validationDataModel.create(validationData)
+            const uptime = await this.relayUptimeModel.findOne({
+                fingerprint: relay.fingerprint,
+                validation_date
+            })
+            const uptime_days = uptime ? uptime.uptime_days : 0
 
-            validatedRelays.forEach(async relay => {
-                this.logger.debug(
-                    `Storing validation ${validated_at} of ${relay.fingerprint}`
-                )
-
-                const relayDto = relaysDto.find(
-                    ({ fingerprint }) => fingerprint == relay.fingerprint,
-                )
-                if (relayDto == undefined) {
-                    this.logger.error(
-                        `Failed to find relay data for validated relay [${relay.fingerprint}]`
-                    )
-                } else {
-                    await this.relayDataModel
-                        .create<RelayData>({
-                            validated_at: validated_at,
-                            fingerprint: relay.fingerprint,
-                            ator_address: relay.ator_address,
-                            primary_address_hex: relay.primary_address_hex,
-                            consensus_weight: relayDto.consensus_weight,
-
-                            running: relayDto.running,
-                            consensus_measured: relayDto.consensus_measured,
-                            consensus_weight_fraction:
-                                relayDto.consensus_weight_fraction,
-                            version: relayDto.version,
-                            version_status: relayDto.version_status,
-                            bandwidth_rate: relayDto.bandwidth_rate,
-                            bandwidth_burst: relayDto.bandwidth_burst,
-                            observed_bandwidth: relayDto.observed_bandwidth,
-                            advertised_bandwidth:
-                                relayDto.advertised_bandwidth,
-                            family: relayDto.effective_family,
-                            hardware_info: relayDto.hardware_info
-                        })
-                        .catch(
-                            error => this.logger.error(
-                                'Failed creating relay data model',
-                                error.stack
-                            )
-                        )
-                }
+            validatedRelays.push({
+                fingerprint: relay.fingerprint,
+                ator_address,
+                consensus_weight: relay.consensus_weight,
+                consensus_weight_fraction: relay.consensus_weight_fraction,
+                observed_bandwidth: relay.observed_bandwidth,
+                running: relay.running,
+                uptime_days,
+                family: relay.effective_family,
+                consensus_measured: relay.consensus_measured,
+                primary_address_hex: relay.primary_address_hex,
+                hardware_info: relay.hardware_info
             })
 
-            return validationData
+            relayDatas.push({
+                validated_at: validated_at,
+                fingerprint: relay.fingerprint,
+                ator_address: ator_address,
+                primary_address_hex: relay.primary_address_hex,
+                consensus_weight: relay.consensus_weight,
+                running: relay.running,
+                uptime_days,
+                consensus_measured: relay.consensus_measured,
+                consensus_weight_fraction: relay.consensus_weight_fraction,
+                version: relay.version,
+                version_status: relay.version_status,
+                bandwidth_rate: relay.bandwidth_rate,
+                bandwidth_burst: relay.bandwidth_burst,
+                observed_bandwidth: relay.observed_bandwidth,
+                advertised_bandwidth: relay.advertised_bandwidth,
+                family: relay.effective_family,
+                hardware_info: relay.hardware_info
+            })
         }
+
+        this.logger.log(
+            `Storing ValidationData at ${validated_at} of ${validatedRelays.length} relays`
+        )
+        const validationData = { validated_at, relays: validatedRelays }
+        await this.validationDataModel
+            .create<ValidationData>(validationData)
+            .catch(error => this.logger.error(
+                'Failed creating validation data model',
+                error.stack
+            ))
+
+        this.logger.debug(
+            `Storing RelayData at ${validated_at} of ${relayDatas.length} relays`
+        )
+        await this.relayDataModel
+            .insertMany<RelayData>(relayDatas)
+            .catch(error => this.logger.error(
+                'Failed creating relay data model',
+                error.stack
+            ))
+
+        return validationData
     }
 
     public async lastValidationOf(

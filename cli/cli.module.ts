@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
 
-import { SeedModule } from './commands/seed.module'
+import {
+  PopulateRelayUptimeModule
+} from './commands/populate-relay-uptime/populate-relay-uptime.module'
+import { SeedModule } from './commands/seed/seed.module'
 
 @Module({
   imports: [
@@ -13,6 +16,7 @@ import { SeedModule } from './commands/seed.module'
         uri: config.get<string>('MONGO_URI', { infer: true })
       })
     }),
+    PopulateRelayUptimeModule,
     SeedModule
   ]
 })
