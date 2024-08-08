@@ -69,9 +69,10 @@ export class UptimeValidationService {
       relayDatas,
       ({ fingerprint }) => fingerprint
     )
+    const fingerprints = Object.keys(relayDatasByFingerprint)
 
     this.logger.log(
-      `Populating relay uptime on ${validation_date} for ${relayDatasByFingerprint.length} relays`
+      `Populating relay uptime on ${validation_date} for ${fingerprints.length} relays`
     )
 
     const validationDate = new Date(validation_date)
@@ -84,7 +85,6 @@ export class UptimeValidationService {
       .find({ validation_date: previousDate })
 
     const relayUptimes: RelayUptime[] = []
-    const fingerprints = Object.keys(relayDatasByFingerprint)
     for (const fingerprint of fingerprints) {
       const relayDatas = relayDatasByFingerprint[fingerprint]
       const seenRunningCount = relayDatas
