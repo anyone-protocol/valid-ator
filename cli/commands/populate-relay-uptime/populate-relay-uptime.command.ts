@@ -114,7 +114,7 @@ export class PopulateRelayUptimeCommand extends CommandRunner {
       }
   
       jobRun.finishedAt = Date.now()
-      // TODO -> await jobRun.save()
+      await jobRun.save()
     }
   }
 }
