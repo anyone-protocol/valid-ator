@@ -193,7 +193,6 @@ describe('ValidationService', () => {
         const relayDto1: RelayDataDto = {
             fingerprint: 'F143E45414700000000000000000000000000010',
             nickname: 'mock-validated-relay',
-            last_seen: Date.now().toString(),
             contact:
                 'Some @text @anon:  0xf72a247Dc4546b0291dbbf57648D45a752537802',
             consensus_weight: 1,
@@ -223,7 +222,6 @@ describe('ValidationService', () => {
         const relayDto2: RelayDataDto = {
             fingerprint: 'F143E45414700000000000000000000000000020',
             nickname: 'mock-validated-relay',
-            last_seen: Date.now().toString(),
             contact:
                 'Some @text @anon:  0xf72a247dc4546b0291dbbf57648D45a752537802',
             consensus_weight: 1,
@@ -250,7 +248,6 @@ describe('ValidationService', () => {
         const relayDto1: RelayDataDto= {
             fingerprint: 'F143E45414700000000000000000000000000010',
             nickname: 'mock-validated-relay',
-            last_seen: Date.now().toString(),
             contact:
                 'Some @text @anon:  0xf72a247Dc4546b0291dbbf57648D45a752537802',
             consensus_weight: 1,

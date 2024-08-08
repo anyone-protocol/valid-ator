@@ -5,7 +5,6 @@ export class RelayDataDto {
     readonly nickname: string
 
     readonly running: boolean
-    readonly last_seen: string
     readonly consensus_weight: number
     readonly consensus_measured: boolean
     readonly consensus_weight_fraction: number
