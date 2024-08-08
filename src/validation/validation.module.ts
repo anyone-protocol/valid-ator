@@ -16,7 +16,7 @@ import { RelayUptime } from './schemas/relay-uptime'
                 config: ConfigService<{
                     ONIONOO_REQUEST_TIMEOUT: number
                     ONIONOO_REQUEST_MAX_REDIRECTS: number
-                    UPTIME_SEEN_COUNT_THRESHOLD: number
+                    UPTIME_MINIMUM_RUNNING_COUNT: number
                 }>,
             ) => ({
                 timeout: config.get<number>('ONIONOO_REQUEST_TIMEOUT', {
