@@ -99,8 +99,6 @@ export class PopulateRelayUptimeCommand extends CommandRunner {
       const jobRun = await this.populateRelayUptimeJobModel
         .create<PopulateRelayUptimeJob>({
           validation_date,
-          uptimeNotRunningLimit:
-            this.uptimeValidationService.uptimeNotRunningLimit,
           uptimeMinimumRunningCount:
             this.uptimeValidationService.uptimeMinimumRunningCount
         })

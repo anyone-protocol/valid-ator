@@ -12,12 +12,10 @@ import extractIsodate from '../util/extract-isodate'
 export class UptimeValidationService {
   private readonly logger = new Logger(UptimeValidationService.name)
 
-  public uptimeNotRunningLimit: number = 8
   public uptimeMinimumRunningCount: number = 16
 
   constructor(
     readonly config: ConfigService<{
-      UPTIME_NOT_RUNNING_LIMIT: number,
       UPTIME_MINIMUM_RUNNING_COUNT: number
     }>,
     @InjectModel(RelayData.name)
@@ -25,23 +23,6 @@ export class UptimeValidationService {
     @InjectModel(RelayUptime.name)
     private readonly relayUptimeModel: Model<RelayUptime>,
   ) {
-    this.uptimeNotRunningLimit = Number.parseInt(
-      config.get<string>(
-        'UPTIME_NOT_RUNNING_LIMIT',
-        { infer: true }
-      ) || ''
-    )
-
-    if (
-      typeof this.uptimeNotRunningLimit !== 'number'
-        && this.uptimeNotRunningLimit <= 0
-    ) {
-      this.logger.error(
-        `UPTIME_NOT_RUNNING_LIMIT env var is invalid or missing,`
-        + ` using default value ${this.uptimeNotRunningLimit}`
-      )
-    }
-
     this.uptimeMinimumRunningCount = Number.parseInt(
       config.get<string>(
         'UPTIME_MINIMUM_RUNNING_COUNT',

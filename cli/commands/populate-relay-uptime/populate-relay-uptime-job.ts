@@ -16,9 +16,6 @@ export class PopulateRelayUptimeJob {
   success?: boolean
 
   @Prop({ type: Number, required: true })
-  uptimeNotRunningLimit: number
-
-  @Prop({ type: Number, required: true })
   uptimeMinimumRunningCount: number
 }
 
