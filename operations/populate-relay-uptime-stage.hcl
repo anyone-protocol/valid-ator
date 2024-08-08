@@ -1,4 +1,4 @@
-job "populate-relay-uptime" {
+job "populate-relay-uptime-stage" {
   datacenters = ["ator-fin"]
   type = "batch"
 
@@ -7,10 +7,10 @@ job "populate-relay-uptime" {
     prohibit_overlap = true
   }
 
-  group "populate-relay-uptime-group" {
+  group "populate-relay-uptime-stage-group" {
     count = 1
 
-    task "populate-relay-uptime-task" {
+    task "populate-relay-uptime-stage-task" {
       driver = "docker"
 
       env {
