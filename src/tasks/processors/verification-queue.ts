@@ -92,9 +92,11 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_SET_HARDWARE_BONUS_RELAYS:
                 try {
-                    const {
-                        ['verify-relays']: verificationResults
-                    } = await job.getChildrenValues<VerificationResults>()
+                    const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
+                        )
 
                     const validatedHardwareRelays = verificationResults
                         .filter(({ relay }) => relay.hardware_validated)
@@ -113,9 +115,11 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_CONFIRM_VERIFICATION:
                 try {
-                    const {
-                        ['verify-relays']: verificationResults
-                    } = await job.getChildrenValues<VerificationResults>()
+                    const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
+                        )
 
                     if (verificationResults.length > 0) {
                         this.logger.debug(`Finalizing verification ${job.data}`)
@@ -136,9 +140,11 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_PERSIST_VERIFICATION:
                 try {
-                    const {
-                        ['verify-relays']: verificationResults
-                    } = await job.getChildrenValues<VerificationResults>()
+                    const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
+                        )
 
                     if (verificationResults.length > 0) {
                         this.logger.log(
