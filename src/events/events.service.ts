@@ -395,7 +395,7 @@ export class EventsService implements OnApplicationBootstrap {
                                             name: 'add-registration-credit',
                                             queueName: 'registrator-updates-queue',
                                             data: {
-                                                account: accountString,
+                                                address: accountString,
                                                 fingerprint: fingerprintString,
                                                 tx: event.transactionHash
                                             },

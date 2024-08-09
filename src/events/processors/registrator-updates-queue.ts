@@ -19,12 +19,15 @@ export class RegistratorUpdatesQueue extends WorkerHost {
     async process(
         job: Job<any, any, string>,
     ): Promise<boolean | undefined> {
-        this.logger.debug(`Dequeueing ${job.name} [${job.id}] - ${job.data}`)
+        this.logger.debug(
+            `Dequeueing ${job.name} [${job.id}] - ${JSON.stringify(job.data)}`
+        )
 
         switch (job.name) {
             case RegistratorUpdatesQueue.JOB_ADD_REGISTRATION_CREDIT:
                 try {
-                    const data: AddRegistrationCreditEventData = job.data as AddRegistrationCreditEventData
+                    const data: AddRegistrationCreditEventData =
+                        job.data as AddRegistrationCreditEventData
                     if (data != undefined) {
                         this.logger.log(
                             `Adding registration credit for ${data.address} seen at ${data.tx}`,
