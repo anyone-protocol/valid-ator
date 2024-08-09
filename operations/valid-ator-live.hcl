@@ -50,6 +50,7 @@ job "valid-ator-live" {
         FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/sepolia/live/address" ]]"
         REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/live/address" ]]"
         TOKEN_CONTRACT_ADDRESS="[[ consulKey "ator-token/sepolia/live/address" ]]"
+        RELAY_UP_NFT_CONTRACT_ADDRESS="[[ consulKey "relay-up-nft-contract/live/address" ]]"
         {{- range service "validator-live-mongo" }}
           MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-live-testnet"
         {{- end }}
@@ -60,6 +61,7 @@ job "valid-ator-live" {
         {{- range service "onionoo-war-live" }}
           ONIONOO_DETAILS_URI="http://{{ .Address }}:{{ .Port }}/details"
         {{- end }}
+        UPTIME_MINIMUM_RUNNING_COUNT=16
         EOH
         destination = "secrets/file.env"
         env         = true
