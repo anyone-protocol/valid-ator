@@ -159,7 +159,9 @@ export class VerificationService {
         ) {
             if (this.isLive === 'true') {
                 try {
-                    // TODO: make use of fingerprint
+                    this.logger.log(
+                        `Adding registration credit to [${address}|${fingerprint}]}`
+                    )
                     const response = await this.relayRegistryContract
                         .writeInteraction<AddRegistrationCredits>({
                             function: 'addRegistrationCredits',
