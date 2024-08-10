@@ -152,12 +152,20 @@ export class PopulateRelayUptimeCommand extends CommandRunner {
       `Found dates needing relay uptime calcs: ${validation_dates.toString()}`
     )
 
-    const latestJobRun = await this.runPopulateRelayUptimeJobsAndReturnLatest(
+    let latestJobRun = await this.runPopulateRelayUptimeJobsAndReturnLatest(
       validation_dates
     )
 
     if (!latestJobRun) {
-      this.logger.log('Did not receive latest job run, exiting')
+      this.logger.log('Did not receive latest job run, checking database')
+
+      latestJobRun = await this.populateRelayUptimeJobModel
+        .findOne({ success: true })
+        .sort({ validation_date: -1 })
+    }
+
+    if (!latestJobRun) {
+      this.logger.log('Could not find latest job run, exiting')
       return
     }
 
