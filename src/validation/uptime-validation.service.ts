@@ -58,7 +58,7 @@ export class UptimeValidationService {
     if (relayDatas.length < 1) {
       this.logger.log(`Could not find any RelayData for ${validation_date}`)
 
-      return
+      return []
     }
 
     this.logger.log(
@@ -117,10 +117,14 @@ export class UptimeValidationService {
       `Saving ${relayUptimes.length} RelayUptime reports for ${validation_date}`
     )
 
-    await this.relayUptimeModel.insertMany(relayUptimes)
+    const createdRelayUptimes = await this.relayUptimeModel.insertMany(
+      relayUptimes
+    )
 
     this.logger.log(
       `Populated ${relayUptimes.length} RelayUptime reports for ${validation_date}`
     )
+
+    return createdRelayUptimes
   }
 }

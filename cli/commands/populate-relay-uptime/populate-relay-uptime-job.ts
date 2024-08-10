@@ -17,6 +17,13 @@ export class PopulateRelayUptimeJob {
 
   @Prop({ type: Number, required: true })
   uptimeMinimumRunningCount: number
+
+  @Prop({
+    type: [{ fingerprint: String, uptime_days: Number, pushed: Boolean }],
+    required: true,
+    default: []
+  })
+  uptimes: { fingerprint: String, uptime_days: Number, pushed: Boolean }[]
 }
 
 export type RelayUptimeJobDocument = HydratedDocument<PopulateRelayUptimeJob>
