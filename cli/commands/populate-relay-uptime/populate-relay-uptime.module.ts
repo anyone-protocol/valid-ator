@@ -18,10 +18,14 @@ import {
   RelayUptime,
   RelayUptimeSchema
 } from '../../../src/validation/schemas/relay-uptime'
+import {
+  DistributionModule
+} from '../../../src/distribution/distribution.module'
 
 @Module({
   imports: [
     ConfigModule,
+    DistributionModule,
     MongooseModule.forFeature([
       { name: PopulateRelayUptimeJob.name, schema: RelayUptimeJobSchema },
       { name: RelayData.name, schema: RelayDataSchema },

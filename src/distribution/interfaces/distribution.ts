@@ -23,6 +23,20 @@ export class DistributionResult {
       networkScore: string
       distributedTokens: string
     }
+    quality: {
+      enabled: boolean
+      tokensDistributedPerSecond: string
+      settings: {
+        uptime: {
+          [days: number]: number
+        }
+      }
+      uptime: {
+        [fingerprint: Fingerprint]: number
+      }
+      networkScore: string
+      distributedTokens: string
+    }
   }
   multipliers: {
     family: {
@@ -41,6 +55,7 @@ export class DistributionResult {
       distributedTokens: string
       bonuses: {
         hardware: string
+        quality: string
       }
       multipliers: {
         family: string
@@ -57,6 +72,18 @@ export type DistributionState = OwnableState & EvolvableState & {
       enabled: boolean
       tokensDistributedPerSecond: string
       fingerprints: Fingerprint[]
+    },
+    quality: {
+      enabled: boolean
+      tokensDistributedPerSecond: string
+      settings: {
+        uptime: {
+          [days: number]: number
+        }
+      }
+      uptime: {
+        [fingerprint: Fingerprint]: number
+      }
     }
   }
   pendingDistributions: {
@@ -104,9 +131,33 @@ export interface SetHardwareBonusRate extends ContractFunctionInput {
   tokensDistributedPerSecond: string
 }
 
+export interface SetQualityTierBonusRate extends ContractFunctionInput {
+  function: 'setQualityTierBonusRate'
+  tokensDistributedPerSecond: string
+}
+
 export interface ToggleHardwareBonus extends ContractFunctionInput {
   function: 'toggleHardwareBonus'
   enabled: boolean
+}
+
+export interface ToggleQualityTierBonus extends ContractFunctionInput {
+  function: 'toggleQualityTierBonus'
+  enabled: boolean
+}
+
+export interface SetQualityTierBonusSettings extends ContractFunctionInput {
+  function: 'setQualityTierBonusSettings'
+  settings: {
+    uptime: {
+      [days: number]: number
+    }
+  }
+}
+
+export interface SetQualityTierUptimes extends ContractFunctionInput {
+  function: 'setQualityTierUptimes',
+  uptimes: { [fingerprint: Fingerprint]: number }
 }
 
 export interface AddFingerprintsToBonus extends ContractFunctionInput {
@@ -130,7 +181,7 @@ export interface SetFamilies extends ContractFunctionInput {
   function: 'setFamilies'
   families: {
     fingerprint: Fingerprint
-    add?: Fingerprint[]
+    add?: Fingerprint[],
     remove?: Fingerprint[]
   }[]
 }

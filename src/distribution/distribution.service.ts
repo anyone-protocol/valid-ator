@@ -10,9 +10,9 @@ import {
     DistributionState,
     Score,
     SetFamilies,
+    SetQualityTierUptimes,
 } from 'src/distribution/interfaces/distribution'
 import { ConfigService } from '@nestjs/config'
-import { Wallet, ethers } from 'ethers'
 import { EthersExtension } from 'warp-contracts-plugin-ethers'
 import {
     EthereumSigner,
@@ -28,14 +28,18 @@ import Bundlr from '@bundlr-network/client'
 import { Distribute } from './interfaces/distribution'
 import { RewardAllocationData } from './dto/reward-allocation-data'
 import { Claimable } from 'src/verification/interfaces/relay-registry'
-import { DistributionCompletedResults } from './dto/distribution-completed-result'
 import { setTimeout } from 'node:timers/promises'
 import { AxiosError } from 'axios'
-import { DreDistributionResponse } from './interfaces/dre-relay-registry-response'
+import {
+    DreDistributionResponse
+} from './interfaces/dre-relay-registry-response'
 import { HttpService } from '@nestjs/axios'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
-import { VerificationResults } from 'src/verification/dto/verification-result-dto'
+import {
+    VerificationResults
+} from 'src/verification/dto/verification-result-dto'
 import _ from 'lodash'
+import { RelayUptime } from 'src/validation/schemas/relay-uptime'
 
 @Injectable()
 export class DistributionService {
@@ -648,5 +652,55 @@ export class DistributionService {
         }
 
         return results.concat(relays.map(relay => ({ relay, result: 'OK' })))
+    }
+
+    public async setRelayUptimes(
+        uptimes: { fingerprint: String, uptime_days: Number, pushed: Boolean }[]
+    ): Promise<{ success: boolean }> {
+        if (!this.distributionContract) {
+            this.logger.error('Distribution contract not initialized')
+            return { success: false }
+        }
+
+        if (!this.operator) {
+            this.logger.error('Distribution operator not defined')
+            return { success: false }
+        }
+
+        if (this.isLive !== 'true') {
+            this.logger.warn(`NOT LIVE - skipped setting relay uptimes`)
+            return { success: true }
+        }
+
+        await setTimeout(5000)
+        const fingerprints = uptimes.map(r => r.fingerprint)
+        this.logger.log(
+            `Setting uptimes for ${uptimes.length} relays [${fingerprints}]`
+        )
+
+        try {
+            const response = await this.distributionContract
+                .writeInteraction<SetQualityTierUptimes>({
+                    function: 'setQualityTierUptimes',
+                    uptimes: Object.fromEntries(
+                        uptimes.map(
+                            ({ fingerprint, uptime_days }) =>
+                                [ fingerprint, uptime_days ]
+                        )
+                    )
+                })
+            this.logger.log(
+                `Set uptimes for ${uptimes.length} relays: ${response?.originalTxId}`
+            )
+        } catch (error) {
+            this.logger.error(
+                `Exception setting uptimes for ${uptimes.length} relays [${fingerprints}]`,
+                error.stack
+            )
+
+            return { success: false }
+        }
+
+        return { success: true }
     }
 }
