@@ -160,7 +160,7 @@ export class VerificationService {
             if (this.isLive === 'true') {
                 try {
                     this.logger.log(
-                        `Adding registration credit to [${address}|${fingerprint}]}`
+                        `Adding registration credit to [${JSON.stringify({ address, tx, fingerprint})}]}`
                     )
                     const response = await this.relayRegistryContract
                         .writeInteraction<AddRegistrationCredits>({
@@ -175,7 +175,7 @@ export class VerificationService {
                     )
                 } catch (error) {
                     this.logger.error(
-                        `Exception when adding registration credit [${address}]`,
+                        `Exception when adding registration credit [${JSON.stringify({ address, tx, fingerprint})}]`,
                         error.stack,
                     )
                     return false
