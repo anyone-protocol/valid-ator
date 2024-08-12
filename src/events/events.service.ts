@@ -389,7 +389,9 @@ export class EventsService implements OnApplicationBootstrap {
 
                                     if (accountString != undefined) {
                                         this.logger.log(
-                                            `Noticed registration lock for ${accountString} with fingerprint: ${fingerprintString}`,
+                                            `Noticed registration lock for ${accountString} `
+                                                + `with fingerprint ${fingerprintString} `
+                                                + `and tx ${event.transactionHash}`,
                                         )
                                         await this.registratorUpdatesFlow.add({
                                             name: 'add-registration-credit',
