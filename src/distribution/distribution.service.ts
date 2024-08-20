@@ -498,6 +498,20 @@ export class DistributionService {
         }
     }
 
+    public async getHardwareBonusFingerprints(): Promise<
+        DistributionState['bonuses']['hardware']['fingerprints']
+    > {
+        await this.refreshDreState()
+        if (this.dreState != undefined) {
+            return this.dreState?.bonuses.hardware.fingerprints || []
+        } else {
+            const {
+                cachedValue: { state }
+            } = await this.distributionContract.readState()
+            return state.bonuses.hardware.fingerprints || []
+        }
+    }
+
     public async setRelayFamilies(
         relays: ValidatedRelay[]
     ): Promise<VerificationResults> {
@@ -601,7 +615,14 @@ export class DistributionService {
     public async setHardwareBonusRelays(
         results: VerificationResults
     ): Promise<VerificationResults> {
+        const currentHardwareBonusFingerprints =
+            await this.getHardwareBonusFingerprints()
         const fingerprints = results
+            .filter(
+                ({ relay }) => !currentHardwareBonusFingerprints.includes(
+                    relay.fingerprint
+                )
+            )
             .filter(({ relay }) => relay.hardware_validated)
             .map(({ relay }) => relay.fingerprint)
 
