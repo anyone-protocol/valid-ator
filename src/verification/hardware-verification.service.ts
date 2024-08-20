@@ -19,6 +19,9 @@ import { isHexStringValid } from '../util/hex-string'
 import { ValidatedRelay } from '../validation/schemas/validated-relay'
 import { VerifiedHardware } from './schemas/verified-hardware'
 import { RelaySaleData } from './schemas/relay-sale-data'
+import {
+  HardwareVerificationFailure
+} from './schemas/hardware-verification-failure'
 
 @Injectable()
 export class HardwareVerificationService {
@@ -38,7 +41,10 @@ export class HardwareVerificationService {
     @InjectModel(VerifiedHardware.name)
     private readonly verifiedHardwareModel: Model<VerifiedHardware>,
     @InjectModel(RelaySaleData.name)
-    private readonly relaySaleDataModel: Model<RelaySaleData>
+    private readonly relaySaleDataModel: Model<RelaySaleData>,
+    @InjectModel(HardwareVerificationFailure.name)
+    private readonly hardwareVerificationFailureModel:
+      Model<HardwareVerificationFailure>
   ) {
     this.logger.log('Initializing HardwareVerificationService')
 
@@ -238,19 +244,18 @@ export class HardwareVerificationService {
    *   - else, pass and return parsed nft id
    * 
    * @todo Handle nftId of 0 for future relay sales / known relays
-   * 
-   * @param fingerprint 
-   * @param address 
-   * @param deviceSerial 
-   * @param nftId 
-   * @returns Promise<{ valid: false } | { valid: true, nftId: number }>
    */
-  private async validateNftIdForAddressAndDeviceSerial(
-    fingerprint: string,
-    address: string,
-    deviceSerial: string,
+  private async validateNftIdForAddressAndDeviceSerial({
+    fingerprint,
+    address,
+    deviceSerial,
+    nftId
+  }: {
+    fingerprint: string
+    address: string
+    deviceSerial?: string
     nftId?: string
-  ): Promise<{ valid: false } | { valid: true, nftId: number }> {
+  }): Promise<{ valid: false } | { valid: true, nftId: number }> {
     if (!nftId) {
       this.logger.log(
         `Missing NFT ID in hardware info for relay [${fingerprint}]`
@@ -315,86 +320,106 @@ export class HardwareVerificationService {
     return { valid: true, nftId: parsedNftId }
   }
 
-  public async isHardwareProofValid(relay: ValidatedRelay): Promise<boolean> {
-    if (!relay.hardware_info) { return false }
+  public async isHardwareProofValid({
+    ator_address: address,
+    fingerprint,
+    hardware_info
+  }: ValidatedRelay): Promise<boolean> {
+    const isValid = await (async () => {
+      if (!hardware_info) { return false }
 
-    const { nftid, serNums, pubKeys, certs } = relay.hardware_info
+      const { nftid: nftId, serNums, pubKeys, certs } = hardware_info
 
-    const deviceSerial = serNums?.find(s => s.type === 'DEVICE')?.number
-    const isDeviceSerialValid = await this.validateDeviceSerial(
-      relay.fingerprint,
-      deviceSerial
-    )
-    if (!isDeviceSerialValid) { return false }
+      const deviceSerial = serNums?.find(s => s.type === 'DEVICE')?.number
+      const isDeviceSerialValid = await this.validateDeviceSerial(
+        fingerprint,
+        deviceSerial
+      )
+      if (!isDeviceSerialValid) { return false }
 
-    const atecSerial = serNums?.find(s => s.type === 'ATEC')?.number
-    const isAtecSerialValid = await this.validateAtecSerial(
-      relay.fingerprint,
-      atecSerial
-    )
-    if (!isAtecSerialValid) { return false }
+      const atecSerial = serNums?.find(s => s.type === 'ATEC')?.number
+      const isAtecSerialValid = await this.validateAtecSerial(
+        fingerprint,
+        atecSerial
+      )
+      if (!isAtecSerialValid) { return false }
 
-    const publicKey = pubKeys
-      ?.find(p => p.type === 'DEVICE')
-      ?.number
-    if (!publicKey) {
-      this.logger.debug(
-        `Missing Public Key in hardware info for relay [${relay.fingerprint}]`
+      const publicKey = pubKeys
+        ?.find(p => p.type === 'DEVICE')
+        ?.number
+      if (!publicKey) {
+        this.logger.debug(
+          `Missing Public Key in hardware info for relay [${fingerprint}]`
+        )
+
+        return false
+      }
+
+      const signature = certs
+        ?.find(c => c.type === 'DEVICE')
+        ?.signature
+      if (!signature) {
+        this.logger.debug(
+          `Missing Signature in hardware info for relay [${fingerprint}]`
+        )
+
+        return false
+      }
+
+      const validateNftResult =
+        await this.validateNftIdForAddressAndDeviceSerial({
+          fingerprint,
+          address,
+          deviceSerial,
+          nftId
+        })
+      if (!validateNftResult.valid) { return false }
+
+      const isHardwareProofValid = await this.verifyRelaySerialProof(
+        'relay',
+        validateNftResult.nftId,
+        deviceSerial!,
+        atecSerial!,
+        fingerprint,
+        address,
+        publicKey,
+        signature
       )
 
-      return false
-    }
+      if (!isHardwareProofValid) {
+        this.logger.debug(
+          `Hardware info proof failed verification for relay [${fingerprint}]`
+        )
 
-    const signature = certs
-      ?.find(c => c.type === 'DEVICE')
-      ?.signature
-    if (!signature) {
-      this.logger.debug(
-        `Missing Signature in hardware info for relay [${relay.fingerprint}]`
+        return false
+      }
+
+      await this.verifiedHardwareModel.create({
+        verified_at: Date.now(),
+        deviceSerial,
+        atecSerial,
+        fingerprint,
+        address,
+        publicKey,
+        signature,
+        nftId: validateNftResult.nftId
+      })
+
+      return true
+    })()
+
+    if (!isValid) {
+      this.logger.log(
+        `Storing hardware verification failure for ${fingerprint}`
       )
-
-      return false
+      await this.hardwareVerificationFailureModel.create({
+        fingerprint,
+        address,
+        timestamp: Date.now(),
+        hardware_info
+      })
     }
 
-    const validateNftResult = await this.validateNftIdForAddressAndDeviceSerial(
-      relay.fingerprint,
-      relay.ator_address,
-      deviceSerial!,
-      nftid      
-    )
-    if (!validateNftResult.valid) { return false }
-
-    const isHardwareProofValid = await this.verifyRelaySerialProof(
-      'relay',
-      validateNftResult.nftId,
-      deviceSerial!,
-      atecSerial!,
-      relay.fingerprint,
-      relay.ator_address,
-      publicKey,
-      signature
-    )
-
-    if (!isHardwareProofValid) {
-      this.logger.debug(
-        `Hardware info proof failed verification for `
-          + `relay [${relay.fingerprint}]`
-      )
-
-      return false
-    }
-
-    await this.verifiedHardwareModel.create({
-      verified_at: Date.now(),
-      deviceSerial,
-      atecSerial,
-      fingerprint: relay.fingerprint,
-      address: relay.ator_address,
-      publicKey,
-      signature,
-      nftId: validateNftResult.nftId
-    })
-
-    return true
+    return isValid
   }
 }
