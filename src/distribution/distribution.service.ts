@@ -599,14 +599,14 @@ export class DistributionService {
     }
 
     public async setHardwareBonusRelays(
-        relays: ValidatedRelay[]
+        results: VerificationResults
     ): Promise<VerificationResults> {
-        const results: VerificationResults = []
+        const fingerprints = results
+            .filter(({ relay }) => relay.hardware_validated)
+            .map(({ relay }) => relay.fingerprint)
 
         if (!this.distributionContract) {
             this.logger.error('Distribution contract not initialized')
-
-            return relays.map(relay => ({ relay, result: 'Failed' }))
         }
 
         if (!this.operator) {
@@ -616,20 +616,20 @@ export class DistributionService {
         if (this.isLive === 'true') {
             try {
                 const batches = _.chunk(
-                    relays,
+                    fingerprints,
                     DistributionService.fingerprintsPerBatch
                 )
 
                 for (const batch of batches) {
                     await setTimeout(5000)
                     this.logger.debug(
-                        `Starting to set hardware bonus relays for ${batch.length} relays [${batch.map(r => r.fingerprint)}]`
+                        `Starting to set hardware bonus relays for ${batch.length} relays [${batch}]`
                     )
                     const response = await this.distributionContract
                         .writeInteraction<AddFingerprintsToBonus>({
                             function: 'addFingerprintsToBonus',
                             bonusName: 'hardware',
-                            fingerprints: batch.map(r => r.fingerprint)
+                            fingerprints: batch
                         })
                     this.logger.log(
                         `Set hardware bonus relays for ${batch.length} relays: ${response?.originalTxId}`
@@ -637,21 +637,17 @@ export class DistributionService {
                 }
             } catch (error) {
                 this.logger.error(
-                    `Exception setting relay families for ${relays.length} relays [${relays.map(r => r.fingerprint)}]`,
+                    `Exception setting relay families for ${fingerprints.length} relays [${fingerprints}]`,
                     error.stack,
-                )
-
-                return results.concat(
-                    relays.map(relay => ({ relay, result: 'Failed' }))
                 )
             }
         } else {
             this.logger.warn(
-                `NOT LIVE - skipped setting hardware bonus relays for ${relays.length} relays [${relays.map(r => r.fingerprint)}]`
+                `NOT LIVE - skipped setting hardware bonus relays for ${fingerprints.length} relays [${fingerprints}]`
             )
         }
 
-        return results.concat(relays.map(relay => ({ relay, result: 'OK' })))
+        return results
     }
 
     public async setRelayUptimes(
