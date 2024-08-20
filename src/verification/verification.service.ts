@@ -747,6 +747,9 @@ export class VerificationService {
                 relay.ator_address ===
                     '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF'
             ) {
+                this.logger.log(
+                    `Failing relay ${relay.fingerprint} with dummy address ${relay.ator_address}`
+                )
                 results.push({ relay, result: 'Failed' })
             } else if (isAlreadyClaimable) {
                 this.logger.debug(
