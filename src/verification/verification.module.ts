@@ -14,6 +14,10 @@ import {
 } from './schemas/verified-hardware'
 import { HardwareVerificationService } from './hardware-verification.service'
 import { RelaySaleData, RelaySaleDataSchema } from './schemas/relay-sale-data'
+import {
+    HardwareVerificationFailure,
+    HardwareVerificationFailureSchema
+} from './schemas/hardware-verification-failure'
 
 
 @Module({
@@ -23,6 +27,10 @@ import { RelaySaleData, RelaySaleDataSchema } from './schemas/relay-sale-data'
             { name: VerificationData.name, schema: VerificationDataSchema },
             { name: VerifiedHardware.name, schema: VerifiedHardwareSchema },
             { name: RelaySaleData.name, schema: RelaySaleDataSchema },
+            {
+                name: HardwareVerificationFailure.name,
+                schema: HardwareVerificationFailureSchema
+            },
         ]),
         HttpModule.registerAsync({
             inject: [ConfigService],
