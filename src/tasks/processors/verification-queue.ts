@@ -2,9 +2,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Job } from 'bullmq'
 import { VerificationService } from 'src/verification/verification.service'
-import { RelayVerificationResult } from 'src/verification/dto/relay-verification-result'
 import {
-    VerificationResultDto,
     VerificationResults,
 } from 'src/verification/dto/verification-result-dto'
 import { ValidatedRelay } from 'src/validation/schemas/validated-relay'
@@ -98,12 +96,8 @@ export class VerificationQueue extends WorkerHost {
                             [],
                         )
 
-                    const validatedHardwareRelays = verificationResults
-                        .filter(({ relay }) => relay.hardware_validated)
-                        .map(({ relay }) => relay)
-
                     return await this.distribution
-                        .setHardwareBonusRelays(validatedHardwareRelays)
+                        .setHardwareBonusRelays(verificationResults)
                 } catch (error) {
                     this.logger.error(
                         `Exception while setting hardware bonus relays`,
