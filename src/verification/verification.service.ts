@@ -743,7 +743,15 @@ export class VerificationService {
                 `${relay.fingerprint}|${relay.ator_address} IS_LIVE: ${this.isLive} Claimable: ${isAlreadyClaimable} Verified: ${isAlreadyVerified}`,
             )
 
-            if (isAlreadyClaimable) {
+            if (
+                relay.ator_address ===
+                    '0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF'
+            ) {
+                this.logger.log(
+                    `Failing relay ${relay.fingerprint} with dummy address ${relay.ator_address}`
+                )
+                results.push({ relay, result: 'Failed' })
+            } else if (isAlreadyClaimable) {
                 this.logger.debug(
                     `Already registered (can be claimed) relay [${relay.fingerprint}]`,
                 )
