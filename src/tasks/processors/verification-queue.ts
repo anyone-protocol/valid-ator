@@ -90,11 +90,9 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_SET_HARDWARE_BONUS_RELAYS:
                 try {
-                    const verificationResults: VerificationResults =
-                        Object.values(await job.getChildrenValues()).reduce(
-                            (prev, curr) => (prev as []).concat(curr as []),
-                            [],
-                        )
+                    const childValues = await job.getChildrenValues()
+                    const verificationResults: VerificationResults = childValues[VerificationQueue.JOB_VERIFY_RELAYS]?? []
+                    this.logger.log(`Processing verification results of size ${verificationResults.length}`)
 
                     return await this.distribution
                         .setHardwareBonusRelays(verificationResults)
