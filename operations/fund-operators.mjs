@@ -5,7 +5,7 @@ import Irys from '@irys/sdk'
 
 const IRYS_NODE = 'https://node2.irys.xyz/'
 
-const irys = new Irys({ url: IRYS_NODE, token: 'ethereum', key: process.env.OPERATOR_KEY || 'NO_KEY' })
+const irys = new Irys({ url: IRYS_NODE, token: 'ethereum', key: process.env.OPERATOR_KEY || 'NO_KEY', config: { timeout: 240000 } })
 
 async function fundOperator() {  
 	try {
