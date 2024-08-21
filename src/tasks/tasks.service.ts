@@ -95,6 +95,7 @@ export class TasksService implements OnApplicationBootstrap {
                     name: 'persist-verification',
                     queueName: 'verification-queue',
                     opts: TasksService.jobOpts,
+                    data: validation.validated_at,
                     children: [
                         {
                             name: 'confirm-verification',
@@ -105,6 +106,8 @@ export class TasksService implements OnApplicationBootstrap {
                                 {
                                     name: 'set-hardware-bonus-relays',
                                     queueName: 'verification-queue',
+                                    data: validation.validated_at,
+                                    opts: TasksService.jobOpts,
                                     children: [
                                         {
                                             name: 'set-relay-families',

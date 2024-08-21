@@ -107,7 +107,7 @@ export class VerificationQueue extends WorkerHost {
                             [],
                         )
 
-                    this.logger.log(`Processing verification results of size ${verificationResults.length}`)
+                    this.logger.log(`Processing verification results for ${job.data} of size ${verificationResults.length}`)
 
                     return await this.distribution
                         .setHardwareBonusRelays(verificationResults)
@@ -155,7 +155,7 @@ export class VerificationQueue extends WorkerHost {
 
                     if (verificationResults.length > 0) {
                         this.logger.log(
-                            `Persisting verification of ${verificationResults.length} relays`,
+                            `Persisting verification for ${job.data} of ${verificationResults.length} relays`,
                         )
 
                         const verificationData =
@@ -169,7 +169,7 @@ export class VerificationQueue extends WorkerHost {
                             verificationData.validation_stats_tx.length > 0
                         ) {
                             try {
-                                this.logger.log(`Publishing relay hex info...`)
+                                this.logger.log(`Publishing relay hex info for ${job.data} ...`)
                                 const relayHexMapData = await this.verification.storeRelayHexMap(verificationResults)
                             } catch (error) {
                                 this.logger.error(
