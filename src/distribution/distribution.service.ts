@@ -592,8 +592,14 @@ export class DistributionService {
                     }
                 }
             } catch (error) {
+                const firstFingerprint = relaysWithFamilyUpdates.at(0)
+                const lastFingerprint = relaysWithFamilyUpdates.at(
+                    relaysWithFamilyUpdates.length - 1
+                )
                 this.logger.error(
-                    `Exception setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`,
+                    `Exception setting relay families for`
+                    + ` ${relaysWithFamilyUpdates.length} relays`
+                    + ` [${firstFingerprint} ... ${lastFingerprint}]`,
                     error.stack,
                 )
 
@@ -602,8 +608,14 @@ export class DistributionService {
                 )
             }
         } else {
+            const firstFingerprint = relaysWithFamilyUpdates.at(0)
+            const lastFingerprint = relaysWithFamilyUpdates.at(
+                relaysWithFamilyUpdates.length - 1
+            )
             this.logger.warn(
-                `NOT LIVE - skipped setting relay families for ${relaysWithFamilyUpdates.length} relays [${relaysWithFamilyUpdates.map(r => r.fingerprint)}]`
+                `NOT LIVE - skipped setting relay families for`
+                + ` ${relaysWithFamilyUpdates.length} relays`
+                + ` [${firstFingerprint} ... ${lastFingerprint}]`
             )
         }
 
