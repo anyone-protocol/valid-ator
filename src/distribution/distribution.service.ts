@@ -112,16 +112,7 @@ export class DistributionService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new EthereumSigner(distributionOperatorKey)
-
-            this.operator = {
-                address: signer.address,
-                signer: signer,
-            }
-
-            this.logger.log(
-                `Initialized distribution service for address: ${this.operator.address}`,
-            )
+            this.operator = new EthereumSigner(distributionOperatorKey)
 
             const distributionContractTxId = this.config.get<string>(
                 'DISTRIBUTION_CONTRACT_TXID',
@@ -160,9 +151,18 @@ export class DistributionService {
                         remoteStateSyncEnabled: true,
                         remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
                     })
-                    .connect(this.operator.signer)
+                    .connect(this.operator)
             } else this.logger.error('Missing distribution contract txid')
         } else this.logger.error('Missing contract owner key...')
+    }
+
+    async onApplicationBootstrap(): Promise<void> {
+        if (this.operator !== undefined) {
+            const operatorAddress = await this.operator.getAddress()
+            this.logger.log(`Initialized with operator address: ${operatorAddress}`)
+        } else {
+            this.logger.error('Operator is undefined!')
+        }
     }
 
     public async getAllocation(

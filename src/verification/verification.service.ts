@@ -105,14 +105,7 @@ export class VerificationService {
                 this.logger.error('Failed to initialize Bundlr!')
             }
 
-            const signer = new EthereumSigner(relayRegistryOperatorKey)
-
-            this.operator = {
-                address: signer.address,
-                signer: signer,
-            }
-
-            this.logger.log(`Initialized for address: ${this.operator.address}`)
+            this.operator = new EthereumSigner(relayRegistryOperatorKey)
 
             const registryTxId = this.config.get<string>(
                 'RELAY_REGISTRY_CONTRACT_TXID',
@@ -147,9 +140,18 @@ export class VerificationService {
                         remoteStateSyncEnabled: true,
                         remoteStateSyncSource: dreHostname ?? 'dre-1.warp.cc',
                     })
-                    .connect(this.operator.signer)
+                    .connect(this.operator)
             } else this.logger.error('Missing relay registry contract txid')
         } else this.logger.error('Missing contract owner key...')
+    }
+
+    async onApplicationBootstrap(): Promise<void> {
+        if (this.operator !== undefined) {
+            const operatorAddress = await this.operator.getAddress()
+            this.logger.log(`Initialized with operator address: ${operatorAddress}`)
+        } else {
+            this.logger.error('Operator is undefined!')
+        }
     }
 
     public async addRegistrationCredit(address: string, tx: string, fingerprint: string): Promise<boolean> {
