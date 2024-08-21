@@ -55,9 +55,13 @@ export class VerificationQueue extends WorkerHost {
                         return false
                     })
 
-                    return await this.verification.verifyRelays(
+                    const verificationResults = await this.verification.verifyRelays(
                         validFingerprintRelays
                     )
+
+                    this.logger.log(`Verification results with ${verificationResults.length} relays`)
+
+                    return verificationResults
                 } catch (error) {
                     this.logger.error(
                         'Exception while verifying validated relay:',
@@ -90,8 +94,9 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_SET_HARDWARE_BONUS_RELAYS:
                 try {
-                    const childValues = await job.getChildrenValues()
-                    const verificationResults: VerificationResults = childValues[VerificationQueue.JOB_VERIFY_RELAYS]?? []
+                    const values = Object.values(await job.getChildrenValues())
+                    const verificationResults: VerificationResults = values[0]
+
                     this.logger.log(`Processing verification results of size ${verificationResults.length}`)
 
                     return await this.distribution
@@ -114,7 +119,7 @@ export class VerificationQueue extends WorkerHost {
                         )
 
                     if (verificationResults.length > 0) {
-                        this.logger.debug(`Finalizing verification ${job.data}`)
+                        this.logger.debug(`Finalizing verification ${job.data} with ${verificationResults.length} results`)
                         this.verification.logVerification(verificationResults)
 
                         return verificationResults
