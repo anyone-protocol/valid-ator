@@ -53,6 +53,7 @@
     "warp-contracts-subscription-plugin": "^1.0.4"
   },
   "devDependencies": {
+    "@irys/sdk": "^0.2.10",
     "@nestjs/cli": "^9.4.2",
     "@nestjs/schematics": "^9.1.0",
     "@nestjs/testing": "^9.4.0",
