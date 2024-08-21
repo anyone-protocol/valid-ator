@@ -72,6 +72,12 @@ export class VerificationQueue extends WorkerHost {
                 return []
 
             case VerificationQueue.JOB_SET_RELAY_FAMILIES:
+                const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
+                        )
+
                 const relays = job.data as ValidatedRelay[]
                 try {
                     const registryResults = await this
@@ -82,7 +88,8 @@ export class VerificationQueue extends WorkerHost {
                         .distribution
                         .setRelayFamilies(relays)
 
-                    return registryResults.concat(distributionResults)
+                    // TODO: merge verification results with registry and distribution updates
+                    return verificationResults
                 } catch (error) {
                     this.logger.error(
                         `Exception while setting relay families for [${relays.map(r => r.fingerprint)}]`,
@@ -94,8 +101,11 @@ export class VerificationQueue extends WorkerHost {
 
             case VerificationQueue.JOB_SET_HARDWARE_BONUS_RELAYS:
                 try {
-                    const values = Object.values(await job.getChildrenValues())
-                    const verificationResults: VerificationResults = values[0]
+                    const verificationResults: VerificationResults =
+                        Object.values(await job.getChildrenValues()).reduce(
+                            (prev, curr) => (prev as []).concat(curr as []),
+                            [],
+                        )
 
                     this.logger.log(`Processing verification results of size ${verificationResults.length}`)
 

@@ -105,19 +105,20 @@ export class TasksService implements OnApplicationBootstrap {
                                 {
                                     name: 'set-hardware-bonus-relays',
                                     queueName: 'verification-queue',
-                                    data: validation.relays,
-                                    children: [ // Make sure verify relays is the first one in the list of children. Update queue of parent task otherwise.
-                                        {
-                                            name: 'verify-relays',
-                                            queueName: 'verification-queue',
-                                            opts: TasksService.jobOpts,
-                                            data: validation.relays
-                                        },
+                                    children: [
                                         {
                                             name: 'set-relay-families',
                                             queueName: 'verification-queue',
                                             opts: TasksService.jobOpts,
-                                            data: validation.relays
+                                            data: validation.relays,
+                                            children: [
+                                                {
+                                                    name: 'verify-relays',
+                                                    queueName: 'verification-queue',
+                                                    opts: TasksService.jobOpts,
+                                                    data: validation.relays
+                                                }
+                                            ]
                                         }
                                     ]
                                 }
