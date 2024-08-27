@@ -6,6 +6,9 @@ import {
   PopulateRelayUptimeModule
 } from './commands/populate-relay-uptime/populate-relay-uptime.module'
 import { SeedModule } from './commands/seed/seed.module'
+import {
+  GetHardwareProofFailsModule
+} from './commands/get-hardware-verification-failures/get-hardware-verification-failures.module'
 
 @Module({
   imports: [
@@ -17,7 +20,8 @@ import { SeedModule } from './commands/seed/seed.module'
       })
     }),
     PopulateRelayUptimeModule,
-    SeedModule
+    SeedModule,
+    GetHardwareProofFailsModule
   ]
 })
 export class CliModule {}
