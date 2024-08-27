@@ -35,7 +35,7 @@ export class GetHardwareVerificationFailuresCommand extends CommandRunner {
         + ` to ${outputPath}`
     )
 
-    writeFileSync(outputPath, JSON.stringify(failures) + '\n')
+    writeFileSync(outputPath, JSON.stringify(failures, undefined, 2) + '\n')
 
     this.logger.log(
       `Wrote ${failures.length} hardware verification failures to ${outputPath}`
