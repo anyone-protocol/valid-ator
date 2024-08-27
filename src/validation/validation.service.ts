@@ -242,7 +242,8 @@ export class ValidationService {
                 family: relay.effective_family,
                 consensus_measured: relay.consensus_measured,
                 primary_address_hex: relay.primary_address_hex,
-                hardware_info: relay.hardware_info
+                hardware_info: relay.hardware_info,
+                nickname: relay.nickname
             })
 
             relayDatas.push({
@@ -262,7 +263,8 @@ export class ValidationService {
                 observed_bandwidth: relay.observed_bandwidth,
                 advertised_bandwidth: relay.advertised_bandwidth,
                 family: relay.effective_family,
-                hardware_info: relay.hardware_info
+                hardware_info: relay.hardware_info,
+                nickname: relay.nickname
             })
         }
 
