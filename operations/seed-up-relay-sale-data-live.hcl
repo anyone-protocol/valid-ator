@@ -1,11 +1,11 @@
-job "seed-down-relay-sale-data-stage" {
+job "seed-up-relay-sale-data-live" {
   datacenters = ["ator-fin"]
   type = "batch"
 
-  group "seed-down-relay-sale-data-stage-group" {
+  group "seed-up-relay-sale-data-live-group" {
     count = 1
 
-    task "seed-down-relay-sale-data-stage-task" {
+    task "seed-up-relay-sale-data-live-task" {
       driver = "docker"
 
       resources {
@@ -19,8 +19,8 @@ job "seed-down-relay-sale-data-stage" {
 
       template {
         data = <<EOH
-        {{- range service "validator-stage-mongo" }}
-          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-stage-testnet"
+        {{- range service "validator-live-mongo" }}
+          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-live-testnet"
         {{- end }}
         EOH
         destination = "secrets/file.env"
@@ -29,7 +29,10 @@ job "seed-down-relay-sale-data-stage" {
 
       template {
         change_mode = "noop"
-        data = "no-data"
+        data = chomp(replace(<<-EOF
+Device Serial,NFT ID
+EOF
+, "\n", "\r\n"))
         destination = "local/relay-sale-data.csv"
       }
 
@@ -40,8 +43,7 @@ job "seed-down-relay-sale-data-stage" {
         args = [
           "dist/cli/main.js",
           "seed", "relay-sale-data",
-          "--data", "/data/relay-sale-data.csv",
-          "down"
+          "--data", "/data/relay-sale-data.csv"
         ]        
       }
     }

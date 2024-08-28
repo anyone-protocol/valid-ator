@@ -1,11 +1,11 @@
-job "seed-down-relay-sale-data-stage" {
+job "seed-down-relay-sale-data-live" {
   datacenters = ["ator-fin"]
   type = "batch"
 
-  group "seed-down-relay-sale-data-stage-group" {
+  group "seed-down-relay-sale-data-live-group" {
     count = 1
 
-    task "seed-down-relay-sale-data-stage-task" {
+    task "seed-down-relay-sale-data-live-task" {
       driver = "docker"
 
       resources {
@@ -19,8 +19,8 @@ job "seed-down-relay-sale-data-stage" {
 
       template {
         data = <<EOH
-        {{- range service "validator-stage-mongo" }}
-          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-stage-testnet"
+        {{- range service "validator-live-mongo" }}
+          MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/valid-ator-live-testnet"
         {{- end }}
         EOH
         destination = "secrets/file.env"

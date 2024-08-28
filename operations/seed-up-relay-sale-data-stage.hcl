@@ -1,19 +1,11 @@
-job "seed-relay-sale-data" {
+job "seed-up-relay-sale-data-stage" {
   datacenters = ["ator-fin"]
   type = "batch"
 
-  group "seed-relay-sale-data-group" {
+  group "seed-up-relay-sale-data-stage-group" {
     count = 1
 
-    network {
-      mode = "bridge"
-      port "validator" {
-        to = 3000
-        host_network = "wireguard"
-      }
-    }
-
-    task "seed-relay-sale-data-task" {
+    task "seed-up-relay-sale-data-stage-task" {
       driver = "docker"
 
       resources {
@@ -37,7 +29,10 @@ job "seed-relay-sale-data" {
 
       template {
         change_mode = "noop"
-        data = ""
+        data = chomp(replace(<<-EOF
+Device Serial,NFT ID
+EOF
+, "\n", "\r\n"))
         destination = "local/relay-sale-data.csv"
       }
 
