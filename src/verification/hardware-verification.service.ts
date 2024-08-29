@@ -155,7 +155,7 @@ export class HardwareVerificationService {
       + deviceSerial
       + atecSerial
       + fingerprint
-      + address
+      + address.substring(2)
     ).toLowerCase()
     const message = Uint8Array.from(
       (messageHexString.match(/.{1,2}/g) || [])
