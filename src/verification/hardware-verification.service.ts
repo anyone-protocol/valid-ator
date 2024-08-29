@@ -116,12 +116,6 @@ export class HardwareVerificationService {
       return false
     }
 
-    if (!isAddressValid(address)) {
-      this.logger.log('Invalid address', address)
-
-      return false
-    }
-
     const nodeIdHex = bytesToHex(toUtf8Bytes(nodeId))
 
     const isDeviceSerialValid = deviceSerial.length === 16
