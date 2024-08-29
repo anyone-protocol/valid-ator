@@ -286,7 +286,7 @@ export class HardwareVerificationService {
 
     const relaySaleData = await this
       .relaySaleDataModel
-      .findOne({ deviceSerial })
+      .findOne({ serial: deviceSerial })
       .exec()
     if (!relaySaleData) {
       this.logger.log(
