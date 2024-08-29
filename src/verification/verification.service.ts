@@ -465,7 +465,11 @@ export class VerificationService {
     ): Promise<VerificationData> {
         const verificationStamp = Date.now()
         const verifiedRelays = data.filter(
-            ({result}) => [ 'AlreadyVerified', 'OK' ].includes(result)
+            ({result}) => [
+                'AlreadyRegistered',
+                'AlreadyVerified',
+                'OK'
+            ].includes(result)
         )
 
         const relayMetricsTx =
