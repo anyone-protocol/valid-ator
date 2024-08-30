@@ -280,9 +280,9 @@ export class HardwareVerificationService {
 
     const relaySaleData = await this
       .relaySaleDataModel
-      .findOne({ serial: deviceSerial })
+      .findOne({ serial: (deviceSerial || '').toLowerCase() })
       .exec()
-    if (!relaySaleData) {
+    if (!relaySaleData || !deviceSerial) {
       this.logger.log(
         `Relay [${fingerprint}] tried to verify with `
           + `NFT ID [${parsedNftId}] and Device Serial [${deviceSerial}], `
