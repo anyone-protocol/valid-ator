@@ -578,7 +578,7 @@ export class DistributionService {
                     for (const familyBatch of familyBatches) {
                         await setTimeout(5000)
                         this.logger.debug(
-                            `Starting to set relay families for ${familyBatch.length} relays [${familyBatch.map(r => r.fingerprint)}]`,
+                            `Starting to set relay families for ${familyBatch.length} relays`,
                         )
                         const response = await this.distributionContract
                             .writeInteraction<SetFamilies>({
