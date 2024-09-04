@@ -48,7 +48,7 @@ job "populate-relay-uptime-live" {
       }
 
       config {
-        image = "ghcr.io/ator-development/valid-ator:[[.deploy]]"
+        image = "ghcr.io/anyone-protocol/valid-ator:[[.deploy]]"
         entrypoint = [ "node" ]
         args = [ "dist/cli/main.js", "populate-relay-uptime" ]
       }

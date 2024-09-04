@@ -34,7 +34,7 @@ job "seed-down-relay-sale-data-stage" {
       }
 
       config {
-        image = "ghcr.io/ator-development/valid-ator:stage"
+        image = "ghcr.io/anyone-protocol/valid-ator:stage"
         volumes = [ "local/relay-sale-data.csv:/data/relay-sale-data.csv" ]
         entrypoint = [ "node" ]
         args = [

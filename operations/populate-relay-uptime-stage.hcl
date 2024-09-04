@@ -48,7 +48,7 @@ job "populate-relay-uptime-stage" {
       }
 
       config {
-        image = "ghcr.io/ator-development/valid-ator:stage"
+        image = "ghcr.io/anyone-protocol/valid-ator:stage"
         entrypoint = [ "node" ]
         args = [ "dist/cli/main.js", "populate-relay-uptime" ]
       }

@@ -46,7 +46,7 @@ job "update-geo-ip-db" {
       }
       
       config {
-        image = "ghcr.io/ator-development/valid-ator:[[.deploy]]"
+        image = "ghcr.io/anyone-protocol/valid-ator:[[.deploy]]"
         entrypoint = ["node"]
         args = [
             "./node_modules/geoip-lite/scripts/updatedb.js",
