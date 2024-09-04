@@ -13,6 +13,10 @@ job "populate-relay-uptime-stage" {
     task "populate-relay-uptime-stage-task" {
       driver = "docker"
 
+      vault {
+        policies = ["valid-ator-stage"]
+      }
+
       env {
         IS_LIVE="true"
         CPU_COUNT="1"
@@ -44,7 +48,7 @@ job "populate-relay-uptime-stage" {
       }
 
       config {
-        image = "ghcr.io/ator-development/valid-ator:[[.deploy]]"
+        image = "ghcr.io/ator-development/valid-ator:stage"
         entrypoint = [ "node" ]
         args = [ "dist/cli/main.js", "populate-relay-uptime" ]
       }
