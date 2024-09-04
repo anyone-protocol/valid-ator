@@ -697,10 +697,13 @@ export class DistributionService {
         }
 
         if (this.isLive !== 'true') {
-            this.logger.warn(`NOT LIVE - skipped setting relay uptimes`)
+            this.logger.log(`NOT LIVE - skipped setting relay uptimes`)
             return { success: true }
         }
 
+        this.logger.log(
+            `Sleeping before writing relay uptimes to distribution contract`
+        )
         await setTimeout(5000)
         const fingerprints = uptimes.map(r => r.fingerprint)
         this.logger.log(
