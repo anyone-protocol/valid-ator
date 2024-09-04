@@ -169,7 +169,15 @@ export class PopulateRelayUptimeCommand extends CommandRunner {
       return
     }
 
+    this.logger.log(`Found latest job run: ${latestJobRun.validation_date}`)
+
     const uptimesToPush = latestJobRun.uptimes.filter(u => !u.pushed)
+    this.logger.log(
+      `Job run ${latestJobRun.validation_date} has`
+        + ` ${latestJobRun.uptimes.length} uptime records`
+        + ` with ${uptimesToPush.length} remaining records to write to the`
+        + ` distribution contract`
+    )
     if (uptimesToPush.length < 1) {
       this.logger.log(
         `No uptimes to push to distribution contract for ${latestJobRun.validation_date}`
@@ -180,6 +188,10 @@ export class PopulateRelayUptimeCommand extends CommandRunner {
     const batches = _.chunk(
       uptimesToPush,
       PopulateRelayUptimeCommand.setUptimesBatchSize
+    )
+    this.logger.log(
+      `Writing ${batches.length} batches of uptime records to the`
+        + ` distribution contract`
     )
     for (const batch of batches) {
       const { success } = await this.distributionService.setRelayUptimes(batch)
