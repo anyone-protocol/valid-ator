@@ -107,8 +107,8 @@ export class EventsService implements OnApplicationBootstrap {
                 this.logger.log('Skipped cleaning up old jobs')
             } else {
                 this.logger.log('Cleaning up old (24hrs+) jobs')
-                await this.facilitatorUpdatesQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
-                await this.registratorUpdatesQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+                await this.facilitatorUpdatesQueue.clean(24 * 60 * 60 * 1000, -1)
+                await this.registratorUpdatesQueue.clean(24 * 60 * 60 * 1000, -1)
             }
 
             if (this.isLive != 'true') {

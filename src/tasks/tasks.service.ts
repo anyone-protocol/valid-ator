@@ -242,10 +242,10 @@ export class TasksService implements OnApplicationBootstrap {
                 this.logger.log('Skipped cleaning up old jobs')
             } else {
                 this.logger.log('Cleaning up old (24hrs+) jobs')
-                await this.tasksQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
-                await this.validationQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
-                await this.verificationQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
-                await this.distributionQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+                await this.tasksQueue.clean(24 * 60 * 60 * 1000, -1)
+                await this.validationQueue.clean(24 * 60 * 60 * 1000, -1)
+                await this.verificationQueue.clean(24 * 60 * 60 * 1000, -1)
+                await this.distributionQueue.clean(24 * 60 * 60 * 1000, -1)
             }
 
             if (this.isLive != 'true') {
