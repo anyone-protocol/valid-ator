@@ -14,6 +14,7 @@ export class TasksService implements OnApplicationBootstrap {
     private readonly logger = new Logger(TasksService.name)
 
     private isLive?: string
+    private doClean?: string
     private dataId: Types.ObjectId
     private state: TaskServiceData
 
@@ -162,6 +163,7 @@ export class TasksService implements OnApplicationBootstrap {
     constructor(
         private readonly config: ConfigService<{
             IS_LIVE: string
+            DO_CLEAN: boolean
         }>,
         private readonly cluster: ClusterService,
         @InjectQueue('tasks-queue') public tasksQueue: Queue,
@@ -181,6 +183,7 @@ export class TasksService implements OnApplicationBootstrap {
         private readonly taskServiceDataModel: Model<TaskServiceData>,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
+        this.doClean = this.config.get<string>('DO_CLEAN', { infer: true })
         this.state = {
             isValidating: false,
             isCheckingBalances: false,
@@ -234,6 +237,16 @@ export class TasksService implements OnApplicationBootstrap {
             this.logger.log(
                 `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}]`,
             )
+
+            if (this.doClean != 'true') {
+                this.logger.log('Skipped cleaning up old jobs')
+            } else {
+                this.logger.log('Cleaning up old (24hrs+) jobs')
+                await this.tasksQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+                await this.validationQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+                await this.verificationQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+                await this.distributionQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+            }
 
             if (this.isLive != 'true') {
                 this.logger.debug('Cleaning up queues for dev...')

@@ -85,6 +85,7 @@ job "valid-ator-stage" {
         GEOTMPDIR="/geo-ip-db/tmp"
         DRE_REQUEST_TIMEOUT=60000
         DRE_REQUEST_MAX_REDIRECTS=3
+        DO_CLEAN="true"
       }
 
       volume_mount {

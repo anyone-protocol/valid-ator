@@ -16,6 +16,7 @@ export class EventsService implements OnApplicationBootstrap {
     private readonly logger = new Logger(EventsService.name)
 
     private isLive?: string
+    private doClean?: string
 
     private static readonly maxUpdateAllocationRetries = 6
 
@@ -69,6 +70,7 @@ export class EventsService implements OnApplicationBootstrap {
         public registratorUpdatesFlow: FlowProducer,
     ) {
         this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
+        this.doClean = this.config.get<string>('DO_CLEAN', { infer: true })
         this.jsonRpc = this.config.get<string>('JSON_RPC', { infer: true })
         this.infuraNetwork = this.config.get<string>('INFURA_NETWORK', { infer: true })
         this.infuraWsUrl = this.config.get<string>('INFURA_WS_URL', { infer: true })
@@ -100,6 +102,15 @@ export class EventsService implements OnApplicationBootstrap {
 
     async onApplicationBootstrap(): Promise<void> {
         if (this.cluster.isTheOne()) {
+            
+            if (this.doClean != 'true') {
+                this.logger.log('Skipped cleaning up old jobs')
+            } else {
+                this.logger.log('Cleaning up old (24hrs+) jobs')
+                await this.facilitatorUpdatesQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+                await this.registratorUpdatesQueue.clean(24 * 60 * 60 * 1000, 1_000_000_000)
+            }
+
             if (this.isLive != 'true') {
                 await this.facilitatorUpdatesQueue.obliterate({ force: true })
                 await this.registratorUpdatesQueue.obliterate({ force: true })
