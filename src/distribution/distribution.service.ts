@@ -592,10 +592,11 @@ export class DistributionService {
                     }
                 }
             } catch (error) {
-                const firstFingerprint = relaysWithFamilyUpdates.at(0)
+                const firstFingerprint =
+                    relaysWithFamilyUpdates.at(0)?.fingerprint
                 const lastFingerprint = relaysWithFamilyUpdates.at(
                     relaysWithFamilyUpdates.length - 1
-                )
+                )?.fingerprint
                 this.logger.error(
                     `Exception setting relay families for`
                     + ` ${relaysWithFamilyUpdates.length} relays`
