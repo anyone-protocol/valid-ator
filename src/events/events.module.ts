@@ -12,9 +12,15 @@ import { VerificationModule } from 'src/verification/verification.module'
         DistributionModule,
         VerificationModule,
         ClusterModule,
-        BullModule.registerQueue({ name: 'facilitator-updates-queue' }),
+        BullModule.registerQueue({ 
+            name: 'facilitator-updates-queue',
+            streams: { events: { maxLen: 2000 } }
+        }),
         BullModule.registerFlowProducer({ name: 'facilitator-updates-flow' }),
-        BullModule.registerQueue({ name: 'registrator-updates-queue' }),
+        BullModule.registerQueue({ 
+            name: 'registrator-updates-queue',
+            streams: { events: { maxLen: 5000 } }
+        }),
         BullModule.registerFlowProducer({ name: 'registrator-updates-flow' }),
     ],
     providers: [EventsService, FacilitatorUpdatesQueue, RegistratorUpdatesQueue],
