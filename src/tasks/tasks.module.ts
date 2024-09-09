@@ -25,7 +25,10 @@ import { ClusterModule } from 'src/cluster/cluster.module'
         ChecksModule,
         ClusterModule,
         BullModule.registerQueue({ name: 'tasks-queue' }),
-        BullModule.registerQueue({ name: 'validation-queue' }),
+        BullModule.registerQueue({
+            name: 'validation-queue',
+            streams: { events: { maxLen: 5000 } }
+        }),
         BullModule.registerFlowProducer({ name: 'validation-flow' }),
         BullModule.registerQueue({ name: 'verification-queue' }),
         BullModule.registerFlowProducer({ name: 'verification-flow' }),
