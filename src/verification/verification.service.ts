@@ -497,19 +497,16 @@ export class VerificationService {
             verified_at: verificationStamp,
             relay_metrics_tx: relayMetricsTx,
             validation_stats_tx: validationStatsTx,
-            relays: verifiedRelays.map((result) => result.relay),
+            relays: verifiedRelays
+                .filter((value) => value.result == 'AlreadyVerified')
+                .map((value) => value.relay),
         }
 
         await this.verificationDataModel
             .create<VerificationData>(verificationData)
             .catch((error) => this.logger.error(error))
 
-        // We want to filter to ones only verified, as it is assumed by the distribution flow to process only verified relays
-        const onlyVerifiedRelays = verifiedRelays
-            .filter((value) => value.result == 'AlreadyVerified')
-            .map((result) => result.relay)
-
-        return { ...verificationData, relays: onlyVerifiedRelays }
+        return verificationData
     }
 
     public async getMostRecent(): Promise<VerificationData | null> {
