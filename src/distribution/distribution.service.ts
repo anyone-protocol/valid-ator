@@ -238,7 +238,7 @@ export class DistributionService {
         if (this.operator != undefined) {
             if (this.isLive === 'true') {
                 try {
-                    await setTimeout(10000)
+                    await setTimeout(15000)
                     const response = await this.distributionContract
                         .writeInteraction<AddScores>({
                             function: 'addScores',
@@ -286,7 +286,7 @@ export class DistributionService {
         }
 
         try {
-            await setTimeout(10000)
+            await setTimeout(15000)
             const response = await this.distributionContract
                 .writeInteraction<Distribute>({
                     function: 'distribute',
@@ -576,7 +576,7 @@ export class DistributionService {
                     )
 
                     for (const familyBatch of familyBatches) {
-                        await setTimeout(10000)
+                        await setTimeout(15000)
                         this.logger.debug(
                             `Starting to set relay families for ${familyBatch.length} relays`,
                         )
@@ -655,7 +655,7 @@ export class DistributionService {
                 )
 
                 for (const batch of batches) {
-                    await setTimeout(10000)
+                    await setTimeout(15000)
                     this.logger.debug(
                         `Starting to set hardware bonus relays for ${batch.length} relays [${batch}]`
                     )
@@ -705,7 +705,7 @@ export class DistributionService {
         this.logger.log(
             `Sleeping before writing relay uptimes to distribution contract`
         )
-        await setTimeout(10000)
+        await setTimeout(15000)
         const fingerprints = uptimes.map(r => r.fingerprint)
         this.logger.log(
             `Setting uptimes for ${uptimes.length} relays [${fingerprints}]`
