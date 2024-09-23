@@ -93,12 +93,13 @@ export class DistributionQueue extends WorkerHost {
                 })
 
                 this.tasks.distributionFlow.add(
-                    TasksService.DISTRIBUTION_FLOW(
-                        data.verified_at,
-                        scores.length,
-                        DistributionService.maxDistributionRetries,
-                        scoreJobs,
-                    ),
+                    TasksService.DISTRIBUTION_FLOW({
+                        stamp: data.verified_at,
+                        total: scores.length,
+                        retries: DistributionService.maxDistributionRetries,
+                        scoreJobs: scoreJobs,
+                        processed: []
+                    }),
                 )
                 return true
             } else {
@@ -155,11 +156,15 @@ export class DistributionQueue extends WorkerHost {
                     },
                     TasksService.jobOpts
                 )
-            }
-
-            return {
-                ...distributionCompletedResults,
-                ...persistResult
+                this.logger.log(
+                    `Failed persisting distribution summary [${job.data.stamp}] - ${persistResult}. Retries left ${job.data.retries}...`
+                )
+                return undefined
+            } else {
+                return {
+                    ...distributionCompletedResults,
+                    ...persistResult
+                }
             }
         } catch (err) {
             this.logger.error(
@@ -206,11 +211,15 @@ export class DistributionQueue extends WorkerHost {
                     },
                     TasksService.jobOpts
                 )
-            }
-
-            return {
-                ...job.data.distributionCompletedResults,
-                ...persistResult
+                this.logger.log(
+                    `Failed persisting distribution summary [${job.data.stamp}] - ${persistResult}. Retries left ${job.data.retriesLeft - 1}...`
+                )
+                return undefined
+            } else {
+                return {
+                    ...job.data.distributionCompletedResults,
+                    ...persistResult
+                }
             }
         } catch (err) {
             this.logger.error(
@@ -276,7 +285,7 @@ export class DistributionQueue extends WorkerHost {
             )
 
             const data = job.data
-
+            
             if (!data) {
                 this.logger.error(
                     'Failed to complete distribution without data'
@@ -292,7 +301,7 @@ export class DistributionQueue extends WorkerHost {
                 if (data.retries > 0) {
                     this.startRecoveryDistribution(
                         data,
-                        processedScores,
+                        processedScores.concat(data.processed),
                         failedScores,
                     )
                     return undefined
@@ -312,25 +321,25 @@ export class DistributionQueue extends WorkerHost {
             const result = await this.distribution.distribute(data.stamp)
 
             if (!result && data.retries > 0) {
-                this.tasks.distributionQueue.add(
-                    DistributionQueue.JOB_RETRY_COMPLETE_DISTRIBUTION,
-                    {
+                this.tasks.distributionFlow.add(
+                    TasksService.RETRY_COMPLETE_DISTRIBUTION_FLOW({
                         stamp: data.stamp,
-                        total: data.total,
                         retries: data.retries - 1,
-                    },
-                    TasksService.jobOpts,
+                        processed: processedScores.concat(data.processed),
+                    })
                 )
-            }
-
-            return {
-                complete: result,
-                stamp: data.stamp,
-                scores: processedScores.map((score) => ({
-                    ator_address: score.address,
-                    fingerprint: score.fingerprint,
-                    score: Number.parseInt(score.score),
-                })),
+                this.logger.warn(`Failed to complete distribution ${data.stamp} with ${result}. Retries left ${data.retries - 1}`)
+                return undefined
+            } else {
+                return {
+                    complete: result,
+                    stamp: data.stamp,
+                    scores: processedScores.concat(data.processed).map((score) => ({
+                        ator_address: score.address,
+                        fingerprint: score.fingerprint,
+                        score: Number.parseInt(score.score),
+                    })),
+                }
             }
         } catch (e) {
             this.logger.error('Exception while completing distribution', e.stack)
@@ -360,12 +369,13 @@ export class DistributionQueue extends WorkerHost {
         })
 
         this.tasks.distributionFlow.add(
-            TasksService.DISTRIBUTION_FLOW(
-                data.stamp,
-                failedScores.length,
-                data.retries - 1,
-                scoreJobs,
-            ),
+            TasksService.DISTRIBUTION_FLOW({
+                stamp: data.stamp,
+                total: failedScores.length,
+                retries: data.retries - 1,
+                scoreJobs: scoreJobs,
+                processed: processedScores
+            }),
         )
     }
 
@@ -381,21 +391,25 @@ export class DistributionQueue extends WorkerHost {
                 const result = await this.distribution.distribute(data.stamp)
 
                 if (!result && data.retries > 0) {
-                    this.tasks.distributionQueue.add(
-                        DistributionQueue.JOB_RETRY_COMPLETE_DISTRIBUTION,
-                        {
+                    this.tasks.distributionFlow.add(
+                        TasksService.RETRY_COMPLETE_DISTRIBUTION_FLOW({
                             stamp: data.stamp,
-                            total: data.total,
                             retries: data.retries - 1,
-                        },
-                        TasksService.jobOpts,
+                            processed: data.processed
+                        })
                     )
-                }
-
-                return {
-                    complete: result,
-                    stamp: data.stamp,
-                    scores: [],
+                    this.logger.warn(`Failed to complete distribution ${data.stamp} with ${result}. Retries left ${data.retries - 1}`)
+                    return undefined
+                } else {
+                    return {
+                        complete: result,
+                        stamp: data.stamp,
+                        scores: data.processed.map((score) => ({
+                            ator_address: score.address,
+                            fingerprint: score.fingerprint,
+                            score: Number.parseInt(score.score),
+                        })),
+                    }
                 }
             } else {
                 this.logger.error(
