@@ -26,6 +26,9 @@ export class VerifiedHardware {
 
   @Prop({ type: Number, required: false })
   nftId?: number
+
+  @Prop({ type: Boolean, required: true, default: false })
+  isHardwareProofValid: boolean
 }
 
 export type VerifiedHardwareDocument = HydratedDocument<VerifiedHardware>
