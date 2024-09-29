@@ -8,6 +8,7 @@ import { TaskServiceData } from './schemas/task-service-data'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { ClusterService } from '../cluster/cluster.service'
+import { Score } from 'src/distribution/interfaces/distribution'
 
 @Injectable()
 export class TasksService implements OnApplicationBootstrap {
@@ -134,28 +135,52 @@ export class TasksService implements OnApplicationBootstrap {
         }
     }
 
-    public static DISTRIBUTION_FLOW(
+    public static DISTRIBUTION_FLOW({
+        stamp, total, retries, scoreJobs, processed
+    }: {
         stamp: number,
         total: number,
         retries: number,
         scoreJobs: ScoreData[][],
-    ): FlowJob {
+        processed: Score[],
+    }): FlowJob {
         return {
             name: 'persist-distribution',
             queueName: 'distribution-queue',
             opts: TasksService.jobOpts,
-            data: { stamp, retries },
+            data: { stamp, retries: 5 },
             children: [{
                 name: 'complete-distribution',
                 queueName: 'distribution-queue',
                 opts: TasksService.jobOpts,
-                data: { stamp, total, retries },
+                data: { stamp, total, retries, processed },
                 children: scoreJobs.map((scores, index, array) => ({
                     name: 'add-scores',
                     queueName: 'distribution-queue',
                     opts: TasksService.jobOpts,
                     data: { stamp, scores }
                 }))
+            }]
+        }
+    }
+
+    public static RETRY_COMPLETE_DISTRIBUTION_FLOW({
+        stamp, retries, processed
+    }: {
+        stamp: number,
+        retries: number,
+        processed: Score[],
+    }): FlowJob {
+        return {
+            name: 'persist-distribution',
+            queueName: 'distribution-queue',
+            opts: TasksService.jobOpts,
+            data: { stamp, retries: 5 },
+            children: [{
+                name: 'retry-complete-distribution',
+                queueName: 'distribution-queue',
+                opts: TasksService.jobOpts,
+                data: { stamp, retries, processed, total: processed.length }
             }]
         }
     }
@@ -235,7 +260,7 @@ export class TasksService implements OnApplicationBootstrap {
             } else this.createServiceState()
 
             this.logger.log(
-                `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}]`,
+                `Bootstrapped Tasks Service [id: ${this.dataId}, isValidating: ${this.state.isValidating}, isCheckingBalances: ${this.state.isCheckingBalances}]`,
             )
 
             if (this.doClean != 'true') {
@@ -303,7 +328,7 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     public async queueValidateRelays(
-        delayJob: number = 1000 * 60 * 60
+        delayJob: number = 1000 * 60 * 60 * 2
     ): Promise<void> {
         if (!this.state.isValidating) {
             this.state.isValidating = true

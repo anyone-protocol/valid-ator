@@ -24,17 +24,29 @@ import { ClusterModule } from 'src/cluster/cluster.module'
         DistributionModule,
         ChecksModule,
         ClusterModule,
-        BullModule.registerQueue({ name: 'tasks-queue' }),
+        BullModule.registerQueue({ 
+            name: 'tasks-queue',
+            streams: { events: { maxLen: 1000 } }
+        }),
         BullModule.registerQueue({
             name: 'validation-queue',
-            streams: { events: { maxLen: 5000 } }
+            streams: { events: { maxLen: 1000 } }
         }),
         BullModule.registerFlowProducer({ name: 'validation-flow' }),
-        BullModule.registerQueue({ name: 'verification-queue' }),
+        BullModule.registerQueue({ 
+            name: 'verification-queue',
+            streams: { events: { maxLen: 1000 } }
+        }),
         BullModule.registerFlowProducer({ name: 'verification-flow' }),
-        BullModule.registerQueue({ name: 'distribution-queue' }),
+        BullModule.registerQueue({ 
+            name: 'distribution-queue',
+            streams: { events: { maxLen: 5000 } }
+        }),
         BullModule.registerFlowProducer({ name: 'distribution-flow' }),
-        BullModule.registerQueue({ name: 'balance-checks-queue' }),
+        BullModule.registerQueue({ 
+            name: 'balance-checks-queue',
+            streams: { events: { maxLen: 500 } }
+        }),
         BullModule.registerFlowProducer({ name: 'balance-checks-flow' }),
         MongooseModule.forFeature([
             {

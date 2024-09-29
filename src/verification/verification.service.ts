@@ -497,7 +497,9 @@ export class VerificationService {
             verified_at: verificationStamp,
             relay_metrics_tx: relayMetricsTx,
             validation_stats_tx: validationStatsTx,
-            relays: verifiedRelays.map((result) => result.relay),
+            relays: verifiedRelays
+                .filter((value) => value.result == 'AlreadyVerified')
+                .map((value) => value.relay),
         }
 
         await this.verificationDataModel
