@@ -265,18 +265,18 @@ export class HardwareVerificationService {
           + `relay [${fingerprint}]`
       )
     }
-    const existingVerifiedHardwareByNftId = await this
-      .verifiedHardwareModel
-      .exists({ nftId: parsedNftId })
-      .exec()
-    if (existingVerifiedHardwareByNftId) {
-      this.logger.log(
-        `Relay [${fingerprint}] tried to verify with `
-          + `NFT ID [${parsedNftId}], but it was already verified`
-      )
+    // const existingVerifiedHardwareByNftId = await this
+    //   .verifiedHardwareModel
+    //   .exists({ nftId: parsedNftId })
+    //   .exec()
+    // if (existingVerifiedHardwareByNftId) {
+    //   this.logger.log(
+    //     `Relay [${fingerprint}] tried to verify with `
+    //       + `NFT ID [${parsedNftId}], but it was already verified`
+    //   )
 
-      return { valid: false }
-    }
+    //   return { valid: false }
+    // }
 
     // NB: Skip relay sale data checks for now
     // const relaySaleData = await this
