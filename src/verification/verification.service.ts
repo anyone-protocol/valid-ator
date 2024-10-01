@@ -839,7 +839,7 @@ export class VerificationService {
                 }
             } catch (error) {
                 this.logger.error(
-                    `Exception when verifying relays [${relaysToAddAsClaimable.map(({ relay }) => relay.fingerprint)}]`,
+                    `Exception when verifying relays [${relaysToAddAsClaimable.length}]`,
                     error.stack,
                 )
 
