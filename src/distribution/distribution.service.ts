@@ -41,6 +41,12 @@ import {
 import _ from 'lodash'
 import { RelayUptime } from 'src/validation/schemas/relay-uptime'
 
+type SetFamilyInput = {
+    fingerprint: string,
+    add: string[],
+    remove: string[]
+}
+
 @Injectable()
 export class DistributionService {
     private readonly logger = new Logger(DistributionService.name)
@@ -51,7 +57,7 @@ export class DistributionService {
     private static readonly scoresPerBatch = 7
     public static readonly maxDistributionRetries = 6
     private static readonly familiesPerBatch = 4
-    private static readonly bigFamilyThreshold = 50
+    private static readonly familyFingerprintThreshold = 50
     private static readonly fingerprintsPerBatch = 50
 
     private distributionWarp: Warp
@@ -568,55 +574,64 @@ export class DistributionService {
                 + ` [${firstFingerprint} ... ${lastFingerprint}]`
             )
         } else if (relaysWithFamilyUpdates.length > 0) {
-            const families = relaysWithFamilyUpdates.map(
-                ({ fingerprint, family }) => ({
+            const { batches: familyBatches } = relaysWithFamilyUpdates
+                .map(({ fingerprint, family }) => ({
                     fingerprint,
                     add: _.difference(family, currentFamilies[fingerprint]),
                     remove: _.difference(currentFamilies[fingerprint], family)
-                })
-            )
+                }))
+                .reduce(
+                    (
+                        { batches, _currentBatch },
+                        { fingerprint, add, remove }
+                    ) => {
+                        let currentBatchFingerprintCount = _currentBatch.reduce(
+                            (sum, { add, remove }) =>
+                                sum + 1 + add.length + remove.length,
+                            0
+                        )
 
-            const largeFamilies = _.remove(
-                families,
-                f =>
-                    f.add.length + f.remove.length + 1
-                        >= DistributionService.bigFamilyThreshold
-            ).map(({ fingerprint, add, remove }) => {
-                const chunks = []
+                        if (
+                            currentBatchFingerprintCount + 1 + add.length
+                                < DistributionService.familyFingerprintThreshold
+                            ) {
+                                _currentBatch.push({
+                                    fingerprint,
+                                    add,
+                                    remove: []
+                                })
+                        } else {
+                            batches.push(_currentBatch.slice())
+                            _currentBatch = []
+                        }
 
-                if (add.length > 0) {
-                    chunks.push(
-                        ..._.chunk(
-                            add,
-                            DistributionService.bigFamilyThreshold
-                        ).map(add => ({ fingerprint, add, remove: [] }))
-                    )
-                }
+                        currentBatchFingerprintCount = _currentBatch.reduce(
+                            (sum, { add, remove }) =>
+                                sum + 1 + add.length + remove.length,
+                            0
+                        )
 
-                if (remove.length > 0) {
-                    chunks.push(
-                        ..._.chunk(
-                            remove,
-                            DistributionService.bigFamilyThreshold
-                        ).map(remove => ({ fingerprint, remove, add: [] }))
-                    )
-                }
+                        if (
+                            currentBatchFingerprintCount + 1 + remove.length
+                                < DistributionService.familyFingerprintThreshold
+                            ) {
+                                _currentBatch.push({
+                                    fingerprint,
+                                    remove,
+                                    add: []
+                                })
+                        } else {
+                            batches.push(_currentBatch.slice())
+                            _currentBatch = []
+                        }
 
-                return chunks
-            })
-
-            const familyBatches = _.sortBy(
-                _.chunk(families, DistributionService.familiesPerBatch),
-                // NB: Sort batches to prioritize smaller families first
-                [
-                    (b) => b.reduce(
-                        (sum, f) => sum + f.add.length + f.remove.length,
-                        0
-                    )
-                ]
-            )
-
-            familyBatches.push(...largeFamilies)
+                        return { batches, _currentBatch }
+                    },
+                    {
+                        batches: [] as SetFamilyInput[][],
+                        _currentBatch: [] as SetFamilyInput[]
+                    }
+                )
 
             let batchesProcessed = 0
             for (const familyBatch of familyBatches) {
