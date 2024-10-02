@@ -554,66 +554,9 @@ export class DistributionService {
             }
         }
 
-        if (this.isLive === 'true') {
-            try {
-                if (relaysWithFamilyUpdates.length > 0) {
-                    const addRemoveFamilies = relaysWithFamilyUpdates.map(
-                        ({ fingerprint, family }) => ({
-                            fingerprint,
-                            add: _.difference(
-                                family,
-                                currentFamilies[fingerprint]
-                            ),
-                            remove: _.difference(
-                                currentFamilies[fingerprint],
-                                family
-                            )
-                        })
-                    )
-                    const familyBatches = _.chunk(
-                        addRemoveFamilies,
-                        DistributionService.familiesPerBatch
-                    )
+        let errorCount = 0
 
-                    for (const familyBatch of familyBatches) {
-                        await setTimeout(15000)
-                        this.logger.debug(
-                            `Starting to set relay families for ${familyBatch.length} relays`,
-                        )
-                        const response = await this.distributionContract
-                        .writeInteraction<SetFamilies>(
-                            {
-                                function: 'setFamilies',
-                                families: familyBatch
-                            },
-                            {
-                                inputFormatAsData: true
-                            }
-                        )
-
-                        this.logger.log(
-                            `Set relay families for ${familyBatch.length} relays: ${response?.originalTxId}`,
-                        )
-                    }
-                }
-            } catch (error) {
-                const firstFingerprint =
-                    relaysWithFamilyUpdates.at(0)?.fingerprint
-                const lastFingerprint = relaysWithFamilyUpdates.at(
-                    relaysWithFamilyUpdates.length - 1
-                )?.fingerprint
-                this.logger.error(
-                    `Exception setting relay families for`
-                    + ` ${relaysWithFamilyUpdates.length} relays`
-                    + ` [${firstFingerprint} ... ${lastFingerprint}]`,
-                    error.stack,
-                )
-
-                return results.concat(
-                    relays.map(relay => ({ relay, result: 'Failed' }))
-                )
-            }
-        } else {
+        if (this.isLive !== 'true') {
             const firstFingerprint = relaysWithFamilyUpdates.at(0)
             const lastFingerprint = relaysWithFamilyUpdates.at(
                 relaysWithFamilyUpdates.length - 1
@@ -623,11 +566,72 @@ export class DistributionService {
                 + ` ${relaysWithFamilyUpdates.length} relays`
                 + ` [${firstFingerprint} ... ${lastFingerprint}]`
             )
+        } else if (relaysWithFamilyUpdates.length > 0) {
+            const families = relaysWithFamilyUpdates.map(
+                ({ fingerprint, family }) => ({
+                    fingerprint,
+                    add: _.difference(family, currentFamilies[fingerprint]),
+                    remove: _.difference(currentFamilies[fingerprint], family)
+                })
+            )
+            const familyBatches = _.sortBy(
+                _.chunk(families, DistributionService.familiesPerBatch),
+                // NB: Sort batches to prioritize smaller families first
+                [
+                    (b) => b.reduce(
+                        (sum, f) => sum + f.add.length + f.remove.length,
+                        0
+                    )
+                ]
+            )
+
+            for (const familyBatch of familyBatches) {
+                await setTimeout(5000)
+                this.logger.debug(
+                    `Starting to set relay families for ${familyBatch.length}`
+                        + ` relays`
+                )
+                try {
+                    const response = await this.distributionContract
+                        .writeInteraction<SetFamilies>(
+                            { function: 'setFamilies', families: familyBatch },
+                            { inputFormatAsData: true }
+                        )
+                    this.logger.log(
+                        `Set relay families for ${familyBatch.length}`
+                            + ` relays: ${response?.originalTxId}`
+                    )
+                } catch (error) {
+                    errorCount++
+                    const failedBatch = familyBatch.map(b => ({
+                        fingerprint: b.fingerprint,
+                        addSize: b.add.length,
+                        removeSize: b.remove.length
+                    }))
+                    this.logger.error(
+                        `Error setting family for batch `
+                            + `${JSON.stringify(failedBatch)}`,
+                        error.stack
+                    )
+                }
+            }
+        } else {
+            this.logger.log('No relay families to update')
         }
 
-        return results.concat(
-            relaysWithFamilyUpdates.map(relay => ({ relay, result: 'OK' }))
-        )
+        if (errorCount > 0) {
+            this.logger.error(
+                `Error setting families with ${errorCount} failed batches`
+            )
+
+            return results.concat(
+                relays.map(relay => ({ relay, result: 'Failed' }))
+            )
+        } else {
+            return results.concat(
+                relaysWithFamilyUpdates.map(relay => ({ relay, result: 'OK' }))
+            )
+        }
     }
 
     public async setHardwareBonusRelays(
