@@ -670,11 +670,14 @@ export class VerificationService {
 
             familyBatches.push(...largeFamilies)
 
+            let batchesProcessed = 0
             for (const familyBatch of familyBatches) {
+                batchesProcessed++
                 await setTimeout(5000)
                 this.logger.debug(
                     `Starting to set relay families for ${familyBatch.length}`
                         + ` relays`
+                        + ` (${batchesProcessed} / ${familyBatches.length})`
                 )
                 try {
                     const response = await this.relayRegistryContract
