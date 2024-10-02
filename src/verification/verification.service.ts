@@ -654,18 +654,20 @@ export class VerificationService {
                         { batches, _currentBatch },
                         { fingerprint, add, remove }
                     ) => {
-                        let currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, fam) =>
-                                sum + 1 + fam.add.length + fam.remove.length,
-                            0
-                        )
                         const toAddBatches = _.chunk(
                             add,
                             VerificationService.familyFingerprintThreshold - 1
                         )
                         for (const toAdd of toAddBatches) {
                             if (
-                                currentBatchFingerprintCount + 1 + toAdd.length
+                                _currentBatch.reduce(
+                                    (sum, fam) =>
+                                        sum
+                                            + 1
+                                            + fam.add.length
+                                            + fam.remove.length,
+                                    0
+                                ) + 1 + toAdd.length
                                     <= VerificationService
                                         .familyFingerprintThreshold
                                 ) {
@@ -680,18 +682,20 @@ export class VerificationService {
                             }
                         }
 
-                        currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, fam) =>
-                                sum + 1 + fam.add.length + fam.remove.length,
-                            0
-                        )
                         const toRemoveBatches = _.chunk(
                             remove,
                             VerificationService.familyFingerprintThreshold - 1
                         )
                         for (const toRemove of toRemoveBatches) {
                             if (
-                                currentBatchFingerprintCount
+                                _currentBatch.reduce(
+                                    (sum, fam) =>
+                                        sum
+                                            + 1
+                                            + fam.add.length
+                                            + fam.remove.length,
+                                    0
+                                )
                                     + 1
                                     + toRemove.length
                                         <= VerificationService

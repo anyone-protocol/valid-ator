@@ -574,7 +574,7 @@ export class DistributionService {
                 + ` [${firstFingerprint} ... ${lastFingerprint}]`
             )
         } else if (relaysWithFamilyUpdates.length > 0) {
-            const { batches: familyBatches } = relaysWithFamilyUpdates
+            const { batches: familyBatches} = relaysWithFamilyUpdates
                 .map(({ fingerprint, family }) => ({
                     fingerprint,
                     add: _.difference(family, currentFamilies[fingerprint]),
@@ -585,18 +585,20 @@ export class DistributionService {
                         { batches, _currentBatch },
                         { fingerprint, add, remove }
                     ) => {
-                        let currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, fam) =>
-                                sum + 1 + fam.add.length + fam.remove.length,
-                            0
-                        )
                         const toAddBatches = _.chunk(
                             add,
                             DistributionService.familyFingerprintThreshold - 1
                         )
                         for (const toAdd of toAddBatches) {
                             if (
-                                currentBatchFingerprintCount + 1 + toAdd.length
+                                _currentBatch.reduce(
+                                    (sum, fam) =>
+                                        sum
+                                            + 1
+                                            + fam.add.length
+                                            + fam.remove.length,
+                                    0
+                                ) + 1 + toAdd.length
                                     <= DistributionService
                                         .familyFingerprintThreshold
                                 ) {
@@ -611,18 +613,20 @@ export class DistributionService {
                             }
                         }
 
-                        currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, fam) =>
-                                sum + 1 + fam.add.length + fam.remove.length,
-                            0
-                        )
                         const toRemoveBatches = _.chunk(
                             remove,
                             DistributionService.familyFingerprintThreshold - 1
                         )
                         for (const toRemove of toRemoveBatches) {
                             if (
-                                currentBatchFingerprintCount
+                                _currentBatch.reduce(
+                                    (sum, fam) =>
+                                        sum
+                                            + 1
+                                            + fam.add.length
+                                            + fam.remove.length,
+                                    0
+                                )
                                     + 1
                                     + toRemove.length
                                         <= DistributionService
