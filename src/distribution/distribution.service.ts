@@ -51,6 +51,7 @@ export class DistributionService {
     private static readonly scoresPerBatch = 7
     public static readonly maxDistributionRetries = 6
     private static readonly familiesPerBatch = 4
+    private static readonly bigFamilyThreshold = 50
     private static readonly fingerprintsPerBatch = 50
 
     private distributionWarp: Warp
@@ -574,6 +575,14 @@ export class DistributionService {
                     remove: _.difference(currentFamilies[fingerprint], family)
                 })
             )
+
+            const largeFamilies = _.remove(
+                families,
+                f =>
+                    f.add.length + f.remove.length + 1
+                        >= DistributionService.bigFamilyThreshold
+            ).map(lf => [ lf ])
+
             const familyBatches = _.sortBy(
                 _.chunk(families, DistributionService.familiesPerBatch),
                 // NB: Sort batches to prioritize smaller families first
@@ -584,6 +593,8 @@ export class DistributionService {
                     )
                 ]
             )
+
+            familyBatches.push(...largeFamilies)
 
             for (const familyBatch of familyBatches) {
                 await setTimeout(5000)

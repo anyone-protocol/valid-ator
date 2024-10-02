@@ -41,6 +41,7 @@ export class VerificationService {
     private bundlr
 
     private static readonly familiesPerBatch = 4
+    private static readonly bigFamilyThreshold = 50
     private static readonly claimableRelaysPerBatch = 8
 
     private relayRegistryWarp: Warp
@@ -626,6 +627,14 @@ export class VerificationService {
                     remove: _.difference(currentFamilies[fingerprint], family)
                 })
             )
+
+            const largeFamilies = _.remove(
+                families,
+                f =>
+                    f.add.length + f.remove.length + 1
+                        >= VerificationService.bigFamilyThreshold
+            ).map(lf => [ lf ])
+
             const familyBatches = _.sortBy(
                 _.chunk(families, VerificationService.familiesPerBatch),
                 // NB: Sort batches to prioritize smaller families first
@@ -636,6 +645,8 @@ export class VerificationService {
                     )
                 ]
             )
+
+            familyBatches.push(...largeFamilies)
 
             for (const familyBatch of familyBatches) {
                 await setTimeout(5000)
