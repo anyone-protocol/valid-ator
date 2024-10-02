@@ -586,8 +586,8 @@ export class DistributionService {
                         { fingerprint, add, remove }
                     ) => {
                         let currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, { add, remove }) =>
-                                sum + 1 + add.length + remove.length,
+                            (sum, fam) =>
+                                sum + 1 + fam.add.length + fam.remove.length,
                             0
                         )
                         const toAddBatches = _.chunk(
@@ -612,8 +612,8 @@ export class DistributionService {
                         }
 
                         currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, { add, remove }) =>
-                                sum + 1 + add.length + remove.length,
+                            (sum, fam) =>
+                                sum + 1 + fam.add.length + fam.remove.length,
                             0
                         )
                         const toRemoveBatches = _.chunk(

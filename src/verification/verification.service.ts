@@ -626,20 +626,37 @@ export class VerificationService {
                 + ` [${firstFingerprint} ... ${lastFingerprint}]`
             )
         } else if (relaysWithFamilyUpdates.length > 0) {
-            const { batches: familyBatches } = relaysWithFamilyUpdates
+            // const addRemoveFamilies = relaysWithFamilyUpdates
+            const { batches: familyBatches} = relaysWithFamilyUpdates
                 .map(({ fingerprint, family }) => ({
                     fingerprint,
                     add: _.difference(family, currentFamilies[fingerprint]),
                     remove: _.difference(currentFamilies[fingerprint], family)
                 }))
+
+            // const familyBatches = [] as SetFamilyInput[][]
+            // let currentBatch = [] as SetFamilyInput[]
+            // for (const { fingerprint, add, remove } of addRemoveFamilies) {
+            //     let currentBatchFingerprintCount = currentBatch.reduce(
+            //         (sum, fam) =>
+            //             sum + 1 + fam.add.length + fam.remove.length,
+            //         0
+            //     )
+            //     const toAddBatches = _.chunk(
+            //         add,
+            //         VerificationService.familyFingerprintThreshold - 1
+            //     )
+
+            // }
+
                 .reduce(
                     (
                         { batches, _currentBatch },
                         { fingerprint, add, remove }
                     ) => {
                         let currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, { add, remove }) =>
-                                sum + 1 + add.length + remove.length,
+                            (sum, fam) =>
+                                sum + 1 + fam.add.length + fam.remove.length,
                             0
                         )
                         const toAddBatches = _.chunk(
@@ -664,8 +681,8 @@ export class VerificationService {
                         }
 
                         currentBatchFingerprintCount = _currentBatch.reduce(
-                            (sum, { add, remove }) =>
-                                sum + 1 + add.length + remove.length,
+                            (sum, fam) =>
+                                sum + 1 + fam.add.length + fam.remove.length,
                             0
                         )
                         const toRemoveBatches = _.chunk(
