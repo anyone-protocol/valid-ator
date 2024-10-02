@@ -590,19 +590,25 @@ export class DistributionService {
                                 sum + 1 + add.length + remove.length,
                             0
                         )
-
-                        if (
-                            currentBatchFingerprintCount + 1 + add.length
-                                < DistributionService.familyFingerprintThreshold
-                            ) {
-                                _currentBatch.push({
-                                    fingerprint,
-                                    add,
-                                    remove: []
-                                })
-                        } else {
-                            batches.push(_currentBatch.slice())
-                            _currentBatch = []
+                        const toAddBatches = _.chunk(
+                            add,
+                            DistributionService.familyFingerprintThreshold - 1
+                        )
+                        for (const toAdd of toAddBatches) {
+                            if (
+                                currentBatchFingerprintCount + 1 + toAdd.length
+                                    <= DistributionService
+                                        .familyFingerprintThreshold
+                                ) {
+                                    _currentBatch.push({
+                                        fingerprint,
+                                        add: toAdd,
+                                        remove: []
+                                    })
+                            } else {
+                                batches.push(_currentBatch.slice())
+                                _currentBatch = []
+                            }
                         }
 
                         currentBatchFingerprintCount = _currentBatch.reduce(
@@ -610,19 +616,27 @@ export class DistributionService {
                                 sum + 1 + add.length + remove.length,
                             0
                         )
-
-                        if (
-                            currentBatchFingerprintCount + 1 + remove.length
-                                < DistributionService.familyFingerprintThreshold
-                            ) {
-                                _currentBatch.push({
-                                    fingerprint,
-                                    remove,
-                                    add: []
-                                })
-                        } else {
-                            batches.push(_currentBatch.slice())
-                            _currentBatch = []
+                        const toRemoveBatches = _.chunk(
+                            remove,
+                            DistributionService.familyFingerprintThreshold - 1
+                        )
+                        for (const toRemove of toRemoveBatches) {
+                            if (
+                                currentBatchFingerprintCount
+                                    + 1
+                                    + toRemove.length
+                                        <= DistributionService
+                                            .familyFingerprintThreshold
+                                ) {
+                                    _currentBatch.push({
+                                        fingerprint,
+                                        add: [],
+                                        remove: toRemove
+                                    })
+                            } else {
+                                batches.push(_currentBatch.slice())
+                                _currentBatch = []
+                            }
                         }
 
                         return { batches, _currentBatch }
@@ -644,23 +658,23 @@ export class DistributionService {
                 )
                 try {
                     const response = await this.distributionContract
-                    .writeInteraction<SetFamilies>(
-                        {
-                            function: 'setFamilies',
-                            families: familyBatch.map(({
-                                fingerprint, add, remove
-                            }) => ({
-                                fingerprint,
-                                add: add.length > 0
-                                    ? add
-                                    : undefined,
-                                remove: remove.length > 0
-                                    ? remove
-                                    : undefined
-                            }))
-                        },
-                        { inputFormatAsData: true }
-                    )
+                        .writeInteraction<SetFamilies>(
+                            {
+                                function: 'setFamilies',
+                                families: familyBatch.map(({
+                                    fingerprint, add, remove
+                                }) => ({
+                                    fingerprint,
+                                    add: add.length > 0
+                                        ? add
+                                        : undefined,
+                                    remove: remove.length > 0
+                                        ? remove
+                                        : undefined
+                                }))
+                            },
+                            { inputFormatAsData: true }
+                        )
                     this.logger.log(
                         `Set relay families for ${familyBatch.length}`
                             + ` relays: ${response?.originalTxId}`

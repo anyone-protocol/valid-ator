@@ -642,19 +642,25 @@ export class VerificationService {
                                 sum + 1 + add.length + remove.length,
                             0
                         )
-
-                        if (
-                            currentBatchFingerprintCount + 1 + add.length
-                                < VerificationService.familyFingerprintThreshold
-                            ) {
-                                _currentBatch.push({
-                                    fingerprint,
-                                    add,
-                                    remove: []
-                                })
-                        } else {
-                            batches.push(_currentBatch.slice())
-                            _currentBatch = []
+                        const toAddBatches = _.chunk(
+                            add,
+                            VerificationService.familyFingerprintThreshold - 1
+                        )
+                        for (const toAdd of toAddBatches) {
+                            if (
+                                currentBatchFingerprintCount + 1 + toAdd.length
+                                    <= VerificationService
+                                        .familyFingerprintThreshold
+                                ) {
+                                    _currentBatch.push({
+                                        fingerprint,
+                                        add: toAdd,
+                                        remove: []
+                                    })
+                            } else {
+                                batches.push(_currentBatch.slice())
+                                _currentBatch = []
+                            }
                         }
 
                         currentBatchFingerprintCount = _currentBatch.reduce(
@@ -662,19 +668,27 @@ export class VerificationService {
                                 sum + 1 + add.length + remove.length,
                             0
                         )
-
-                        if (
-                            currentBatchFingerprintCount + 1 + remove.length
-                                < VerificationService.familyFingerprintThreshold
-                            ) {
-                                _currentBatch.push({
-                                    fingerprint,
-                                    remove,
-                                    add: []
-                                })
-                        } else {
-                            batches.push(_currentBatch.slice())
-                            _currentBatch = []
+                        const toRemoveBatches = _.chunk(
+                            remove,
+                            VerificationService.familyFingerprintThreshold - 1
+                        )
+                        for (const toRemove of toRemoveBatches) {
+                            if (
+                                currentBatchFingerprintCount
+                                    + 1
+                                    + toRemove.length
+                                        <= VerificationService
+                                            .familyFingerprintThreshold
+                                ) {
+                                    _currentBatch.push({
+                                        fingerprint,
+                                        add: [],
+                                        remove: toRemove
+                                    })
+                            } else {
+                                batches.push(_currentBatch.slice())
+                                _currentBatch = []
+                            }
                         }
 
                         return { batches, _currentBatch }
