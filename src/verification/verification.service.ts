@@ -633,7 +633,29 @@ export class VerificationService {
                 f =>
                     f.add.length + f.remove.length + 1
                         >= VerificationService.bigFamilyThreshold
-            ).map(lf => [ lf ])
+            ).map(({ fingerprint, add, remove }) => {
+                const chunks = []
+
+                if (add.length > 0) {
+                    chunks.push(
+                        ..._.chunk(
+                            add,
+                            VerificationService.bigFamilyThreshold
+                        ).map(add => ({ fingerprint, add, remove: [] }))
+                    )
+                }
+
+                if (remove.length > 0) {
+                    chunks.push(
+                        ..._.chunk(
+                            remove,
+                            VerificationService.bigFamilyThreshold
+                        ).map(remove => ({ fingerprint, remove, add: [] }))
+                    )
+                }
+
+                return chunks
+            })
 
             const familyBatches = _.sortBy(
                 _.chunk(families, VerificationService.familiesPerBatch),
