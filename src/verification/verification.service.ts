@@ -646,7 +646,20 @@ export class VerificationService {
                 try {
                     const response = await this.relayRegistryContract
                         .writeInteraction<SetFamilies>(
-                            { function: 'setFamilies', families: familyBatch },
+                            {
+                                function: 'setFamilies',
+                                families: familyBatch.map(({
+                                    fingerprint, add, remove
+                                }) => ({
+                                    fingerprint,
+                                    add: add.length > 0
+                                        ? add
+                                        : undefined,
+                                    remove: remove.length > 0
+                                        ? remove
+                                        : undefined
+                                }))
+                            },
                             { inputFormatAsData: true }
                         )
                     this.logger.log(

@@ -593,10 +593,23 @@ export class DistributionService {
                 )
                 try {
                     const response = await this.distributionContract
-                        .writeInteraction<SetFamilies>(
-                            { function: 'setFamilies', families: familyBatch },
-                            { inputFormatAsData: true }
-                        )
+                    .writeInteraction<SetFamilies>(
+                        {
+                            function: 'setFamilies',
+                            families: familyBatch.map(({
+                                fingerprint, add, remove
+                            }) => ({
+                                fingerprint,
+                                add: add.length > 0
+                                    ? add
+                                    : undefined,
+                                remove: remove.length > 0
+                                    ? remove
+                                    : undefined
+                            }))
+                        },
+                        { inputFormatAsData: true }
+                    )
                     this.logger.log(
                         `Set relay families for ${familyBatch.length}`
                             + ` relays: ${response?.originalTxId}`
