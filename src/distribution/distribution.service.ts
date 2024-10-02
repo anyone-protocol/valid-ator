@@ -581,10 +581,15 @@ export class DistributionService {
                             `Starting to set relay families for ${familyBatch.length} relays`,
                         )
                         const response = await this.distributionContract
-                            .writeInteraction<SetFamilies>({
+                        .writeInteraction<SetFamilies>(
+                            {
                                 function: 'setFamilies',
                                 families: familyBatch
-                            })
+                            },
+                            {
+                                inputFormatAsData: true
+                            }
+                        )
 
                         this.logger.log(
                             `Set relay families for ${familyBatch.length} relays: ${response?.originalTxId}`,

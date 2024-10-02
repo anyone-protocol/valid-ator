@@ -633,10 +633,15 @@ export class VerificationService {
                             `Starting to set relay families for ${familyBatch.length} relays`,
                         )
                         const response = await this.relayRegistryContract
-                            .writeInteraction<SetFamilies>({
-                                function: 'setFamilies',
-                                families: familyBatch
-                            })
+                            .writeInteraction<SetFamilies>(
+                                {
+                                    function: 'setFamilies',
+                                    families: familyBatch
+                                },
+                                {
+                                    inputFormatAsData: true
+                                }
+                            )
 
                         this.logger.log(
                             `Set relay families for ${familyBatch.length} relays: ${response?.originalTxId}`,
