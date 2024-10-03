@@ -597,7 +597,7 @@ export class DistributionService {
                                             + fam.add.length
                                             + fam.remove.length,
                                     0
-                                ) + 1 + toAdd.length
+                                ) + toAdd.length
                                     <= DistributionService
                                         .familyFingerprintThreshold
                                 ) {
@@ -626,7 +626,6 @@ export class DistributionService {
                                             + fam.remove.length,
                                     0
                                 )
-                                    + 1
                                     + toRemove.length
                                         <= DistributionService
                                             .familyFingerprintThreshold

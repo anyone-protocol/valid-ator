@@ -649,7 +649,7 @@ export class VerificationService {
                                             + fam.add.length
                                             + fam.remove.length,
                                     0
-                                ) + 1 + toAdd.length
+                                ) + toAdd.length
                                     <= VerificationService
                                         .familyFingerprintThreshold
                                 ) {
@@ -678,7 +678,6 @@ export class VerificationService {
                                             + fam.remove.length,
                                     0
                                 )
-                                    + 1
                                     + toRemove.length
                                         <= VerificationService
                                             .familyFingerprintThreshold
