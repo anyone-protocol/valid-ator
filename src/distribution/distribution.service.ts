@@ -56,8 +56,7 @@ export class DistributionService {
 
     private static readonly scoresPerBatch = 7
     public static readonly maxDistributionRetries = 6
-    private static readonly familiesPerBatch = 4
-    private static readonly familyFingerprintThreshold = 50
+    private static readonly familyFingerprintThreshold = 25
     private static readonly fingerprintsPerBatch = 50
 
     private distributionWarp: Warp
@@ -587,7 +586,7 @@ export class DistributionService {
                     ) => {
                         const toAddBatches = _.chunk(
                             add,
-                            DistributionService.familyFingerprintThreshold - 1
+                            DistributionService.familyFingerprintThreshold
                         )
                         for (const toAdd of toAddBatches) {
                             if (
@@ -615,7 +614,7 @@ export class DistributionService {
 
                         const toRemoveBatches = _.chunk(
                             remove,
-                            DistributionService.familyFingerprintThreshold - 1
+                            DistributionService.familyFingerprintThreshold
                         )
                         for (const toRemove of toRemoveBatches) {
                             if (

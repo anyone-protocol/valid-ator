@@ -46,8 +46,7 @@ export class VerificationService {
     private operator
     private bundlr
 
-    private static readonly familiesPerBatch = 4
-    private static readonly familyFingerprintThreshold = 50
+    private static readonly familyFingerprintThreshold = 25
     private static readonly claimableRelaysPerBatch = 8
 
     private relayRegistryWarp: Warp
@@ -626,29 +625,12 @@ export class VerificationService {
                 + ` [${firstFingerprint} ... ${lastFingerprint}]`
             )
         } else if (relaysWithFamilyUpdates.length > 0) {
-            // const addRemoveFamilies = relaysWithFamilyUpdates
             const { batches: familyBatches} = relaysWithFamilyUpdates
                 .map(({ fingerprint, family }) => ({
                     fingerprint,
                     add: _.difference(family, currentFamilies[fingerprint]),
                     remove: _.difference(currentFamilies[fingerprint], family)
                 }))
-
-            // const familyBatches = [] as SetFamilyInput[][]
-            // let currentBatch = [] as SetFamilyInput[]
-            // for (const { fingerprint, add, remove } of addRemoveFamilies) {
-            //     let currentBatchFingerprintCount = currentBatch.reduce(
-            //         (sum, fam) =>
-            //             sum + 1 + fam.add.length + fam.remove.length,
-            //         0
-            //     )
-            //     const toAddBatches = _.chunk(
-            //         add,
-            //         VerificationService.familyFingerprintThreshold - 1
-            //     )
-
-            // }
-
                 .reduce(
                     (
                         { batches, _currentBatch },
@@ -656,7 +638,7 @@ export class VerificationService {
                     ) => {
                         const toAddBatches = _.chunk(
                             add,
-                            VerificationService.familyFingerprintThreshold - 1
+                            VerificationService.familyFingerprintThreshold
                         )
                         for (const toAdd of toAddBatches) {
                             if (
@@ -684,7 +666,7 @@ export class VerificationService {
 
                         const toRemoveBatches = _.chunk(
                             remove,
-                            VerificationService.familyFingerprintThreshold - 1
+                            VerificationService.familyFingerprintThreshold
                         )
                         for (const toRemove of toRemoveBatches) {
                             if (
