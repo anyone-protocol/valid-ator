@@ -94,7 +94,7 @@ job "valid-ator-live" {
 
       resources {
         cpu    = 4096
-        memory = 16384
+        memory = 32384
       }
 
       service {

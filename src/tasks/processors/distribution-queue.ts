@@ -240,7 +240,7 @@ export class DistributionQueue extends WorkerHost {
                 scores: ScoreData[]
             }
             if (data != undefined) {
-                this.logger.debug(
+                this.logger.log(
                     `Adding ${data.scores.length} scores for ${data.stamp}`,
                 )
                 const scores: Score[] = this.dataToScores(data.scores)
