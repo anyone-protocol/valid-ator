@@ -56,7 +56,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 try {
                     if (rewardData.length > 0) {
                         this.logger.log(
-                            `Updating rewards for ${rewardData[0].address} with ${rewardData[0]}`,
+                            `Updating rewards for ${rewardData[0].address} with ${rewardData[0].amount}`,
                         )
                         const hasPassedUpdate =
                             await this.events.updateAllocation(rewardData[0])
