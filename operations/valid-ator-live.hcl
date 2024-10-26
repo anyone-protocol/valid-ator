@@ -105,11 +105,11 @@ job "valid-ator-live" {
           name     = "valid-ator health check"
           type     = "http"
           path     = "/health"
-          interval = "5s"
+          interval = "30s"
           timeout  = "10s"
           check_restart {
             limit = 180
-            grace = "15s"
+            grace = "45s"
           }
         }
       }
