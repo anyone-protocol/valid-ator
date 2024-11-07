@@ -2,6 +2,11 @@ job "valid-ator-live" {
   datacenters = ["ator-fin"]
   type = "service"
 
+  update {
+    healthy_deadline  = "45m"
+    progress_deadline = "60m"
+  }
+
   group "valid-ator-live-group" {
     
     count = 1
