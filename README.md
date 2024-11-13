@@ -178,3 +178,5 @@ npm run cli -- seed relay-sale-data -d <path-to-relay-sale-data.csv> down
 5. Testing - `npm test -- --watch`
 
 6. Running - `npm run start:dev`
+
+deploy!
