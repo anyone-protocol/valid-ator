@@ -17,6 +17,11 @@ job "populate-relay-uptime-stage" {
         policies = ["valid-ator-stage"]
       }
 
+      resources {
+        cpu    = 4096
+        memory = 8192
+      }
+
       env {
         IS_LIVE="true"
         CPU_COUNT="1"
@@ -28,7 +33,7 @@ job "populate-relay-uptime-stage" {
         FACILITY_OPERATOR_MIN_BALANCE=1000000
         FACILITY_TOKEN_MIN_BALANCE=1000000
         IRYS_NODE="https://node2.irys.xyz"
-        UPTIME_MINIMUM_RUNNING_COUNT="16"
+        UPTIME_MINIMUM_RUNNING_COUNT="4"
       }
 
       template {

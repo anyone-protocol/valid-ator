@@ -84,9 +84,9 @@ export class VerificationQueue extends WorkerHost {
                         .verification
                         .setRelayFamilies(relays)
 
-                    const distributionResults = await this
-                        .distribution
-                        .setRelayFamilies(relays)
+                    // const distributionResults = await this
+                    //     .distribution
+                    //     .setRelayFamilies(relays)
 
                     // TODO: merge verification results with registry and distribution updates
                     return verificationResults
