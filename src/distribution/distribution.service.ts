@@ -176,22 +176,18 @@ export class DistributionService {
     ): Promise<RewardAllocationData | undefined> {
         if (this.operator != undefined) {
             try {
-                const response = await this.distributionContract
-                    .viewState<Claimable, string>({
-                        function: 'claimable',
-                        address: address,
-                    })
-
-                if (response.result == undefined) {
-                    this.logger.error(
-                        `Failed to fetch distribution state: ${response.errorMessage}`,
-                    )
-                    return undefined
-                } else {
+                await this.refreshDreState()
+                
+                if (this.dreState != undefined) {
                     return {
                         address: address,
-                        amount: response.result,
+                        amount: this.dreState?.claimable[address] || "0"
                     }
+                } else {
+                    this.logger.error(
+                        `Failed to fetch distribution state: DRE state missing`,
+                    )
+                    return undefined
                 }
             } catch (error) {
                 this.logger.error(`Exception in getAllocation:`, error.stack)

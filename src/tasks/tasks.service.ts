@@ -328,7 +328,7 @@ export class TasksService implements OnApplicationBootstrap {
     }
 
     public async queueValidateRelays(
-        delayJob: number = 1000 * 60 * 60 * 2
+        delayJob: number = 1000 * 60 * 60 * 4
     ): Promise<void> {
         if (!this.state.isValidating) {
             this.state.isValidating = true

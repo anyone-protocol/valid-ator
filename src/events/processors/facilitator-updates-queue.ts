@@ -43,7 +43,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 } catch (error) {
                     this.logger.error(
                         'Exception while getting current rewards:',
-                        error,
+                        error.stack
                     )
                     return undefined
                 }
@@ -56,7 +56,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 try {
                     if (rewardData.length > 0) {
                         this.logger.log(
-                            `Updating rewards for ${rewardData[0].address}`,
+                            `Updating rewards for ${rewardData[0].address} with ${rewardData[0].amount}`,
                         )
                         const hasPassedUpdate =
                             await this.events.updateAllocation(rewardData[0])
@@ -70,7 +70,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                         return false
                     }
                 } catch (e) {
-                    this.logger.error('Exception when updating allocation:', e)
+                    this.logger.error('Exception when updating allocation:', e.stack)
                     return false
                 }
 
@@ -106,7 +106,7 @@ export class FacilitatorUpdatesQueue extends WorkerHost {
                 } catch (e) {
                     this.logger.error(
                         'Exception while recovering allocation:',
-                        e,
+                        e.stack
                     )
                     return false
                 }

@@ -2,6 +2,11 @@ job "valid-ator-live" {
   datacenters = ["ator-fin"]
   type = "service"
 
+  update {
+    healthy_deadline  = "45m"
+    progress_deadline = "60m"
+  }
+
   group "valid-ator-live-group" {
     
     count = 1
@@ -94,7 +99,7 @@ job "valid-ator-live" {
 
       resources {
         cpu    = 4096
-        memory = 8192
+        memory = 32384
       }
 
       service {
@@ -105,11 +110,11 @@ job "valid-ator-live" {
           name     = "valid-ator health check"
           type     = "http"
           path     = "/health"
-          interval = "5s"
+          interval = "30s"
           timeout  = "10s"
           check_restart {
             limit = 180
-            grace = "15s"
+            grace = "45s"
           }
         }
       }
