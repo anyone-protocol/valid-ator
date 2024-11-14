@@ -77,9 +77,9 @@ export class DistributionQueue extends WorkerHost {
             if (data != undefined) {
                 const scores = data.relays
                     .map((relay, index, array) => ({
-                        ator_address: relay.ator_address,
+                        ator_address: relay.address,
                         fingerprint: relay.fingerprint,
-                        score: relay.consensus_weight,
+                        score: relay.score,
                     }))
                     .filter((score, index, array) => score.score > 0)
 

@@ -30,6 +30,7 @@ import {
 import { setTimeout } from 'node:timers/promises'
 import _ from 'lodash'
 import { HardwareVerificationService } from './hardware-verification.service'
+import { VerifiedRelay } from './schemas/verified-relay'
 
 type SetFamilyInput = {
     fingerprint: string,
@@ -505,7 +506,11 @@ export class VerificationService {
             validation_stats_tx: validationStatsTx,
             relays: verifiedRelays
                 .filter((value) => value.result == 'AlreadyVerified')
-                .map((value) => value.relay),
+                .map((value) => ({
+                    fingerprint: value.relay.fingerprint,
+                    address: value.relay.ator_address,
+                    score: value.relay.consensus_weight
+                })),
         }
 
         await this.verificationDataModel
