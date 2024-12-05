@@ -28,7 +28,7 @@ job "valid-ator-live" {
     task "valid-ator-live-service" {
       driver = "docker"
       config {
-        image = "ghcr.io/anyone-protocol/valid-ator:[[.deploy]]"
+        image = "ghcr.io/anyone-protocol/valid-ator:[[.commit_sha]]"
       }
 
       vault {
